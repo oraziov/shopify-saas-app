@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg
 from psycopg2.extras import RealDictCursor
 from urllib.parse import urlparse
 
@@ -6,7 +6,7 @@ from app.config import DATABASE_URL
 
 
 def get_conn():
-    return psycopg2.connect(DATABASE_URL)
+    return psycopg.connect(DATABASE_URL)
 
 
 def init_db():
