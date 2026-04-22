@@ -3,6 +3,9 @@ import time
 
 import requests
 
+from app.config import API_VERSION
+from app.db import get_shop_token
+
 
 logger = logging.getLogger(__name__)
 
@@ -15,23 +18,27 @@ def graphql(
     *,
     shop: str,
     query: str,
-    variables: dict | None,
-    access_token: str,
-    api_version: str,
+    variables: dict | None = None,
     timeout: int = 30,
     max_retries: int = 3,
 ) -> dict:
+
     if not shop:
         raise ValueError("shop is required")
-    if not access_token:
-        raise ValueError(f"No access token available for shop: {shop}")
 
-    url = f"https://{shop}/admin/api/{api_version}/graphql.json"
+    access_token = get_shop_token(shop)
+
+    if not access_token:
+        raise ValueError(f"No access token found for shop: {shop}")
+
+    url = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+
     headers = {
         "X-Shopify-Access-Token": access_token,
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
+
     payload = {
         "query": query,
         "variables": variables or {},
@@ -50,51 +57,42 @@ def graphql(
             )
 
             if response.status_code == 429:
-                logger.warning("Shopify rate limited request", extra={"shop": shop, "attempt": attempt})
+                logger.warning("Rate limited", extra={"shop": shop})
                 time.sleep(backoff)
                 backoff *= 2
                 continue
 
             if response.status_code >= 500:
-                logger.warning("Shopify server error", extra={"shop": shop, "status_code": response.status_code, "attempt": attempt})
+                logger.warning("Shopify server error", extra={"shop": shop})
                 time.sleep(backoff)
                 backoff *= 2
                 continue
 
             if response.status_code != 200:
-                raise ShopifyAPIError(f"HTTP {response.status_code} - {response.text}")
+                raise ShopifyAPIError(
+                    f"HTTP {response.status_code} - {response.text}"
+                )
 
             data = response.json()
 
             if "errors" in data:
-                raise ShopifyAPIError(f"GraphQL top-level errors: {data['errors']}")
+                raise ShopifyAPIError(f"GraphQL errors: {data['errors']}")
 
-            user_errors = []
-            # Useful when you later add mutations.
-            if isinstance(data.get("data"), dict):
-                for value in data["data"].values():
-                    if isinstance(value, dict) and value.get("userErrors"):
-                        user_errors.extend(value["userErrors"])
-
-            if user_errors:
-                raise ShopifyAPIError(f"GraphQL user errors: {user_errors}")
-
+            # throttle handling
             throttle = data.get("extensions", {}).get("cost", {}).get("throttleStatus", {})
-            currently_available = throttle.get("currentlyAvailable")
-            restore_rate = throttle.get("restoreRate")
-            if currently_available is not None and restore_rate is not None and currently_available < 50:
-                sleep_for = max(0.5, 50 / max(restore_rate, 1))
-                logger.info("Approaching Shopify GraphQL throttle, sleeping briefly", extra={"shop": shop, "sleep_for": sleep_for})
-                time.sleep(min(sleep_for, 2.0))
+            if throttle.get("currentlyAvailable", 1000) < 50:
+                time.sleep(0.5)
 
             return data
 
         except (requests.Timeout, requests.ConnectionError) as exc:
             last_error = exc
-            logger.warning("Transient Shopify network error", extra={"shop": shop, "attempt": attempt, "error": str(exc)})
+            logger.warning("Network error", extra={"shop": shop})
+
             if attempt == max_retries:
                 break
+
             time.sleep(backoff)
             backoff *= 2
 
-    raise ShopifyAPIError(f"Shopify request failed after retries: {last_error}")
+    raise ShopifyAPIError(f"Failed after retries: {last_error}")
