@@ -1,1 +1,41 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shopify Product Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; background: #fafafa; color: #222; }
+    h1, h2, h3 { margin-top: 0; }
+    .product { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .images { display: flex; gap: 12px; flex-wrap: wrap; }
+    .images img { width: 120px; height: auto; border-radius: 6px; border: 1px solid #eee; background: #fff; }
+    code { background: #f3f3f3; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Dashboard prodotti</h1>
+  <p><strong>Shop:</strong> {{ shop }}</p>
 
+  {% for product in products %}
+    <div class="product">
+      <h2>{{ product.title }}</h2>
+      <p><code>{{ product.id }}</code></p>
+
+      <h3>Immagini prodotto</h3>
+      <div class="images">
+        {% for image in product.images %}
+          <img src="{{ image }}" alt="{{ product.title }}">
+        {% endfor %}
+      </div>
+
+      <h3>Gallery metafield</h3>
+      <div class="images">
+        {% for image in product.gallery_images %}
+          <img src="{{ image }}" alt="{{ product.title }}">
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</body>
+</html>
