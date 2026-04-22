@@ -12,9 +12,13 @@ SHOPIFY_SCOPES = os.getenv(
     "SHOPIFY_SCOPES",
     "read_products,read_files,read_metaobjects"
 )
+
 API_VERSION = os.getenv("API_VERSION", "2026-04")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./shopify.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL is not set")
+
 APP_SECRET = os.getenv("APP_SECRET", "change-me")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
