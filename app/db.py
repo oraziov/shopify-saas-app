@@ -1,5 +1,5 @@
 import psycopg
-from psycopg2.extras import RealDictCursor
+from psycopg.rows import dict_row
 from urllib.parse import urlparse
 
 from app.config import DATABASE_URL
@@ -58,7 +58,7 @@ def save_shop_token(shop: str, access_token: str, scope: str = None):
 # 🔍 LEGGI TOKEN
 def get_shop_token(shop: str):
     conn = get_conn()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur = conn.cursor(row_factory=dict_row)
 
     cur.execute("SELECT access_token FROM shops WHERE shop = %s", (shop,))
     row = cur.fetchone()
