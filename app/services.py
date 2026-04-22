@@ -2,7 +2,7 @@ import json
 from app.shopify import graphql
 
 
-def resolve_media(shop: str, ids: list[str], access_token: str, api_version: str) -> list[str]:
+def resolve_media(shop: str, ids: list[str]) -> list[str]:
     if not ids:
         return []
 
@@ -22,11 +22,10 @@ def resolve_media(shop: str, ids: list[str], access_token: str, api_version: str
         shop=shop,
         query=query,
         variables={"ids": ids},
-        access_token=access_token,
-        api_version=api_version,
     )
 
     images = []
+
     for node in data.get("data", {}).get("nodes", []):
         if node and node.get("image") and node["image"].get("url"):
             images.append(node["image"]["url"])
@@ -34,13 +33,7 @@ def resolve_media(shop: str, ids: list[str], access_token: str, api_version: str
     return images
 
 
-def get_products_full(
-    *,
-    limit: int,
-    shop: str,
-    access_token: str,
-    api_version: str,
-) -> list[dict]:
+def get_products_full(limit: int, shop: str) -> list[dict]:
     query = """
     query getProducts($first: Int!) {
       products(first: $first) {
@@ -68,8 +61,6 @@ def get_products_full(
         shop=shop,
         query=query,
         variables={"first": limit},
-        access_token=access_token,
-        api_version=api_version,
     )
 
     products = []
@@ -84,7 +75,9 @@ def get_products_full(
         ]
 
         gallery_ids = []
+
         metafield = p.get("metafield")
+
         if metafield and metafield.get("value"):
             try:
                 gallery_ids = json.loads(metafield["value"])
@@ -93,20 +86,14 @@ def get_products_full(
             except (json.JSONDecodeError, TypeError):
                 gallery_ids = []
 
-        gallery_images = resolve_media(
-            shop=shop,
-            ids=gallery_ids,
-            access_token=access_token,
-            api_version=api_version,
-        )
+        gallery_images = resolve_media(shop, gallery_ids)
 
-        products.append(
-            {
-                "id": p["id"],
-                "title": p["title"],
-                "images": images,
-                "gallery_images": gallery_images,
-            }
-        )
+        products.append({
+            "id": p["id"],
+            "title": p["title"],
+            "images": images,
+            "gallery_images": gallery_images
+        })
 
     return products
+    
