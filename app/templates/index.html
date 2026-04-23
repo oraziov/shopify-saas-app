@@ -2,40 +2,104 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shopify Product Dashboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 24px; background: #fafafa; color: #222; }
-    h1, h2, h3 { margin-top: 0; }
-    .product { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-    .images { display: flex; gap: 12px; flex-wrap: wrap; }
-    .images img { width: 120px; height: auto; border-radius: 6px; border: 1px solid #eee; background: #fff; }
-    code { background: #f3f3f3; padding: 2px 6px; border-radius: 4px; }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Image Manager OV</title>
+  <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-  <h1>Dashboard prodotti</h1>
-  <p><strong>Shop:</strong> {{ shop }}</p>
-
-  {% for product in products %}
-    <div class="product">
-      <h2>{{ product.title }}</h2>
-      <p><code>{{ product.id }}</code></p>
-
-      <h3>Immagini prodotto</h3>
-      <div class="images">
-        {% for image in product.images %}
-          <img src="{{ image }}" alt="{{ product.title }}">
-        {% endfor %}
-      </div>
-
-      <h3>Gallery metafield</h3>
-      <div class="images">
-        {% for image in product.gallery_images %}
-          <img src="{{ image }}" alt="{{ product.title }}">
-        {% endfor %}
-      </div>
+  <header class="topbar">
+    <div>
+      <h1>Image Manager OV</h1>
+      <p class="sub">Shop: {{ shop }}</p>
     </div>
-  {% endfor %}
+  </header>
+
+  <main class="page">
+    {% for product in products %}
+    <section class="product-card" data-product-id="{{ product.id }}">
+      <div class="product-head">
+        <div>
+          <h2>{{ product.title }}</h2>
+          <code>{{ product.id }}</code>
+        </div>
+      </div>
+
+      <div class="dropzone"
+           data-upload-dropzone
+           data-shop="{{ shop }}"
+           data-product-id="{{ product.id }}">
+        <input type="file" multiple accept="image/*" class="hidden-file-input" data-file-input>
+        <div class="dropzone-copy">
+          <strong>Trascina immagini qui</strong>
+          <span>oppure clicca per selezionarle</span>
+        </div>
+        <div class="upload-progress" data-progress hidden>
+          <div class="upload-progress-bar" data-progress-bar></div>
+        </div>
+      </div>
+
+      <div class="columns">
+        <div class="column">
+          <h3>Media prodotto</h3>
+          <div class="media-grid">
+            {% for media in product.media %}
+            <article class="media-card">
+              <img src="{{ media.url }}" alt="{{ media.alt or product.title }}">
+              <div class="media-actions">
+                <button class="btn"
+                        data-add-gallery
+                        data-shop="{{ shop }}"
+                        data-product-id="{{ product.id }}"
+                        data-file-id="{{ media.id }}">
+                  Aggiungi a gallery
+                </button>
+                <button class="btn btn-danger"
+                        data-delete-media
+                        data-shop="{{ shop }}"
+                        data-product-id="{{ product.id }}"
+                        data-media-id="{{ media.id }}">
+                  Elimina dal prodotto
+                </button>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="column">
+          <h3>Gallery metafield</h3>
+          <div class="media-grid">
+            {% for item in product.gallery %}
+            <article class="media-card">
+              <img src="{{ item.url }}" alt="{{ item.alt or product.title }}">
+              <div class="media-actions">
+                <button class="btn btn-danger"
+                        data-remove-gallery
+                        data-shop="{{ shop }}"
+                        data-product-id="{{ product.id }}"
+                        data-file-id="{{ item.id }}">
+                  Rimuovi dalla gallery
+                </button>
+              </div>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endfor %}
+
+    {% if page_info.hasNextPage %}
+    <div class="pagination">
+      <a class="btn" href="/?shop={{ shop }}&after={{ page_info.endCursor | urlencode }}">Carica altri prodotti</a>
+    </div>
+    {% endif %}
+  </main>
+
+  <template id="toast-template">
+    <div class="toast"></div>
+  </template>
+
+  <script src="/static/app.js"></script>
 </body>
 </html>
