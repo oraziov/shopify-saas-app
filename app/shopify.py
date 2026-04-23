@@ -47,7 +47,18 @@ def graphql(
                 headers=headers,
                 timeout=timeout,
             )
+print("STATUS:", response.status_code)
+print("RESPONSE TEXT:", response.text)
 
+try:
+    data = response.json()
+except Exception as e:
+    print("JSON ERROR:", e)
+    return None
+
+print("DATA:", data)
+
+return data
             if response.status_code == 429:
                 logger.warning("Shopify rate limited request", extra={"shop": shop, "attempt": attempt})
                 time.sleep(backoff)
