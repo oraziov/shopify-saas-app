@@ -39,66 +39,31 @@ def graphql(
     backoff = 1.0
     last_error = None
 
-    for attempt in range(1, max_retries + 1):
-       print("------ SHOPIFY DEBUG ------")
-print("SHOP:", shop)
-print("TOKEN:", access_token)
+    response = requests.post(
+        url,
+        json=payload,
+        headers=headers,
+        timeout=timeout,
+    )
 
-response = requests.post(
-    url,
-    json=payload,
-    headers=headers,
-    timeout=timeout,
-)
+    print("STATUS:", response.status_code)
+    print("RESPONSE TEXT:", response.text)
 
-print("STATUS:", response.status_code)
-print("RESPONSE TEXT:", response.text)
+    try:
+        data = response.json()
+    except Exception as e:
+        print("JSON ERROR:", e)
+        return None
 
-try:
-    data = response.json()
-except Exception as e:
-    print("JSON ERROR:", e)
-    return None
+    print("DATA:", data)
+    print("------ END DEBUG ------")
 
-print("DATA:", data)
-print("------ END DEBUG ------")
+    if response.status_code != 200:
+        raise ShopifyAPIError(
+            f"HTTP {response.status_code} - {response.text}"
+        )
 
-return data
+    if "errors" in data:
+        raise ShopifyAPIError(f"GraphQL errors: {data['errors']}")
 
-            if response.status_code == 429:
-                logger.warning("Shopify rate limited request", extra={"shop": shop, "attempt": attempt})
-                time.sleep(backoff)
-                backoff *= 2
-                continue
-
-            if response.status_code >= 500:
-                logger.warning("Shopify server error", extra={"shop": shop, "attempt": attempt})
-                time.sleep(backoff)
-                backoff *= 2
-                continue
-
-            if response.status_code != 200:
-                raise ShopifyAPIError(f"HTTP {response.status_code} - {response.text}")
-
-            data = response.json()
-
-            if "errors" in data:
-                raise ShopifyAPIError(f"GraphQL top-level errors: {data['errors']}")
-
-            throttle = data.get("extensions", {}).get("cost", {}).get("throttleStatus", {})
-            currently_available = throttle.get("currentlyAvailable")
-            restore_rate = throttle.get("restoreRate")
-            if currently_available is not None and restore_rate is not None and currently_available < 50:
-                time.sleep(min(max(0.5, 50 / max(restore_rate, 1)), 2.0))
-
-            return data
-
-        except (requests.Timeout, requests.ConnectionError) as exc:
-            last_error = exc
-            logger.warning("Transient Shopify network error", extra={"shop": shop, "attempt": attempt, "error": str(exc)})
-            if attempt == max_retries:
-                break
-            time.sleep(backoff)
-            backoff *= 2
-
-    raise ShopifyAPIError(f"Shopify request failed after retries: {last_error}")
+    return data
