@@ -61,29 +61,32 @@ def get_shop_token(shop: str):
 def save_oauth_state(state: str, shop: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-            INSERT INTO oauth_states (state, shop)
-            VALUES (%s, %s)
-            ON CONFLICT (state) DO NOTHING;
-            """, (state, shop))
+            cur.execute(
+                "INSERT INTO oauth_states (state, shop) VALUES (%s, %s)",
+                (state, shop)
+            )
 
 
 def consume_oauth_state(state: str, shop: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
+
+            # 🔍 controlla SOLO lo state
             cur.execute(
-                "SELECT state FROM oauth_states WHERE state = %s AND shop = %s",
-                (state, shop)
+                "SELECT state FROM oauth_states WHERE state = %s",
+                (state,)
             )
             row = cur.fetchone()
 
             if not row:
                 return False
 
+            # 🧹 cancella lo state (one-time use)
             cur.execute(
                 "DELETE FROM oauth_states WHERE state = %s",
                 (state,)
             )
+
             return True
 
 
