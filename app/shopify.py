@@ -40,13 +40,30 @@ def graphql(
     last_error = None
 
     for attempt in range(1, max_retries + 1):
-        try:
-            response = requests.post(
-                url,
-                json=payload,
-                headers=headers,
-                timeout=timeout,
-            )
+       print("------ SHOPIFY DEBUG ------")
+print("SHOP:", shop)
+print("TOKEN:", access_token)
+
+response = requests.post(
+    url,
+    json=payload,
+    headers=headers,
+    timeout=timeout,
+)
+
+print("STATUS:", response.status_code)
+print("RESPONSE TEXT:", response.text)
+
+try:
+    data = response.json()
+except Exception as e:
+    print("JSON ERROR:", e)
+    return None
+
+print("DATA:", data)
+print("------ END DEBUG ------")
+
+return data
 
             if response.status_code == 429:
                 logger.warning("Shopify rate limited request", extra={"shop": shop, "attempt": attempt})
