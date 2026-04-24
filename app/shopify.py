@@ -46,24 +46,22 @@ def graphql(
         timeout=timeout,
     )
 
-    print("STATUS:", response.status_code)
-    print("RESPONSE TEXT:", response.text)
-
-    try:
-        data = response.json()
-    except Exception as e:
-        print("JSON ERROR:", e)
-        raise ShopifyAPIError(f"Failed to parse JSON response: {e}")
-
-    print("DATA:", data)
-    print("------ END DEBUG ------")
+    logger.debug("Shopify API call", extra={"shop": shop, "status": response.status_code, "url": url})
 
     if response.status_code != 200:
+        logger.error("Shopify API error", extra={"shop": shop, "status": response.status_code, "response": response.text})
         raise ShopifyAPIError(
             f"HTTP {response.status_code} - {response.text}"
         )
 
+    try:
+        data = response.json()
+    except Exception as e:
+        logger.error("Failed to parse Shopify API response as JSON", extra={"shop": shop, "response": response.text, "error": str(e)})
+        raise ShopifyAPIError(f"Failed to parse JSON response: {e}")
+
     if "errors" in data:
+        logger.error("Shopify GraphQL errors", extra={"shop": shop, "errors": data["errors"]})
         raise ShopifyAPIError(f"GraphQL errors: {data['errors']}")
 
     return data
