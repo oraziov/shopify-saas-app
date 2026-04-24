@@ -53,7 +53,7 @@ def graphql(
         data = response.json()
     except Exception as e:
         print("JSON ERROR:", e)
-        return None
+        raise ShopifyAPIError(f"Failed to parse JSON response: {e}")
 
     print("DATA:", data)
     print("------ END DEBUG ------")
