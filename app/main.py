@@ -68,8 +68,7 @@ def callback(request: Request):
     code = params.get("code")
     state = params.get("state")
     hmac_value = params.get("hmac")
-print("SHOP CALLBACK:", shop)
-print("TOKEN RECEIVED:", access_token)
+
     if not shop or not code or not state or not hmac_value:
         raise HTTPException(status_code=400, detail="Missing OAuth params")
 
@@ -91,7 +90,8 @@ print("TOKEN RECEIVED:", access_token)
         },
         timeout=30,
     )
-
+print("SHOP CALLBACK:", shop)
+print("TOKEN RECEIVED:", access_token)
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail=f"Token exchange failed: {response.text}")
 
