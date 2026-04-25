@@ -423,3 +423,43 @@ def remove_file_from_gallery(shop: str, product_id: str, file_id: str):
     ids = [i for i in ids if i != file_id]
 
     return set_gallery_file_ids(shop, product_id, ids)
+
+def delete_product_media(shop: str, product_id: str, media_id: str) -> list[str]:
+    query = """
+    mutation DeleteProductMedia($productId: ID!, $mediaIds: [ID!]!) {
+      productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+        deletedMediaIds
+        mediaUserErrors {
+          field
+          message
+        }
+        product {
+          id
+        }
+      }
+    }
+    """
+
+    data = safe_graphql(
+        shop=shop,
+        query=query,
+        variables={
+            "productId": product_id,
+            "mediaIds": [media_id],
+        },
+    )
+
+    errors = (
+        data["data"]
+        .get("productDeleteMedia", {})
+        .get("mediaUserErrors", [])
+    )
+
+    if errors:
+        raise HTTPException(status_code=400, detail=errors)
+
+    return (
+        data["data"]
+        .get("productDeleteMedia", {})
+        .get("deletedMediaIds", [])
+    )
