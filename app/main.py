@@ -90,8 +90,7 @@ def callback(request: Request):
         },
         timeout=30,
     )
-print("SHOP CALLBACK:", shop)
-print("TOKEN RECEIVED:", access_token)
+
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail=f"Token exchange failed: {response.text}")
 
@@ -106,7 +105,8 @@ print("TOKEN RECEIVED:", access_token)
     logger.info("Shop installed", extra={"shop": shop, "scope": scope})
 
     return RedirectResponse(f"/?shop={shop}", status_code=302)
-
+print("SHOP CALLBACK:", shop)
+print("TOKEN RECEIVED:", access_token)
 
 @app.post("/webhooks/app/uninstalled")
 async def app_uninstalled(request: Request):
