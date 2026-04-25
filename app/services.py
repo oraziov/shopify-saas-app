@@ -12,6 +12,22 @@ GALLERY_NAMESPACE = "custom"
 GALLERY_KEY = "gallery"
 
 
+# 🔥 SAFE GRAPHQL WRAPPER
+def safe_graphql(shop: str, query: str, variables: dict | None = None):
+    data = graphql(shop=shop, query=query, variables=variables)
+
+    if not data:
+        raise HTTPException(status_code=500, detail="GraphQL returned None")
+
+    if "errors" in data:
+        raise HTTPException(status_code=400, detail=data["errors"])
+
+    if "data" not in data:
+        raise HTTPException(status_code=500, detail=f"Invalid response: {data}")
+
+    return data
+
+
 def _assert_no_user_errors(payload: dict, path: str) -> None:
     cursor = payload.get("data", {})
     for part in path.split("."):
@@ -20,6 +36,10 @@ def _assert_no_user_errors(payload: dict, path: str) -> None:
     if user_errors:
         raise HTTPException(status_code=400, detail=user_errors)
 
+
+# ===============================
+# PRODUCTS
+# ===============================
 
 def get_products_page(shop: str, first: int = 12, after: str | None = None) -> dict:
     query = """
@@ -69,56 +89,68 @@ def get_products_page(shop: str, first: int = 12, after: str | None = None) -> d
       }
     }
     """
-    data = graphql(
+
+    data = safe_graphql(
         shop=shop,
         query=query,
         variables={"first": first, "after": after},
     )
 
+    payload = data["data"]["products"]
+
     products = []
-    payload = data.get("data", {}).get("products", {})
     for edge in payload.get("edges", []):
         node = edge["node"]
-        gallery_refs = node.get("metafield", {}).get("references", {}).get("nodes", [])
 
-        gallery = []
-        for ref in gallery_refs:
-            image = ref.get("image") or {}
-            if image.get("url"):
-                gallery.append(
-                    {
-                        "id": ref["id"],
-                        "url": image["url"],
-                        "alt": ref.get("alt"),
-                        "file_status": ref.get("fileStatus"),
-                    }
-                )
+        gallery_refs = (
+            node.get("metafield", {})
+            .get("references", {})
+            .get("nodes", [])
+        )
+
+        gallery = [
+            {
+                "id": ref["id"],
+                "url": (ref.get("image") or {}).get("url"),
+                "alt": ref.get("alt"),
+                "file_status": ref.get("fileStatus"),
+            }
+            for ref in gallery_refs
+            if (ref.get("image") or {}).get("url")
+        ]
+
+        media = [
+            {
+                "id": m["id"],
+                "alt": m.get("alt"),
+                "type": m.get("mediaContentType"),
+                "url": (m.get("image") or {}).get("url"),
+                "file_status": m.get("fileStatus"),
+            }
+            for m in node.get("media", {}).get("nodes", [])
+            if m.get("mediaContentType") == "IMAGE"
+            and (m.get("image") or {}).get("url")
+        ]
 
         products.append(
             {
                 "id": node["id"],
                 "title": node["title"],
                 "cursor": edge["cursor"],
-                "media": [
-                    {
-                        "id": media["id"],
-                        "alt": media.get("alt"),
-                        "type": media.get("mediaContentType"),
-                        "url": (media.get("image") or {}).get("url"),
-                        "file_status": media.get("fileStatus"),
-                    }
-                    for media in node.get("media", {}).get("nodes", [])
-                    if media.get("mediaContentType") == "IMAGE" and (media.get("image") or {}).get("url")
-                ],
+                "media": media,
                 "gallery": gallery,
             }
         )
 
     return {
         "products": products,
-        "page_info": payload.get("pageInfo", {"hasNextPage": False, "endCursor": None}),
+        "page_info": payload.get("pageInfo", {}),
     }
 
+
+# ===============================
+# UPLOAD
+# ===============================
 
 def staged_upload_create(shop: str, filename: str, mime_type: str, file_size: int) -> dict:
     query = """
@@ -139,7 +171,8 @@ def staged_upload_create(shop: str, filename: str, mime_type: str, file_size: in
       }
     }
     """
-    data = graphql(
+
+    data = safe_graphql(
         shop=shop,
         query=query,
         variables={
@@ -154,34 +187,36 @@ def staged_upload_create(shop: str, filename: str, mime_type: str, file_size: in
             ]
         },
     )
+
     _assert_no_user_errors(data, "stagedUploadsCreate")
-    target = data["data"]["stagedUploadsCreate"]["stagedTargets"][0]
-    return target
+
+    return data["data"]["stagedUploadsCreate"]["stagedTargets"][0]
 
 
 def upload_binary_to_staged_target(staged_target: dict, binary: bytes) -> None:
     params = staged_target.get("parameters") or []
     headers = {item["name"]: item["value"] for item in params}
+
     response = requests.put(
         staged_target["url"],
         data=binary,
         headers=headers,
         timeout=120,
     )
+
     if response.status_code not in (200, 201):
         raise HTTPException(
             status_code=400,
-            detail=f"Staged upload failed: {response.status_code} - {response.text[:300]}",
+            detail=f"Upload failed: {response.text[:200]}",
         )
 
 
 def file_create_from_resource(shop: str, resource_url: str, alt: str | None = None) -> dict:
     query = """
-    mutation CreateFileFromResource($files: [FileCreateInput!]!) {
+    mutation CreateFile($files: [FileCreateInput!]!) {
       fileCreate(files: $files) {
         files {
           id
-          alt
           fileStatus
           ... on MediaImage {
             image {
@@ -190,13 +225,13 @@ def file_create_from_resource(shop: str, resource_url: str, alt: str | None = No
           }
         }
         userErrors {
-          field
           message
         }
       }
     }
     """
-    data = graphql(
+
+    data = safe_graphql(
         shop=shop,
         query=query,
         variables={
@@ -209,7 +244,9 @@ def file_create_from_resource(shop: str, resource_url: str, alt: str | None = No
             ]
         },
     )
+
     _assert_no_user_errors(data, "fileCreate")
+
     return data["data"]["fileCreate"]["files"][0]
 
 
@@ -220,7 +257,6 @@ def wait_until_file_ready(shop: str, file_id: str, timeout_seconds: int = 60) ->
         ... on File {
           id
           fileStatus
-          alt
           preview {
             image {
               url
@@ -230,50 +266,40 @@ def wait_until_file_ready(shop: str, file_id: str, timeout_seconds: int = 60) ->
       }
     }
     """
-    started = time.time()
-    while time.time() - started < timeout_seconds:
-        data = graphql(shop=shop, query=query, variables={"id": file_id})
-        node = data.get("data", {}).get("node")
-        if not node:
-            raise HTTPException(status_code=400, detail="File not found after create")
 
-        status = node.get("fileStatus")
-        if status == "READY":
+    start = time.time()
+
+    while time.time() - start < timeout_seconds:
+        data = safe_graphql(shop=shop, query=query, variables={"id": file_id})
+
+        node = data["data"]["node"]
+
+        if node["fileStatus"] == "READY":
             return node
-        if status == "FAILED":
-            raise HTTPException(status_code=400, detail="Shopify failed to process the uploaded file")
-        time.sleep(1.0)
 
-    raise HTTPException(status_code=400, detail="Timed out waiting for Shopify file processing")
+        if node["fileStatus"] == "FAILED":
+            raise HTTPException(status_code=400, detail="File processing failed")
+
+        time.sleep(1)
+
+    raise HTTPException(status_code=400, detail="Timeout waiting file")
 
 
-def attach_file_to_product(shop: str, product_id: str, file_id: str, alt: str | None = None) -> dict:
+def attach_file_to_product(shop: str, product_id: str, file_id: str):
     query = """
-    mutation AttachFileToProduct($input: ProductSetInput!) {
+    mutation AttachFile($input: ProductSetInput!) {
       productSet(input: $input, synchronous: true) {
         product {
           id
-          media(first: 20) {
-            nodes {
-              id
-              alt
-              mediaContentType
-              ... on MediaImage {
-                image {
-                  url
-                }
-              }
-            }
-          }
         }
         userErrors {
-          field
           message
         }
       }
     }
     """
-    data = graphql(
+
+    data = safe_graphql(
         shop=shop,
         query=query,
         variables={
@@ -283,55 +309,50 @@ def attach_file_to_product(shop: str, product_id: str, file_id: str, alt: str | 
                     {
                         "originalSource": file_id,
                         "contentType": "IMAGE",
-                        "alt": alt or "",
                     }
                 ],
             }
         },
     )
+
     _assert_no_user_errors(data, "productSet")
-    return data["data"]["productSet"]["product"]
+
+    return True
 
 
 async def upload_files_to_product(shop: str, product_id: str, files: list[UploadFile]) -> list[dict]:
-    uploaded = []
+    results = []
 
     for file in files:
         binary = await file.read()
-        if not binary:
-            continue
 
-        mime_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "image/jpeg"
-        staged_target = staged_upload_create(
-            shop=shop,
-            filename=file.filename or "upload.jpg",
-            mime_type=mime_type,
-            file_size=len(binary),
-        )
-        upload_binary_to_staged_target(staged_target, binary)
-        created_file = file_create_from_resource(shop=shop, resource_url=staged_target["resourceUrl"], alt=file.filename)
-        ready = wait_until_file_ready(shop=shop, file_id=created_file["id"])
-        attach_file_to_product(shop=shop, product_id=product_id, file_id=created_file["id"], alt=file.filename)
+        mime = file.content_type or "image/jpeg"
 
-        uploaded.append(
-            {
-                "file_id": created_file["id"],
-                "url": ready.get("preview", {}).get("image", {}).get("url"),
-                "alt": file.filename,
-            }
-        )
+        staged = staged_upload_create(shop, file.filename, mime, len(binary))
+        upload_binary_to_staged_target(staged, binary)
 
-    return uploaded
+        created = file_create_from_resource(shop, staged["resourceUrl"], file.filename)
+        ready = wait_until_file_ready(shop, created["id"])
 
+        attach_file_to_product(shop, product_id, created["id"])
+
+        results.append({
+            "id": created["id"],
+            "url": ready["preview"]["image"]["url"],
+        })
+
+    return results
+
+
+# ===============================
+# GALLERY
+# ===============================
 
 def get_gallery_file_ids(shop: str, product_id: str) -> list[str]:
     query = """
-    query GalleryValue($id: ID!) {
+    query GetGallery($id: ID!) {
       product(id: $id) {
-        id
         metafield(namespace: "custom", key: "gallery") {
-          type
-          value
           references(first: 100) {
             nodes {
               ... on MediaImage {
@@ -343,45 +364,30 @@ def get_gallery_file_ids(shop: str, product_id: str) -> list[str]:
       }
     }
     """
-    data = graphql(shop=shop, query=query, variables={"id": product_id})
-    metafield = data.get("data", {}).get("product", {}).get("metafield")
-    if not metafield:
-        return []
 
-    refs = [node["id"] for node in metafield.get("references", {}).get("nodes", []) if node.get("id")]
-    if refs:
-        return refs
+    data = safe_graphql(shop=shop, query=query, variables={"id": product_id})
 
-    value = metafield.get("value")
-    if not value:
-        return []
+    nodes = (
+        data["data"]["product"]["metafield"]
+        .get("references", {})
+        .get("nodes", [])
+    )
 
-    try:
-        parsed = json.loads(value)
-        return parsed if isinstance(parsed, list) else []
-    except Exception:
-        return []
+    return [n["id"] for n in nodes if n.get("id")]
 
 
 def set_gallery_file_ids(shop: str, product_id: str, file_ids: list[str]) -> list[str]:
     query = """
     mutation SetGallery($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
-        metafields {
-          key
-          namespace
-          type
-          value
-        }
         userErrors {
-          field
           message
-          code
         }
       }
     }
     """
-    data = graphql(
+
+    data = safe_graphql(
         shop=shop,
         query=query,
         variables={
@@ -396,45 +402,24 @@ def set_gallery_file_ids(shop: str, product_id: str, file_ids: list[str]) -> lis
             ]
         },
     )
+
     _assert_no_user_errors(data, "metafieldsSet")
+
     return file_ids
 
 
-def add_file_to_gallery(shop: str, product_id: str, file_id: str) -> list[str]:
-    existing = get_gallery_file_ids(shop=shop, product_id=product_id)
-    if file_id not in existing:
-        existing.append(file_id)
-    return set_gallery_file_ids(shop=shop, product_id=product_id, file_ids=existing)
+def add_file_to_gallery(shop: str, product_id: str, file_id: str):
+    ids = get_gallery_file_ids(shop, product_id)
+
+    if file_id not in ids:
+        ids.append(file_id)
+
+    return set_gallery_file_ids(shop, product_id, ids)
 
 
-def remove_file_from_gallery(shop: str, product_id: str, file_id: str) -> list[str]:
-    existing = get_gallery_file_ids(shop=shop, product_id=product_id)
-    existing = [item for item in existing if item != file_id]
-    return set_gallery_file_ids(shop=shop, product_id=product_id, file_ids=existing)
+def remove_file_from_gallery(shop: str, product_id: str, file_id: str):
+    ids = get_gallery_file_ids(shop, product_id)
 
+    ids = [i for i in ids if i != file_id]
 
-def delete_product_media(shop: str, product_id: str, media_id: str) -> list[str]:
-    query = """
-    mutation DeleteProductMedia($productId: ID!, $mediaIds: [ID!]!) {
-      productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
-        deletedMediaIds
-        deletedProductImageIds
-        mediaUserErrors {
-          field
-          message
-        }
-        product {
-          id
-        }
-      }
-    }
-    """
-    data = graphql(
-        shop=shop,
-        query=query,
-        variables={"productId": product_id, "mediaIds": [media_id]},
-    )
-    errors = data.get("data", {}).get("productDeleteMedia", {}).get("mediaUserErrors", [])
-    if errors:
-        raise HTTPException(status_code=400, detail=errors)
-    return data["data"]["productDeleteMedia"].get("deletedMediaIds", [])
+    return set_gallery_file_ids(shop, product_id, ids)
