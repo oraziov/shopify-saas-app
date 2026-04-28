@@ -396,3 +396,60 @@ def add_to_gallery(
     print("SAVE RESPONSE:", save)
 
     return save
+
+
+@app.get("/gallery/get")
+def get_gallery(shop: str, product_id: str):
+    token = get_shop_token(shop)
+
+    if not token:
+        raise HTTPException(400, "No token")
+
+    query = """
+    query ($id: ID!) {
+      product(id: $id) {
+        metafield(namespace: "custom", key: "gallery") {
+          references(first: 20) {
+            nodes {
+              ... on MediaImage {
+                id
+                image {
+                  url
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+
+    res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": query,
+            "variables": {"id": product_id}
+        }
+    ).json()
+
+    nodes = (
+        res.get("data", {})
+        .get("product", {})
+        .get("metafield", {})
+        .get("references", {})
+        .get("nodes", [])
+    )
+
+    gallery = [
+        {
+            "id": n["id"],
+            "url": n["image"]["url"]
+        }
+        for n in nodes if n.get("image")
+    ]
+
+    return gallery
