@@ -68,8 +68,18 @@
 
     .products {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .product-card {
+      cursor: pointer;
+      transition: .15s;
+    }
+
+    .product-card:hover {
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+      transform: translateY(-1px);
     }
 
     .selected {
@@ -122,18 +132,27 @@
       const container = document.getElementById("products")
       container.innerHTML = ""
 
+      if (!Array.isArray(products) || products.length === 0) {
+        container.innerHTML = "<p>Nessun prodotto trovato</p>"
+        return
+      }
+
       products.forEach(p => {
         const div = document.createElement("div")
-        div.className = "item"
+        div.className = "item product-card"
 
         div.innerHTML = `
-      <img src="${p.image || 'https://via.placeholder.com/150'}">
-      <div>${p.title}</div>
+      <img src="${p.image || 'https://placehold.co/400x400?text=No+image'}" alt="">
+      <div style="padding:8px 0;font-weight:600">${p.title}</div>
     `
 
         div.onclick = () => {
           productId = p.id
-          document.querySelectorAll(".item").forEach(el => el.classList.remove("selected"))
+
+          document
+            .querySelectorAll("#products .item")
+            .forEach(el => el.classList.remove("selected"))
+
           div.classList.add("selected")
           loadGallery()
         }
