@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Query
 from fastapi.responses import RedirectResponse
 from urllib.parse import urlencode
 import requests
+import base64
+
 
 from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, APP_URL
 from app.db import init_db, save_shop_token, get_shop_token
@@ -101,3 +103,56 @@ def test(shop: str = Query(...)):
         "status": res.status_code,
         "response": res.json()
     }
+
+@app.post("/upload")
+async def upload_image(shop: str, file: UploadFile = File(...)):
+    token = get_shop_token(shop)
+
+    if not token:
+        raise HTTPException(400, "No token")
+
+    content = await file.read()
+    b64 = base64.b64encode(content).decode()
+
+    mutation = """
+    mutation fileCreate($files: [FileCreateInput!]!) {
+      fileCreate(files: $files) {
+        files {
+          id
+          fileStatus
+          ... on MediaImage {
+            image {
+              url
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+
+    url = f"https://{shop}/admin/api/2026-04/graphql.json"
+
+    res = requests.post(
+        url,
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": mutation,
+            "variables": {
+                "files": [
+                    {
+                        "contentType": "IMAGE",
+                        "originalSource": f"data:image/jpeg;base64,{b64}"
+                    }
+                ]
+            }
+        }
+    )
+
+    return res.json()
