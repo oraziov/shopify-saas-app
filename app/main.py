@@ -1,3 +1,15 @@
+from fastapi import FastAPI, Request, HTTPException
+import requests
+
+from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET
+from app.db import init_db, save_shop_token
+
+app = FastAPI()   # 🔥 QUESTO DEVE ESSERE PRIMA DI TUTTO
+
+@app.on_event("startup")
+def startup():
+    init_db()
+
 @app.get("/callback")
 def callback(request: Request):
     params = dict(request.query_params)
@@ -32,7 +44,7 @@ def callback(request: Request):
 def test(shop: str):
     token = get_shop_token(shop)
 
-    url = f"https://{shop}/admin/api/2024-01/products.json"
+    url = f"https://{shop}/admin/api/2026-04/products.json"
 
     res = requests.get(
         url,
