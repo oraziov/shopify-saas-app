@@ -85,6 +85,28 @@
     .selected {
       border: 2px solid #008060;
     }
+
+    .product-row {
+      border-bottom: 1px solid #ddd;
+      padding: 20px 0;
+    }
+
+    .image-grid {
+      display: flex;
+      gap: 20px;
+    }
+
+    .image-slot {
+      background: #1e2a38;
+      padding: 15px;
+      border-radius: 8px;
+      width: 200px;
+    }
+
+    .preview {
+      margin-top: 10px;
+      color: #aaa;
+    }
   </style>
 
 </head>
@@ -96,8 +118,8 @@
 
     <!-- PRODOTTI -->
     <div class="card">
-      <h2>Prodotti</h2>
-      <div id="products" class="products"></div>
+      <h2>Gestione immagini prodotti</h2>
+      <div id="products"></div>
     </div>
 
     <!-- UPLOAD -->
@@ -132,35 +154,43 @@
       const container = document.getElementById("products")
       container.innerHTML = ""
 
-      if (!Array.isArray(products) || products.length === 0) {
-        container.innerHTML = "<p>Nessun prodotto trovato</p>"
-        return
-      }
+      for (const p of products) {
 
-      products.forEach(p => {
-        const div = document.createElement("div")
-        div.className = "item product-card"
+        const productDiv = document.createElement("div")
+        productDiv.className = "product-row"
 
-        div.innerHTML = `
-      <img src="${p.image || 'https://placehold.co/400x400?text=No+image'}" alt="">
-      <div style="padding:8px 0;font-weight:600">${p.title}</div>
-    `
+        // 🔥 titolo
+        const title = document.createElement("h3")
+        title.innerText = p.title
 
-        div.onclick = () => {
-          productId = p.id
+        productDiv.appendChild(title)
 
-          document
-            .querySelectorAll("#products .item")
-            .forEach(el => el.classList.remove("selected"))
+        // 🔥 container immagini
+        const imagesContainer = document.createElement("div")
+        imagesContainer.className = "image-grid"
 
-          div.classList.add("selected")
-          loadGallery()
+        // 👉 crea 3 slot (puoi aumentare)
+        for (let i = 1; i <= 3; i++) {
+
+          const slot = document.createElement("div")
+          slot.className = "image-slot"
+
+          slot.innerHTML = `
+        <div><strong>Image${i}</strong></div>
+        <input type="file" onchange="uploadToProduct('${p.id}', this.files[0])">
+        <div id="preview-${p.id}-${i}" class="preview">Nessuna immagine</div>
+      `
+
+          imagesContainer.appendChild(slot)
         }
 
-        container.appendChild(div)
-      })
-    }
+        productDiv.appendChild(imagesContainer)
+        container.appendChild(productDiv)
 
+        // 🔥 carica immagini reali prodotto
+        loadProductImages(p.id)
+      }
+    }
     // 🔥 LOAD GALLERY
     async function loadGallery() {
       if (!productId) return

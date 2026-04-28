@@ -565,3 +565,44 @@ def get_products(shop: str):
         })
 
     return products
+
+
+@app.get("/product/images")
+def get_product_images(shop: str, product_id: str):
+    token = get_shop_token(shop)
+
+    url = f"https://{shop}/admin/api/2026-04/products/{product_id.split('/')[-1]}/images.json"
+
+    res = requests.get(
+        url,
+        headers={"X-Shopify-Access-Token": token}
+    ).json()
+
+    return res.get("images", [])
+
+@app.post("/upload-product-image")
+async def upload_product_image(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    token = get_shop_token(shop)
+
+    content = await file.read()
+
+    url = f"https://{shop}/admin/api/2026-04/products/{product_id.split('/')[-1]}/images.json"
+
+    res = requests.post(
+        url,
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "image": {
+                "attachment": base64.b64encode(content).decode()
+            }
+        }
+    )
+
+    return res.json()
