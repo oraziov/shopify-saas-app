@@ -453,3 +453,12 @@ def get_gallery(shop: str, product_id: str):
     ]
 
     return gallery
+
+
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="app/templates")
+
+@app.get("/ui", response_class=HTMLResponse)
+def ui(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
