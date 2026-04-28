@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Query
+from fastapi import FastAPI, Request, HTTPException, UploadFile, Form, File, Query
 from fastapi.responses import RedirectResponse
 from urllib.parse import urlencode
 import requests
 import base64
 import requests
 import mimetypes
-from fastapi import Form
+import time
 
 from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, APP_URL
 from app.db import init_db, save_shop_token, get_shop_token
@@ -108,6 +108,7 @@ def test(shop: str = Query(...)):
 
 
 
+
 @app.post("/upload")
 async def upload_image(shop: str = Form(...), file: UploadFile = File(...)):
     token = get_shop_token(shop)
@@ -140,7 +141,7 @@ async def upload_image(shop: str = Form(...), file: UploadFile = File(...)):
     """
 
     staged_res = requests.post(
-        f"https://{shop}/admin/api/2024-01/graphql.json",
+        f"https://{shop}/admin/api/2026-04/graphql.json",
         headers={
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
@@ -211,6 +212,52 @@ async def upload_image(shop: str = Form(...), file: UploadFile = File(...)):
                 }]
             }
         }
-    )
+    ).json()
 
-    return file_res.json()
+    file_data = file_res["data"]["fileCreate"]["files"][0]
+    file_id = file_data["id"]
+
+    # 4️⃣ WAIT UNTIL READY (FONDAMENTALE)
+    status_query = """
+    query ($id: ID!) {
+      node(id: $id) {
+        ... on MediaImage {
+          id
+          fileStatus
+          image {
+            url
+          }
+        }
+      }
+    }
+    """
+
+    for _ in range(10):
+        check = requests.post(
+            f"https://{shop}/admin/api/2026-04/graphql.json",
+            headers={
+                "X-Shopify-Access-Token": token,
+                "Content-Type": "application/json"
+            },
+            json={
+                "query": status_query,
+                "variables": {"id": file_id}
+            }
+        ).json()
+
+        node = check.get("data", {}).get("node")
+
+        if node and node.get("fileStatus") == "READY":
+            return {
+                "id": node["id"],
+                "url": node["image"]["url"],
+                "status": "READY"
+            }
+
+        time.sleep(1)
+
+    # fallback
+    return {
+        "id": file_id,
+        "status": "PROCESSING"
+    }
