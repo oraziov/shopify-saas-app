@@ -6,6 +6,7 @@ import base64
 import requests
 import mimetypes
 import time
+import json
 
 from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, APP_URL
 from app.db import init_db, save_shop_token, get_shop_token
@@ -309,6 +310,8 @@ def attach_image(shop: str = Form(...), product_id: str = Form(...), image_url: 
     return res.json()
 
 
+
+
 @app.post("/gallery/add")
 def add_to_gallery(
     shop: str = Form(...),
@@ -320,7 +323,7 @@ def add_to_gallery(
     if not token:
         raise HTTPException(400, "No token")
 
-    # 1️⃣ leggi gallery esistente
+    # GET EXISTING
     query = """
     query ($id: ID!) {
       product(id: $id) {
@@ -340,17 +343,23 @@ def add_to_gallery(
         json={"query": query, "variables": {"id": product_id}}
     ).json()
 
-    metafield = res["data"]["product"]["metafield"]
+    print("METAFIELD RAW:", res)
 
-    if metafield and metafield["value"]:
-        gallery = json.loads(metafield["value"])
-    else:
-        gallery = []
+    metafield = res.get("data", {}).get("product", {}).get("metafield")
 
-    # 2️⃣ aggiungi nuova immagine
-    gallery.append(file_id)
+    gallery = []
 
-    # 3️⃣ salva
+    if metafield and metafield.get("value"):
+        try:
+            gallery = json.loads(metafield["value"])
+        except:
+            gallery = []
+
+    # ADD IMAGE
+    if file_id not in gallery:
+        gallery.append(file_id)
+
+    # SAVE
     mutation = """
     mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
@@ -382,6 +391,8 @@ def add_to_gallery(
                 }]
             }
         }
-    )
+    ).json()
 
-    return save.json()
+    print("SAVE RESPONSE:", save)
+
+    return save
