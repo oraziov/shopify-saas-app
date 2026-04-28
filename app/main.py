@@ -464,3 +464,54 @@ def get_gallery(shop: str, product_id: str):
 @app.get("/ui", response_class=HTMLResponse)
 def ui(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.post("/gallery/reorder")
+def reorder_gallery(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    file_ids: str = Form(...)
+):
+    import json
+
+    token = get_shop_token(shop)
+
+    if not token:
+        raise HTTPException(400, "No token")
+
+    ids = json.loads(file_ids)
+
+    mutation = """
+    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields {
+          value
+        }
+        userErrors {
+          message
+        }
+      }
+    }
+    """
+
+    res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": mutation,
+            "variables": {
+                "metafields": [{
+                    "ownerId": product_id,
+                    "namespace": "custom",
+                    "key": "gallery",
+                    "type": "list.file_reference",
+                    "value": json.dumps(ids)
+                }]
+            }
+        }
+    )
+
+    return res.json()

@@ -41,19 +41,86 @@
     const shop = "6uxkvv-2d.myshopify.com"
     const productId = "gid://shopify/Product/15588924457304"
 
+    let galleryData = []
+
     async function loadGallery() {
       const res = await fetch(`/gallery/get?shop=${shop}&product_id=${productId}`)
-      const data = await res.json()
+      galleryData = await res.json()
 
+      renderGallery()
+    }
+
+    function renderGallery() {
       const container = document.getElementById("gallery")
       container.innerHTML = ""
 
-      data.forEach(img => {
+      galleryData.forEach((img, index) => {
         const div = document.createElement("div")
         div.className = "item"
-        div.innerHTML = `<img src="${img.url}" />`
+        div.draggable = true
+        div.dataset.index = index
+
+        div.innerHTML = `
+      <img src="${img.url}" />
+      <button onclick="removeImage('${img.id}')">❌</button>
+    `
+
+        // DRAG EVENTS
+        div.addEventListener("dragstart", dragStart)
+        div.addEventListener("dragover", dragOver)
+        div.addEventListener("drop", drop)
+
         container.appendChild(div)
       })
+    }
+
+    let draggedIndex = null
+
+    function dragStart(e) {
+      draggedIndex = e.currentTarget.dataset.index
+    }
+
+    function dragOver(e) {
+      e.preventDefault()
+    }
+
+    function drop(e) {
+      const targetIndex = e.currentTarget.dataset.index
+
+      const moved = galleryData.splice(draggedIndex, 1)[0]
+      galleryData.splice(targetIndex, 0, moved)
+
+      renderGallery()
+    }
+
+    async function saveOrder() {
+      const ids = galleryData.map(i => i.id)
+
+      await fetch("/gallery/reorder", {
+        method: "POST",
+        body: new URLSearchParams({
+          shop: shop,
+          product_id: productId,
+          file_ids: JSON.stringify(ids)
+        })
+      })
+
+      alert("Ordine salvato ✅")
+    }
+
+    async function removeImage(fileId) {
+      const ids = galleryData.filter(i => i.id !== fileId).map(i => i.id)
+
+      await fetch("/gallery/reorder", {
+        method: "POST",
+        body: new URLSearchParams({
+          shop: shop,
+          product_id: productId,
+          file_ids: JSON.stringify(ids)
+        })
+      })
+
+      loadGallery()
     }
 
     async function upload() {
