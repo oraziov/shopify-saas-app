@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <title>Shopify Media Manager</title>
+
   <style>
     body {
       margin: 0;
@@ -18,54 +19,12 @@
       padding: 32px;
     }
 
-    .header {
-      margin-bottom: 24px;
-    }
-
-    .header h1 {
-      font-size: 28px;
-      margin: 0 0 8px;
-    }
-
     .card {
       background: #fff;
       border: 1px solid #e1e3e5;
       border-radius: 12px;
-      box-shadow: 0 1px 0 rgba(0, 0, 0, .05);
       padding: 20px;
       margin-bottom: 20px;
-    }
-
-    .dropzone {
-      border: 2px dashed #c9cccf;
-      border-radius: 12px;
-      padding: 32px;
-      text-align: center;
-      background: #fafbfb;
-      cursor: pointer;
-      transition: .2s;
-    }
-
-    .dropzone.dragover {
-      border-color: #008060;
-      background: #f1f8f5;
-    }
-
-    .button {
-      background: #008060;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 12px;
-    }
-
-    .button.secondary {
-      background: #fff;
-      color: #202223;
-      border: 1px solid #c9cccf;
     }
 
     .gallery {
@@ -81,11 +40,6 @@
       border-radius: 10px;
       padding: 8px;
       cursor: grab;
-      position: relative;
-    }
-
-    .item.dragging {
-      opacity: .5;
     }
 
     .item img {
@@ -93,14 +47,15 @@
       height: 150px;
       object-fit: cover;
       border-radius: 8px;
-      background: #f6f6f7;
     }
 
-    .actions {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      margin-top: 8px;
+    .button {
+      background: #008060;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
     }
 
     .danger {
@@ -108,164 +63,142 @@
       border: 1px solid #d72c0d;
       background: #fff;
       border-radius: 6px;
-      padding: 6px 8px;
-      cursor: pointer;
+      padding: 6px;
     }
 
-    .badge {
-      display: inline-block;
-      background: #e3f1df;
-      color: #108043;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 600;
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
     }
 
-    .notice {
-      padding: 12px;
-      border-radius: 8px;
-      background: #fff4e5;
-      border: 1px solid #ffd79d;
-      margin-top: 12px;
-      display: none;
+    .selected {
+      border: 2px solid #008060;
     }
   </style>
+
 </head>
 
 <body>
   <div class="page">
-    <div class="header">
-      <h1>Media Manager</h1>
-      <p>Gestione gallery prodotto con upload, drag & drop e ordine personalizzato.</p>
-      <span class="badge">Shopify connected</span>
+
+    <h1>Media Manager</h1>
+
+    <!-- PRODOTTI -->
+    <div class="card">
+      <h2>Prodotti</h2>
+      <div id="products" class="products"></div>
     </div>
 
+    <!-- UPLOAD -->
     <div class="card">
       <h2>Upload immagini</h2>
-
-      <div id="dropzone" class="dropzone">
-        <p><strong>Trascina qui le immagini</strong></p>
-        <p>oppure clicca per selezionare file</p>
-        <input id="fileInput" type="file" accept="image/*" multiple hidden>
-        <button class="button" type="button">Seleziona immagini</button>
-      </div>
-
-      <div id="notice" class="notice"></div>
+      <input id="fileInput" type="file" multiple>
+      <button class="button" onclick="upload()">Upload</button>
+      <p id="status"></p>
     </div>
 
+    <!-- GALLERY -->
     <div class="card">
       <h2>Gallery</h2>
-      <p>Trascina le immagini per cambiare ordine, poi salva.</p>
-
       <button class="button" onclick="saveOrder()">Salva ordine</button>
-      <button class="button secondary" onclick="loadGallery()">Ricarica</button>
-
       <div id="gallery" class="gallery"></div>
     </div>
+
   </div>
 
   <script>
-    const shop = "6uxkvv-2d.myshopify.com";
-    const productId = "gid://shopify/Product/15588924457304";
+    const shop = "6uxkvv-2d.myshopify.com"
 
-    let galleryData = [];
-    let draggedIndex = null;
+    let productId = null
+    let galleryData = []
+    let draggedIndex = null
 
-    const dropzone = document.getElementById("dropzone");
-    const fileInput = document.getElementById("fileInput");
-    const notice = document.getElementById("notice");
+    // 🔥 LOAD PRODUCTS
+    async function loadProducts() {
+      const res = await fetch(`/products?shop=${shop}`)
+      const products = await res.json()
 
-    dropzone.addEventListener("click", () => fileInput.click());
+      const container = document.getElementById("products")
+      container.innerHTML = ""
 
-    dropzone.addEventListener("dragover", e => {
-      e.preventDefault();
-      dropzone.classList.add("dragover");
-    });
-
-    dropzone.addEventListener("dragleave", () => {
-      dropzone.classList.remove("dragover");
-    });
-
-    dropzone.addEventListener("drop", async e => {
-      e.preventDefault();
-      dropzone.classList.remove("dragover");
-      await uploadFiles(e.dataTransfer.files);
-    });
-
-    fileInput.addEventListener("change", async e => {
-      await uploadFiles(e.target.files);
-    });
-
-    function showNotice(message) {
-      notice.style.display = "block";
-      notice.innerText = message;
-    }
-
-    async function loadGallery() {
-      const res = await fetch(`/gallery/get?shop=${shop}&product_id=${encodeURIComponent(productId)}`);
-      galleryData = await res.json();
-      renderGallery();
-    }
-
-    function renderGallery() {
-      const container = document.getElementById("gallery");
-      container.innerHTML = "";
-
-      galleryData.forEach((img, index) => {
-        const div = document.createElement("div");
-        div.className = "item";
-        div.draggable = true;
-        div.dataset.index = index;
+      products.forEach(p => {
+        const div = document.createElement("div")
+        div.className = "item"
 
         div.innerHTML = `
-      <img src="${img.url}" alt="">
-      <div class="actions">
-        <button class="danger" onclick="removeImage('${img.id}')">Rimuovi</button>
-      </div>
-    `;
+      <img src="${p.image || 'https://via.placeholder.com/150'}">
+      <div>${p.title}</div>
+    `
 
-        div.addEventListener("dragstart", e => {
-          draggedIndex = Number(e.currentTarget.dataset.index);
-          e.currentTarget.classList.add("dragging");
-        });
+        div.onclick = () => {
+          productId = p.id
+          document.querySelectorAll(".item").forEach(el => el.classList.remove("selected"))
+          div.classList.add("selected")
+          loadGallery()
+        }
 
-        div.addEventListener("dragend", e => {
-          e.currentTarget.classList.remove("dragging");
-        });
-
-        div.addEventListener("dragover", e => e.preventDefault());
-
-        div.addEventListener("drop", e => {
-          const targetIndex = Number(e.currentTarget.dataset.index);
-          const moved = galleryData.splice(draggedIndex, 1)[0];
-          galleryData.splice(targetIndex, 0, moved);
-          renderGallery();
-        });
-
-        container.appendChild(div);
-      });
+        container.appendChild(div)
+      })
     }
 
-    async function uploadFiles(files) {
+    // 🔥 LOAD GALLERY
+    async function loadGallery() {
+      if (!productId) return
+
+      const res = await fetch(`/gallery/get?shop=${shop}&product_id=${encodeURIComponent(productId)}`)
+      galleryData = await res.json()
+
+      renderGallery()
+    }
+
+    // 🔥 RENDER
+    function renderGallery() {
+      const container = document.getElementById("gallery")
+      container.innerHTML = ""
+
+      galleryData.forEach((img, index) => {
+        const div = document.createElement("div")
+        div.className = "item"
+        div.draggable = true
+        div.dataset.index = index
+
+        div.innerHTML = `
+      <img src="${img.url}">
+      <button class="danger" onclick="removeImage('${img.id}')">X</button>
+    `
+
+        div.addEventListener("dragstart", () => draggedIndex = index)
+        div.addEventListener("dragover", e => e.preventDefault())
+
+        div.addEventListener("drop", () => {
+          const moved = galleryData.splice(draggedIndex, 1)[0]
+          galleryData.splice(index, 0, moved)
+          renderGallery()
+        })
+
+        container.appendChild(div)
+      })
+    }
+
+    // 🔥 UPLOAD
+    async function upload() {
+      if (!productId) {
+        alert("Seleziona prima un prodotto")
+        return
+      }
+
+      const files = document.getElementById("fileInput").files
+
       for (const file of files) {
-        showNotice(`Upload in corso: ${file.name}`);
+        document.getElementById("status").innerText = "Uploading..."
 
-        const form = new FormData();
-        form.append("shop", shop);
-        form.append("file", file);
+        const form = new FormData()
+        form.append("shop", shop)
+        form.append("file", file)
 
-        const uploadRes = await fetch("/upload", {
-          method: "POST",
-          body: form
-        });
-
-        const uploaded = await uploadRes.json();
-
-        if (!uploaded.id) {
-          showNotice("Errore upload: " + JSON.stringify(uploaded));
-          return;
-        }
+        const res = await fetch("/upload", { method: "POST", body: form })
+        const uploaded = await res.json()
 
         await fetch("/gallery/add", {
           method: "POST",
@@ -274,15 +207,16 @@
             product_id: productId,
             file_id: uploaded.id
           })
-        });
+        })
       }
 
-      showNotice("Upload completato ✅");
-      await loadGallery();
+      document.getElementById("status").innerText = "Done ✅"
+      loadGallery()
     }
 
+    // 🔥 SAVE ORDER
     async function saveOrder() {
-      const ids = galleryData.map(i => i.id);
+      const ids = galleryData.map(i => i.id)
 
       await fetch("/gallery/reorder", {
         method: "POST",
@@ -291,19 +225,22 @@
           product_id: productId,
           file_ids: JSON.stringify(ids)
         })
-      });
+      })
 
-      showNotice("Ordine salvato ✅");
+      alert("Ordine salvato")
     }
 
-    async function removeImage(fileId) {
-      galleryData = galleryData.filter(i => i.id !== fileId);
-      await saveOrder();
-      await loadGallery();
+    // 🔥 REMOVE
+    async function removeImage(id) {
+      galleryData = galleryData.filter(i => i.id !== id)
+      await saveOrder()
+      loadGallery()
     }
 
-    loadGallery();
+    // INIT
+    loadProducts()
   </script>
+
 </body>
 
 </html>

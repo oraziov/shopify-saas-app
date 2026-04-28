@@ -515,3 +515,29 @@ def reorder_gallery(
     )
 
     return res.json()
+
+
+@app.get("/products")
+def get_products(shop: str):
+    token = get_shop_token(shop)
+
+    if not token:
+        raise HTTPException(400, "No token")
+
+    url = f"https://{shop}/admin/api/2026-04/products.json?limit=50"
+
+    res = requests.get(
+        url,
+        headers={"X-Shopify-Access-Token": token}
+    ).json()
+
+    products = []
+
+    for p in res.get("products", []):
+        products.append({
+            "id": p["admin_graphql_api_id"],
+            "title": p["title"],
+            "image": p.get("image", {}).get("src")
+        })
+
+    return products
