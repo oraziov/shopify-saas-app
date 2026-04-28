@@ -307,3 +307,81 @@ def attach_image(shop: str = Form(...), product_id: str = Form(...), image_url: 
     )
 
     return res.json()
+
+
+@app.post("/gallery/add")
+def add_to_gallery(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    file_id: str = Form(...)
+):
+    token = get_shop_token(shop)
+
+    if not token:
+        raise HTTPException(400, "No token")
+
+    # 1️⃣ leggi gallery esistente
+    query = """
+    query ($id: ID!) {
+      product(id: $id) {
+        metafield(namespace: "custom", key: "gallery") {
+          value
+        }
+      }
+    }
+    """
+
+    res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={"query": query, "variables": {"id": product_id}}
+    ).json()
+
+    metafield = res["data"]["product"]["metafield"]
+
+    if metafield and metafield["value"]:
+        gallery = json.loads(metafield["value"])
+    else:
+        gallery = []
+
+    # 2️⃣ aggiungi nuova immagine
+    gallery.append(file_id)
+
+    # 3️⃣ salva
+    mutation = """
+    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields {
+          value
+        }
+        userErrors {
+          message
+        }
+      }
+    }
+    """
+
+    save = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": mutation,
+            "variables": {
+                "metafields": [{
+                    "ownerId": product_id,
+                    "namespace": "custom",
+                    "key": "gallery",
+                    "type": "list.file_reference",
+                    "value": json.dumps(gallery)
+                }]
+            }
+        }
+    )
+
+    return save.json()
