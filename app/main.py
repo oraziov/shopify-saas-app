@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from urllib.parse import urlencode
 import requests
 import base64
-
+from fastapi import Form
 
 from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, APP_URL
 from app.db import init_db, save_shop_token, get_shop_token
@@ -105,7 +105,10 @@ def test(shop: str = Query(...)):
     }
 
 @app.post("/upload")
-async def upload_image(shop: str, file: UploadFile = File(...)):
+async def upload_image(
+    shop: str = Form(...),
+    file: UploadFile = File(...)
+):
     token = get_shop_token(shop)
 
     if not token:
