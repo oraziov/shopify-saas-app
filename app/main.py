@@ -3,6 +3,8 @@ from fastapi.responses import RedirectResponse
 from urllib.parse import urlencode
 import requests
 import base64
+import requests
+import mimetypes
 from fastapi import Form
 
 from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, APP_URL
@@ -104,20 +106,77 @@ def test(shop: str = Query(...)):
         "response": res.json()
     }
 
+
+
 @app.post("/upload")
-async def upload_image(
-    shop: str = Form(...),
-    file: UploadFile = File(...)
-):
+async def upload_image(shop: str = Form(...), file: UploadFile = File(...)):
     token = get_shop_token(shop)
 
     if not token:
         raise HTTPException(400, "No token")
 
     content = await file.read()
-    b64 = base64.b64encode(content).decode()
+    filename = file.filename or "upload.jpg"
+    mime_type = file.content_type or mimetypes.guess_type(filename)[0] or "image/jpeg"
 
-    mutation = """
+    # 1️⃣ STAGED UPLOAD
+    staged_query = """
+    mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+      stagedUploadsCreate(input: $input) {
+        stagedTargets {
+          url
+          resourceUrl
+          parameters {
+            name
+            value
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+
+    staged_res = requests.post(
+        f"https://{shop}/admin/api/2024-01/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": staged_query,
+            "variables": {
+                "input": [{
+                    "filename": filename,
+                    "mimeType": mime_type,
+                    "resource": "IMAGE",
+                    "fileSize": str(len(content))
+                }]
+            }
+        }
+    ).json()
+
+    target = staged_res["data"]["stagedUploadsCreate"]["stagedTargets"][0]
+
+    # 2️⃣ UPLOAD FILE (PUT)
+    upload_headers = {
+        p["name"]: p["value"]
+        for p in target["parameters"]
+    }
+
+    upload_res = requests.put(
+        target["url"],
+        data=content,
+        headers=upload_headers
+    )
+
+    if upload_res.status_code not in [200, 201]:
+        raise HTTPException(400, "Upload to Shopify failed")
+
+    # 3️⃣ CREA FILE SU SHOPIFY
+    file_create_query = """
     mutation fileCreate($files: [FileCreateInput!]!) {
       fileCreate(files: $files) {
         files {
@@ -137,25 +196,21 @@ async def upload_image(
     }
     """
 
-    url = f"https://{shop}/admin/api/2026-04/graphql.json"
-
-    res = requests.post(
-        url,
+    file_res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
         headers={
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
         },
         json={
-            "query": mutation,
+            "query": file_create_query,
             "variables": {
-                "files": [
-                    {
-                        "contentType": "IMAGE",
-                        "originalSource": f"data:image/jpeg;base64,{b64}"
-                    }
-                ]
+                "files": [{
+                    "originalSource": target["resourceUrl"],
+                    "contentType": "IMAGE"
+                }]
             }
         }
     )
 
-    return res.json()
+    return file_res.json()
