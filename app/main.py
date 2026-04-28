@@ -261,3 +261,49 @@ async def upload_image(shop: str = Form(...), file: UploadFile = File(...)):
         "id": file_id,
         "status": "PROCESSING"
     }
+
+@app.post("/attach")
+def attach_image(shop: str = Form(...), product_id: str = Form(...), image_url: str = Form(...)):
+    token = get_shop_token(shop)
+
+    if not token:
+        raise HTTPException(400, "No token")
+
+    mutation = """
+    mutation productCreateMedia($media: [CreateMediaInput!]!, $productId: ID!) {
+      productCreateMedia(media: $media, productId: $productId) {
+        media {
+          ... on MediaImage {
+            id
+            image {
+              url
+            }
+          }
+        }
+        mediaUserErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+
+    res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": mutation,
+            "variables": {
+                "productId": product_id,
+                "media": [{
+                    "originalSource": image_url,
+                    "mediaContentType": "IMAGE"
+                }]
+            }
+        }
+    )
+
+    return res.json()
