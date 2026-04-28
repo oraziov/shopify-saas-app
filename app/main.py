@@ -8,6 +8,7 @@ import mimetypes
 import time
 import json
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 
 templates = Jinja2Templates(directory="app/templates")
 
