@@ -1,21 +1,50 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi.responses import RedirectResponse
+from urllib.parse import urlencode
 import requests
 
-from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET
-from app.db import init_db, save_shop_token
+from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, APP_URL
+from app.db import init_db, save_shop_token, get_shop_token
 
-app = FastAPI()   # 🔥 QUESTO DEVE ESSERE PRIMA DI TUTTO
+app = FastAPI()
 
+
+# 🔥 STARTUP
 @app.on_event("startup")
 def startup():
     init_db()
 
+
+# 🔹 ROOT (per evitare Not Found)
+@app.get("/")
+def root():
+    return {"status": "app running"}
+
+
+# 🔹 INSTALL APP
+@app.get("/install")
+def install(shop: str = Query(...)):
+    params = {
+        "client_id": SHOPIFY_CLIENT_ID,
+        "scope": "read_products",
+        "redirect_uri": f"{APP_URL}/callback",
+    }
+
+    url = f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
+
+    return RedirectResponse(url)
+
+
+# 🔹 CALLBACK SHOPIFY
 @app.get("/callback")
 def callback(request: Request):
     params = dict(request.query_params)
 
     shop = params.get("shop")
     code = params.get("code")
+
+    if not shop or not code:
+        raise HTTPException(status_code=400, detail="Missing shop or code")
 
     print("SHOP CALLBACK:", shop)
 
@@ -30,21 +59,36 @@ def callback(request: Request):
 
     print("TOKEN RESPONSE:", response.text)
 
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Token exchange failed: {response.text}",
+        )
+
     data = response.json()
     token = data.get("access_token")
 
     if not token:
-        raise HTTPException(400, detail="No token")
+        raise HTTPException(status_code=400, detail="No token returned")
 
     save_shop_token(shop, token)
 
-    return {"ok": True, "shop": shop}
+    return {
+        "ok": True,
+        "shop": shop,
+        "message": "App installed successfully"
+    }
 
+
+# 🔹 TEST API SHOPIFY
 @app.get("/test")
-def test(shop: str):
+def test(shop: str = Query(...)):
     token = get_shop_token(shop)
 
-    url = f"https://{shop}/admin/api/2026-04/products.json"
+    if not token:
+        return {"error": "No token found. Install the app first."}
+
+    url = f"https://{shop}/admin/api/2024-01/products.json"
 
     res = requests.get(
         url,
@@ -53,4 +97,7 @@ def test(shop: str):
         }
     )
 
-    return res.json()
+    return {
+        "status": res.status_code,
+        "response": res.json()
+    }
