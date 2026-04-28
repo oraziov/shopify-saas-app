@@ -7,6 +7,9 @@ import requests
 import mimetypes
 import time
 import json
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="app/templates")
 
 from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, APP_URL
 from app.db import init_db, save_shop_token, get_shop_token
@@ -455,9 +458,7 @@ def get_gallery(shop: str, product_id: str):
     return gallery
 
 
-from fastapi.templating import Jinja2Templates
 
-templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/ui", response_class=HTMLResponse)
 def ui(request: Request):
