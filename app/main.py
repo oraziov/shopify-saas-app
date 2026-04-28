@@ -518,7 +518,7 @@ def reorder_gallery(
 
 
 
-   @app.get("/products")
+@app.get("/products")
 def get_products(shop: str):
     token = get_shop_token(shop)
 
