@@ -122,6 +122,76 @@
       margin-top: 10px;
       color: #aaa;
     }
+
+    .product-manager {
+      background: #fff;
+      border: 1px solid #e1e3e5;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .product-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .product-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .media-card,
+    .upload-card {
+      border: 1px solid #dfe3e8;
+      border-radius: 10px;
+      padding: 8px;
+      background: #fafbfb;
+      min-height: 160px;
+    }
+
+    .media-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .media-card button {
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .upload-card {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #008060;
+      font-weight: 600;
+    }
+
+    .variant-list {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .variant-pill {
+      background: #f1f2f3;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+    }
   </style>
 
 </head>
@@ -169,32 +239,43 @@
       const container = document.getElementById("products")
       container.innerHTML = ""
 
-      products.forEach(p => {
-        const div = document.createElement("div")
-        div.className = "product-row"
+      products.forEach(product => {
+        const row = document.createElement("div")
+        row.className = "product-manager"
 
-        // 🔥 titolo
-        const title = document.createElement("h3")
-        title.innerText = p.title
+        row.innerHTML = `
+      <div class="product-header">
+        <h2>${product.title}</h2>
+        <span>${product.images.length} foto</span>
+      </div>
 
-        // 🔥 immagini
-        const imagesDiv = document.createElement("div")
-        imagesDiv.className = "image-row"
+      <div class="media-grid" id="media-${cssSafe(product.id)}">
+        ${product.images.map(img => `
+          <div class="media-card">
+            <img src="${img.url}">
+            <button onclick="deleteMedia('${product.id}', '${img.id}')">Elimina</button>
+          </div>
+        `).join("")}
 
-        for (let i = 0; i < 3; i++) {
-          const img = document.createElement("img")
+        <label class="upload-card">
+          <input type="file" multiple accept="image/*" hidden onchange="uploadToProduct('${product.id}', this.files)">
+          <strong>+ Aggiungi foto</strong>
+        </label>
+      </div>
 
-          img.src = p.images[i] || "https://placehold.co/150x150?text=No+image"
-          img.className = "product-image"
+      <div class="variant-list">
+        ${product.variants.map(v => `
+          <span class="variant-pill">${v.title}</span>
+        `).join("")}
+      </div>
+    `
 
-          imagesDiv.appendChild(img)
-        }
-
-        div.appendChild(title)
-        div.appendChild(imagesDiv)
-
-        container.appendChild(div)
+        container.appendChild(row)
       })
+    }
+
+    function cssSafe(id) {
+      return id.replaceAll("/", "-").replaceAll(":", "-")
     }
 
     // 🔥 RENDER
@@ -282,6 +363,37 @@
       loadGallery()
     }
 
+
+    async function uploadToProduct(productId, files) {
+      for (const file of files) {
+        const form = new FormData()
+        form.append("shop", shop)
+        form.append("product_id", productId)
+        form.append("file", file)
+
+        await fetch("/upload-product-image", {
+          method: "POST",
+          body: form
+        })
+      }
+
+      await loadProducts()
+    }
+
+    async function deleteMedia(productId, mediaId) {
+      if (!confirm("Eliminare questa foto dal prodotto?")) return
+
+      await fetch("/product/media/delete", {
+        method: "POST",
+        body: new URLSearchParams({
+          shop: shop,
+          product_id: productId,
+          media_id: mediaId
+        })
+      })
+
+      await loadProducts()
+    }
     // INIT
     loadProducts()
   </script>

@@ -522,19 +522,34 @@ def reorder_gallery(
 def get_products(shop: str):
     token = get_shop_token(shop)
 
+    if not token:
+        raise HTTPException(400, "No token")
+
     query = """
-    query {
-      products(first: 50) {
+    query Products {
+      products(first: 50, sortKey: UPDATED_AT, reverse: true) {
         edges {
           node {
             id
             title
-            media(first: 3) {
+            media(first: 50) {
               nodes {
+                id
+                mediaContentType
                 ... on MediaImage {
                   image {
                     url
                   }
+                }
+              }
+            }
+            variants(first: 50) {
+              nodes {
+                id
+                title
+                selectedOptions {
+                  name
+                  value
                 }
               }
             }
@@ -555,19 +570,32 @@ def get_products(shop: str):
 
     products = []
 
-    for edge in res["data"]["products"]["edges"]:
+    for edge in res.get("data", {}).get("products", {}).get("edges", []):
         node = edge["node"]
 
-        images = [
-            m["image"]["url"]
-            for m in node["media"]["nodes"]
-            if m.get("image")
-        ]
+        images = []
+        for media in node.get("media", {}).get("nodes", []):
+            if media.get("mediaContentType") == "IMAGE":
+                image = media.get("image") or {}
+                if image.get("url"):
+                    images.append({
+                        "id": media["id"],
+                        "url": image["url"]
+                    })
+
+        variants = []
+        for variant in node.get("variants", {}).get("nodes", []):
+            variants.append({
+                "id": variant["id"],
+                "title": variant["title"],
+                "options": variant.get("selectedOptions", [])
+            })
 
         products.append({
             "id": node["id"],
             "title": node["title"],
-            "images": images
+            "images": images,
+            "variants": variants
         })
 
     return products
@@ -591,23 +619,88 @@ async def upload_product_image(
     product_id: str = Form(...),
     file: UploadFile = File(...)
 ):
+    # qui puoi riusare la tua funzione /upload
+    # ma invece di restituire solo file id, dopo READY fai attach al prodotto
+    uploaded = await upload_image(shop=shop, file=file)
+
+    image_url = uploaded.get("url")
+    if not image_url:
+        raise HTTPException(400, "Upload failed")
+
+    mutation = """
+    mutation AddMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+      productCreateMedia(productId: $productId, media: $media) {
+        media {
+          id
+          ... on MediaImage {
+            image {
+              url
+            }
+          }
+        }
+        mediaUserErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+
     token = get_shop_token(shop)
 
-    content = await file.read()
-
-    url = f"https://{shop}/admin/api/2026-04/products/{product_id.split('/')[-1]}/images.json"
-
     res = requests.post(
-        url,
+        f"https://{shop}/admin/api/2026-04/graphql.json",
         headers={
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
         },
         json={
-            "image": {
-                "attachment": base64.b64encode(content).decode()
+            "query": mutation,
+            "variables": {
+                "productId": product_id,
+                "media": [{
+                    "originalSource": image_url,
+                    "mediaContentType": "IMAGE"
+                }]
             }
         }
-    )
+    ).json()
 
-    return res.json()
+    return res
+
+@app.post("/product/media/delete")
+def delete_product_media_endpoint(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    media_id: str = Form(...)
+):
+    token = get_shop_token(shop)
+
+    mutation = """
+    mutation DeleteProductMedia($productId: ID!, $mediaIds: [ID!]!) {
+      productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+        deletedMediaIds
+        mediaUserErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+
+    res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": mutation,
+            "variables": {
+                "productId": product_id,
+                "mediaIds": [media_id]
+            }
+        }
+    ).json()
+
+    return res
