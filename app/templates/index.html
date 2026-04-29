@@ -103,6 +103,21 @@
       width: 200px;
     }
 
+
+    .image-row {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .product-image {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #f6f6f7;
+    }
+
     .preview {
       margin-top: 10px;
       color: #aaa;
@@ -154,51 +169,32 @@
       const container = document.getElementById("products")
       container.innerHTML = ""
 
-      for (const p of products) {
-
-        const productDiv = document.createElement("div")
-        productDiv.className = "product-row"
+      products.forEach(p => {
+        const div = document.createElement("div")
+        div.className = "product-row"
 
         // 🔥 titolo
         const title = document.createElement("h3")
         title.innerText = p.title
 
-        productDiv.appendChild(title)
+        // 🔥 immagini
+        const imagesDiv = document.createElement("div")
+        imagesDiv.className = "image-row"
 
-        // 🔥 container immagini
-        const imagesContainer = document.createElement("div")
-        imagesContainer.className = "image-grid"
+        for (let i = 0; i < 3; i++) {
+          const img = document.createElement("img")
 
-        // 👉 crea 3 slot (puoi aumentare)
-        for (let i = 1; i <= 3; i++) {
+          img.src = p.images[i] || "https://placehold.co/150x150?text=No+image"
+          img.className = "product-image"
 
-          const slot = document.createElement("div")
-          slot.className = "image-slot"
-
-          slot.innerHTML = `
-        <div><strong>Image${i}</strong></div>
-        <input type="file" onchange="uploadToProduct('${p.id}', this.files[0])">
-        <div id="preview-${p.id}-${i}" class="preview">Nessuna immagine</div>
-      `
-
-          imagesContainer.appendChild(slot)
+          imagesDiv.appendChild(img)
         }
 
-        productDiv.appendChild(imagesContainer)
-        container.appendChild(productDiv)
+        div.appendChild(title)
+        div.appendChild(imagesDiv)
 
-        // 🔥 carica immagini reali prodotto
-        loadProductImages(p.id)
-      }
-    }
-    // 🔥 LOAD GALLERY
-    async function loadGallery() {
-      if (!productId) return
-
-      const res = await fetch(`/gallery/get?shop=${shop}&product_id=${encodeURIComponent(productId)}`)
-      galleryData = await res.json()
-
-      renderGallery()
+        container.appendChild(div)
+      })
     }
 
     // 🔥 RENDER

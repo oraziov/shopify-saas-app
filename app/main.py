@@ -522,18 +522,21 @@ def reorder_gallery(
 def get_products(shop: str):
     token = get_shop_token(shop)
 
-    if not token:
-        raise HTTPException(400, "No token")
-
     query = """
-    query getProducts($first: Int!) {
-      products(first: $first) {
+    query {
+      products(first: 50) {
         edges {
           node {
             id
             title
-            featuredImage {
-              url
+            media(first: 3) {
+              nodes {
+                ... on MediaImage {
+                  image {
+                    url
+                  }
+                }
+              }
             }
           }
         }
@@ -547,25 +550,27 @@ def get_products(shop: str):
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
         },
-        json={
-            "query": query,
-            "variables": {"first": 50}
-        }
+        json={"query": query}
     ).json()
 
     products = []
 
-    for edge in res.get("data", {}).get("products", {}).get("edges", []):
-        p = edge["node"]
+    for edge in res["data"]["products"]["edges"]:
+        node = edge["node"]
+
+        images = [
+            m["image"]["url"]
+            for m in node["media"]["nodes"]
+            if m.get("image")
+        ]
 
         products.append({
-            "id": p["id"],
-            "title": p["title"],
-            "image": (p.get("featuredImage") or {}).get("url")
+            "id": node["id"],
+            "title": node["title"],
+            "images": images
         })
 
     return products
-
 
 @app.get("/product/images")
 def get_product_images(shop: str, product_id: str):
