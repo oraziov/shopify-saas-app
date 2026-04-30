@@ -170,6 +170,7 @@
     const shop = "6uxkvv-2d.myshopify.com"
 
     let searchTimer = null
+    let currentQuery = ""
 
     function cssSafe(id) {
       return id.replaceAll("/", "-").replaceAll(":", "-")
@@ -188,14 +189,25 @@
       document.getElementById("status").innerText = message || ""
     }
 
-    async function loadProducts(query = "") {
+    async function loadProducts(query = currentQuery) {
+      currentQuery = query
       setStatus("Caricamento prodotti...")
 
-      const res = await fetch(`/products?shop=${encodeURIComponent(shop)}&query=${encodeURIComponent(query)}`)
-      const products = await res.json()
+      try {
+        const res = await fetch(`/products?shop=${encodeURIComponent(shop)}&query=${encodeURIComponent(query)}`)
+        const products = await res.json()
 
-      renderProducts(products)
-      setStatus("")
+        if (!res.ok) {
+          throw new Error(JSON.stringify(products))
+        }
+
+        renderProducts(products)
+      } catch (error) {
+        document.getElementById("products").innerHTML =
+          `<div class="empty">Errore caricamento prodotti: ${escapeHtml(error.message)}</div>`
+      } finally {
+        setStatus("")
+      }
     }
 
     function renderProducts(products) {
@@ -211,26 +223,29 @@
         const row = document.createElement("div")
         row.className = "product-manager"
 
-        const imagesHtml = product.images && product.images.length
-          ? product.images.map(img => `
+        const images = Array.isArray(product.images) ? product.images : []
+        const variants = Array.isArray(product.variants) ? product.variants : []
+
+        const imagesHtml = images.length
+          ? images.map(img => `
           <div class="media-card">
-            <img src="${img.url}" alt="">
-            <button class="danger" onclick="deleteMedia('${product.id}', '${img.id}')">
+            <img src="${escapeHtml(img.url)}" alt="">
+            <button class="danger" type="button" onclick="deleteMedia('${product.id}', '${img.id}')">
               Elimina
             </button>
           </div>
         `).join("")
           : `<div class="empty">Nessuna immagine</div>`
 
-        const variantsHtml = product.variants && product.variants.length
-          ? product.variants.map(variant => `
+        const variantsHtml = variants.length
+          ? variants.map(variant => `
           <div class="variant-row">
             <div class="variant-title">${escapeHtml(variant.title)}</div>
             <div class="variant-images">
-              ${product.images && product.images.length
-              ? product.images.map(img => `
+              ${images.length
+              ? images.map(img => `
                       <img
-                        src="${img.url}"
+                        src="${escapeHtml(img.url)}"
                         title="Assegna alla variante"
                         onclick="assignImageToVariant('${variant.id}', '${img.id}')"
                       >
@@ -245,7 +260,7 @@
         row.innerHTML = `
       <div class="product-header">
         <h2>${escapeHtml(product.title)}</h2>
-        <span>${product.images ? product.images.length : 0} foto</span>
+        <span>${images.length} foto</span>
       </div>
 
       <div class="media-grid" id="media-${cssSafe(product.id)}">
@@ -291,7 +306,7 @@
 
         const data = await res.json()
 
-        if (data.errors || data.detail) {
+        if (!res.ok || data.errors || data.detail) {
           alert("Errore upload: " + JSON.stringify(data))
           setStatus("")
           return
@@ -299,7 +314,7 @@
       }
 
       setStatus("Upload completato ✅")
-      await loadProducts()
+      await loadProducts(currentQuery)
     }
 
     async function deleteMedia(productId, mediaId) {
@@ -318,12 +333,12 @@
 
       const data = await res.json()
 
-      if (data.errors || data.detail) {
+      if (!res.ok || data.errors || data.detail) {
         alert("Errore eliminazione: " + JSON.stringify(data))
       }
 
       setStatus("")
-      await loadProducts()
+      await loadProducts(currentQuery)
     }
 
     async function assignImageToVariant(variantId, imageId) {
@@ -340,13 +355,14 @@
 
       const data = await res.json()
 
-      if (data.errors || data.detail) {
+      if (!res.ok || data.errors || data.detail) {
         alert("Errore associazione: " + JSON.stringify(data))
       } else {
         alert("Immagine assegnata alla variante ✅")
       }
 
       setStatus("")
+      await loadProducts(currentQuery)
     }
 
     function searchProducts(value) {
