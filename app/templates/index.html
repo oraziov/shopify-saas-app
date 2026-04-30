@@ -14,115 +14,26 @@
     }
 
     .page {
-      max-width: 1200px;
+      max-width: 1300px;
       margin: 0 auto;
       padding: 32px;
     }
 
-    .card {
-      background: #fff;
-      border: 1px solid #e1e3e5;
-      border-radius: 12px;
-      padding: 20px;
+    h1 {
       margin-bottom: 20px;
     }
 
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
-    }
-
-    .item {
-      background: #fff;
-      border: 1px solid #dfe3e8;
-      border-radius: 10px;
-      padding: 8px;
-      cursor: grab;
-    }
-
-    .item img {
+    .search {
       width: 100%;
-      height: 150px;
-      object-fit: cover;
+      max-width: 420px;
+      padding: 12px;
+      border: 1px solid #c9cccf;
       border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 15px;
     }
 
-    .button {
-      background: #008060;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      cursor: pointer;
-    }
-
-    .danger {
-      color: #d72c0d;
-      border: 1px solid #d72c0d;
-      background: #fff;
-      border-radius: 6px;
-      padding: 6px;
-    }
-
-    .products {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    .product-card {
-      cursor: pointer;
-      transition: .15s;
-    }
-
-    .product-card:hover {
-      box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
-      transform: translateY(-1px);
-    }
-
-    .selected {
-      border: 2px solid #008060;
-    }
-
-    .product-row {
-      border-bottom: 1px solid #ddd;
-      padding: 20px 0;
-    }
-
-    .image-grid {
-      display: flex;
-      gap: 20px;
-    }
-
-    .image-slot {
-      background: #1e2a38;
-      padding: 15px;
-      border-radius: 8px;
-      width: 200px;
-    }
-
-
-    .image-row {
-      display: flex;
-      gap: 15px;
-      margin-top: 10px;
-    }
-
-    .product-image {
-      width: 120px;
-      height: 120px;
-      object-fit: cover;
-      border-radius: 8px;
-      background: #f6f6f7;
-    }
-
-    .preview {
-      margin-top: 10px;
-      color: #aaa;
-    }
-
+    .card,
     .product-manager {
       background: #fff;
       border: 1px solid #e1e3e5;
@@ -133,8 +44,9 @@
 
     .product-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
+      gap: 16px;
       margin-bottom: 16px;
     }
 
@@ -145,128 +57,215 @@
 
     .media-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
     }
 
     .media-card,
     .upload-card {
       border: 1px solid #dfe3e8;
       border-radius: 10px;
-      padding: 8px;
       background: #fafbfb;
-      min-height: 160px;
+      padding: 8px;
+      min-height: 170px;
     }
 
     .media-card img {
       width: 100%;
-      height: 120px;
+      height: 125px;
       object-fit: cover;
       border-radius: 8px;
-    }
-
-    .media-card button {
-      margin-top: 8px;
-      width: 100%;
+      background: #f6f6f7;
     }
 
     .upload-card {
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
       color: #008060;
-      font-weight: 600;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
     }
 
-    .variant-list {
-      margin-top: 12px;
+    .danger {
+      width: 100%;
+      margin-top: 8px;
+      color: #d72c0d;
+      border: 1px solid #d72c0d;
+      background: #fff;
+      border-radius: 6px;
+      padding: 7px;
+      cursor: pointer;
+    }
+
+    .variant-section {
+      border-top: 1px solid #e1e3e5;
+      padding-top: 14px;
+      margin-top: 14px;
+    }
+
+    .variant-row {
+      margin-bottom: 14px;
+    }
+
+    .variant-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .variant-images {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
 
-    .variant-pill {
-      background: #f1f2f3;
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 12px;
+    .variant-images img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      background: #f6f6f7;
+    }
+
+    .variant-images img:hover {
+      border-color: #008060;
+    }
+
+    .empty {
+      padding: 16px;
+      background: #f6f6f7;
+      border-radius: 8px;
+      color: #6d7175;
+    }
+
+    .status {
+      margin: 8px 0 0;
+      color: #008060;
+      font-weight: 600;
     }
   </style>
-
 </head>
 
 <body>
   <div class="page">
+    <h1>Media Manager by OV</h1>
 
-    <h1>Media Manager</h1>
+    <input class="search" type="text" placeholder="Cerca prodotto..." oninput="searchProducts(this.value)">
 
-    <!-- PRODOTTI -->
     <div class="card">
       <h2>Gestione immagini prodotti</h2>
-      <div id="products"></div>
+      <p>Carica immagini, eliminale o assegna un’immagine principale alla variante cliccando sull’immagine sotto la
+        variante.</p>
+      <p id="status" class="status"></p>
     </div>
 
-    <!-- UPLOAD -->
-    <div class="card">
-      <h2>Upload immagini</h2>
-      <input id="fileInput" type="file" multiple>
-      <button class="button" onclick="upload()">Upload</button>
-      <p id="status"></p>
-    </div>
-
-    <!-- GALLERY -->
-    <div class="card">
-      <h2>Gallery</h2>
-      <button class="button" onclick="saveOrder()">Salva ordine</button>
-      <div id="gallery" class="gallery"></div>
-    </div>
-
+    <div id="products"></div>
   </div>
 
   <script>
     const shop = "6uxkvv-2d.myshopify.com"
 
-    let productId = null
-    let galleryData = []
-    let draggedIndex = null
+    let searchTimer = null
 
-    // 🔥 LOAD PRODUCTS
-    async function loadProducts() {
-      const res = await fetch(`/products?shop=${shop}`)
+    function cssSafe(id) {
+      return id.replaceAll("/", "-").replaceAll(":", "-")
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;")
+    }
+
+    function setStatus(message) {
+      document.getElementById("status").innerText = message || ""
+    }
+
+    async function loadProducts(query = "") {
+      setStatus("Caricamento prodotti...")
+
+      const res = await fetch(`/products?shop=${encodeURIComponent(shop)}&query=${encodeURIComponent(query)}`)
       const products = await res.json()
 
+      renderProducts(products)
+      setStatus("")
+    }
+
+    function renderProducts(products) {
       const container = document.getElementById("products")
       container.innerHTML = ""
+
+      if (!Array.isArray(products) || products.length === 0) {
+        container.innerHTML = `<div class="empty">Nessun prodotto trovato</div>`
+        return
+      }
 
       products.forEach(product => {
         const row = document.createElement("div")
         row.className = "product-manager"
 
+        const imagesHtml = product.images && product.images.length
+          ? product.images.map(img => `
+          <div class="media-card">
+            <img src="${img.url}" alt="">
+            <button class="danger" onclick="deleteMedia('${product.id}', '${img.id}')">
+              Elimina
+            </button>
+          </div>
+        `).join("")
+          : `<div class="empty">Nessuna immagine</div>`
+
+        const variantsHtml = product.variants && product.variants.length
+          ? product.variants.map(variant => `
+          <div class="variant-row">
+            <div class="variant-title">${escapeHtml(variant.title)}</div>
+            <div class="variant-images">
+              ${product.images && product.images.length
+              ? product.images.map(img => `
+                      <img
+                        src="${img.url}"
+                        title="Assegna alla variante"
+                        onclick="assignImageToVariant('${variant.id}', '${img.id}')"
+                      >
+                    `).join("")
+              : `<span class="empty">Carica prima una foto prodotto</span>`
+            }
+            </div>
+          </div>
+        `).join("")
+          : `<div class="empty">Nessuna variante</div>`
+
         row.innerHTML = `
       <div class="product-header">
-        <h2>${product.title}</h2>
-        <span>${product.images.length} foto</span>
+        <h2>${escapeHtml(product.title)}</h2>
+        <span>${product.images ? product.images.length : 0} foto</span>
       </div>
 
       <div class="media-grid" id="media-${cssSafe(product.id)}">
-        ${product.images.map(img => `
-          <div class="media-card">
-            <img src="${img.url}">
-            <button onclick="deleteMedia('${product.id}', '${img.id}')">Elimina</button>
-          </div>
-        `).join("")}
+        ${imagesHtml}
 
         <label class="upload-card">
-          <input type="file" multiple accept="image/*" hidden onchange="uploadToProduct('${product.id}', this.files)">
-          <strong>+ Aggiungi foto</strong>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            hidden
+            onchange="uploadToProduct('${product.id}', this.files)"
+          >
+          + Aggiungi foto
         </label>
       </div>
 
-      <div class="variant-list">
-        ${product.variants.map(v => `
-          <span class="variant-pill">${v.title}</span>
-        `).join("")}
+      <div class="variant-section">
+        <h3>Associa immagine a variante</h3>
+        ${variantsHtml}
       </div>
     `
 
@@ -274,116 +273,41 @@
       })
     }
 
-    function cssSafe(id) {
-      return id.replaceAll("/", "-").replaceAll(":", "-")
-    }
-
-    // 🔥 RENDER
-    function renderGallery() {
-      const container = document.getElementById("gallery")
-      container.innerHTML = ""
-
-      galleryData.forEach((img, index) => {
-        const div = document.createElement("div")
-        div.className = "item"
-        div.draggable = true
-        div.dataset.index = index
-
-        div.innerHTML = `
-      <img src="${img.url}">
-      <button class="danger" onclick="removeImage('${img.id}')">X</button>
-    `
-
-        div.addEventListener("dragstart", () => draggedIndex = index)
-        div.addEventListener("dragover", e => e.preventDefault())
-
-        div.addEventListener("drop", () => {
-          const moved = galleryData.splice(draggedIndex, 1)[0]
-          galleryData.splice(index, 0, moved)
-          renderGallery()
-        })
-
-        container.appendChild(div)
-      })
-    }
-
-    // 🔥 UPLOAD
-    async function upload() {
-      if (!productId) {
-        alert("Seleziona prima un prodotto")
-        return
-      }
-
-      const files = document.getElementById("fileInput").files
-
-      for (const file of files) {
-        document.getElementById("status").innerText = "Uploading..."
-
-        const form = new FormData()
-        form.append("shop", shop)
-        form.append("file", file)
-
-        const res = await fetch("/upload", { method: "POST", body: form })
-        const uploaded = await res.json()
-
-        await fetch("/gallery/add", {
-          method: "POST",
-          body: new URLSearchParams({
-            shop: shop,
-            product_id: productId,
-            file_id: uploaded.id
-          })
-        })
-      }
-
-      document.getElementById("status").innerText = "Done ✅"
-      loadGallery()
-    }
-
-    // 🔥 SAVE ORDER
-    async function saveOrder() {
-      const ids = galleryData.map(i => i.id)
-
-      await fetch("/gallery/reorder", {
-        method: "POST",
-        body: new URLSearchParams({
-          shop: shop,
-          product_id: productId,
-          file_ids: JSON.stringify(ids)
-        })
-      })
-
-      alert("Ordine salvato")
-    }
-
-    // 🔥 REMOVE
-    async function removeImage(id) {
-      galleryData = galleryData.filter(i => i.id !== id)
-      await saveOrder()
-      loadGallery()
-    }
-
-
     async function uploadToProduct(productId, files) {
+      if (!files || files.length === 0) return
+
+      setStatus("Upload immagini in corso...")
+
       for (const file of files) {
         const form = new FormData()
         form.append("shop", shop)
         form.append("product_id", productId)
         form.append("file", file)
 
-        await fetch("/upload-product-image", {
+        const res = await fetch("/upload-product-image", {
           method: "POST",
           body: form
         })
+
+        const data = await res.json()
+
+        if (data.errors || data.detail) {
+          alert("Errore upload: " + JSON.stringify(data))
+          setStatus("")
+          return
+        }
       }
 
+      setStatus("Upload completato ✅")
       await loadProducts()
     }
 
     async function deleteMedia(productId, mediaId) {
       if (!confirm("Eliminare questa foto dal prodotto?")) return
 
-      await fetch("/product/media/delete", {
+      setStatus("Eliminazione immagine...")
+
+      const res = await fetch("/product/media/delete", {
         method: "POST",
         body: new URLSearchParams({
           shop: shop,
@@ -392,12 +316,49 @@
         })
       })
 
+      const data = await res.json()
+
+      if (data.errors || data.detail) {
+        alert("Errore eliminazione: " + JSON.stringify(data))
+      }
+
+      setStatus("")
       await loadProducts()
     }
-    // INIT
+
+    async function assignImageToVariant(variantId, imageId) {
+      setStatus("Associazione immagine alla variante...")
+
+      const res = await fetch("/variant/image/set", {
+        method: "POST",
+        body: new URLSearchParams({
+          shop: shop,
+          variant_id: variantId,
+          image_id: imageId
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.errors || data.detail) {
+        alert("Errore associazione: " + JSON.stringify(data))
+      } else {
+        alert("Immagine assegnata alla variante ✅")
+      }
+
+      setStatus("")
+    }
+
+    function searchProducts(value) {
+      clearTimeout(searchTimer)
+
+      searchTimer = setTimeout(() => {
+        loadProducts(value)
+      }, 350)
+    }
+
     loadProducts()
   </script>
-
 </body>
 
 </html>

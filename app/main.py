@@ -519,37 +519,21 @@ def reorder_gallery(
 
 
 @app.get("/products")
-def get_products(shop: str):
+def get_products(shop: str, query: str = ""):
     token = get_shop_token(shop)
 
-    if not token:
-        raise HTTPException(400, "No token")
-
-    query = """
-    query Products {
-      products(first: 50, sortKey: UPDATED_AT, reverse: true) {
+    gql = """
+    query getProducts($query: String!) {
+      products(first: 50, query: $query) {
         edges {
           node {
             id
             title
-            media(first: 50) {
+            media(first: 10) {
               nodes {
                 id
-                mediaContentType
                 ... on MediaImage {
-                  image {
-                    url
-                  }
-                }
-              }
-            }
-            variants(first: 50) {
-              nodes {
-                id
-                title
-                selectedOptions {
-                  name
-                  value
+                  image { url }
                 }
               }
             }
@@ -565,37 +549,30 @@ def get_products(shop: str):
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
         },
-        json={"query": query}
+        json={
+            "query": gql,
+            "variables": {"query": query}
+        }
     ).json()
 
     products = []
 
-    for edge in res.get("data", {}).get("products", {}).get("edges", []):
+    for edge in res["data"]["products"]["edges"]:
         node = edge["node"]
 
-        images = []
-        for media in node.get("media", {}).get("nodes", []):
-            if media.get("mediaContentType") == "IMAGE":
-                image = media.get("image") or {}
-                if image.get("url"):
-                    images.append({
-                        "id": media["id"],
-                        "url": image["url"]
-                    })
-
-        variants = []
-        for variant in node.get("variants", {}).get("nodes", []):
-            variants.append({
-                "id": variant["id"],
-                "title": variant["title"],
-                "options": variant.get("selectedOptions", [])
-            })
+        images = [
+            {
+                "id": m["id"],
+                "url": m["image"]["url"]
+            }
+            for m in node["media"]["nodes"]
+            if m.get("image")
+        ]
 
         products.append({
             "id": node["id"],
             "title": node["title"],
-            "images": images,
-            "variants": variants
+            "images": images
         })
 
     return products
@@ -699,6 +676,48 @@ def delete_product_media_endpoint(
             "variables": {
                 "productId": product_id,
                 "mediaIds": [media_id]
+            }
+        }
+    ).json()
+
+    return res
+
+
+@app.post("/variant/image/set")
+def set_variant_image(
+    shop: str = Form(...),
+    variant_id: str = Form(...),
+    image_id: str = Form(...)
+):
+    token = get_shop_token(shop)
+
+    mutation = """
+    mutation variantUpdate($input: ProductVariantInput!) {
+      productVariantUpdate(input: $input) {
+        productVariant {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    """
+
+    res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": mutation,
+            "variables": {
+                "input": {
+                    "id": variant_id,
+                    "imageId": image_id
+                }
             }
         }
     ).json()
