@@ -523,18 +523,29 @@ def get_products(shop: str, query: str = ""):
     token = get_shop_token(shop)
 
     gql = """
-    query getProducts($query: String!) {
+    query ($query: String!) {
       products(first: 50, query: $query) {
         edges {
           node {
             id
             title
-            media(first: 10) {
+
+            media(first: 20) {
               nodes {
                 id
+                mediaContentType
                 ... on MediaImage {
-                  image { url }
+                  image {
+                    url
+                  }
                 }
+              }
+            }
+
+            variants(first: 50) {
+              nodes {
+                id
+                title
               }
             }
           }
@@ -557,7 +568,7 @@ def get_products(shop: str, query: str = ""):
 
     products = []
 
-    for edge in res["data"]["products"]["edges"]:
+    for edge in res.get("data", {}).get("products", {}).get("edges", []):
         node = edge["node"]
 
         images = [
@@ -565,23 +576,33 @@ def get_products(shop: str, query: str = ""):
                 "id": m["id"],
                 "url": m["image"]["url"]
             }
-            for m in node["media"]["nodes"]
+            for m in node.get("media", {}).get("nodes", [])
             if m.get("image")
+        ]
+
+        variants = [
+            {
+                "id": v["id"],
+                "title": v["title"]
+            }
+            for v in node.get("variants", {}).get("nodes", [])
         ]
 
         products.append({
             "id": node["id"],
             "title": node["title"],
-            "images": images
+            "images": images,
+            "variants": variants
         })
 
     return products
-
 @app.get("/product/images")
 def get_product_images(shop: str, product_id: str):
     token = get_shop_token(shop)
 
-    url = f"https://{shop}/admin/api/2026-04/products/{product_id.split('/')[-1]}/images.json"
+    product_numeric = product_id.split("/")[-1]
+
+    url = f"https://{shop}/admin/api/2026-04/products/{product_numeric}/images.json"
 
     res = requests.get(
         url,
@@ -684,42 +705,25 @@ def delete_product_media_endpoint(
 
 
 @app.post("/variant/image/set")
-def set_variant_image(
-    shop: str = Form(...),
-    variant_id: str = Form(...),
-    image_id: str = Form(...)
-):
+def set_variant_image(shop: str = Form(...), variant_id: str = Form(...), image_id: str = Form(...)):
     token = get_shop_token(shop)
 
-    mutation = """
-    mutation variantUpdate($input: ProductVariantInput!) {
-      productVariantUpdate(input: $input) {
-        productVariant {
-          id
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-    """
+    variant_numeric = variant_id.split("/")[-1]
 
-    res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
+    url = f"https://{shop}/admin/api/2026-04/variants/{variant_numeric}.json"
+
+    res = requests.put(
+        url,
         headers={
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
         },
         json={
-            "query": mutation,
-            "variables": {
-                "input": {
-                    "id": variant_id,
-                    "imageId": image_id
-                }
+            "variant": {
+                "id": variant_numeric,
+                "image_id": image_id
             }
         }
-    ).json()
+    )
 
-    return res
+    return res.json()
