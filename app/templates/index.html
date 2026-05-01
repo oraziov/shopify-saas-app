@@ -155,7 +155,14 @@
     <h1>Media Manager by OV</h1>
 
     <input class="search" type="text" placeholder="Cerca prodotto..." oninput="searchProducts(this.value)">
+    <div class="card">
+      <h2>Import CSV</h2>
 
+      <input type="file" id="csvFile" accept=".csv">
+      <button onclick="uploadCSV()">Importa CSV</button>
+
+      <p id="csvStatus"></p>
+    </div>
     <div class="card">
       <h2>Gestione immagini prodotti</h2>
       <p>Carica immagini, eliminale o assegna un’immagine principale alla variante cliccando sull’immagine sotto la
@@ -371,6 +378,33 @@
       searchTimer = setTimeout(() => {
         loadProducts(value)
       }, 350)
+    }
+
+    async function uploadCSV() {
+      const fileInput = document.getElementById("csvFile")
+      const file = fileInput.files[0]
+
+      if (!file) {
+        alert("Seleziona un file CSV")
+        return
+      }
+
+      const form = new FormData()
+      form.append("shop", shop)
+      form.append("file", file)
+
+      document.getElementById("csvStatus").innerText = "Import in corso..."
+
+      const res = await fetch("/import-csv", {
+        method: "POST",
+        body: form
+      })
+
+      const data = await res.json()
+
+      console.log(data)
+
+      document.getElementById("csvStatus").innerText = "Import completato ✅"
     }
 
     loadProducts()
