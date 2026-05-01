@@ -9,7 +9,7 @@ import time
 import json
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-import pandas as pd
+import csv
 
 templates = Jinja2Templates(directory="app/templates")
 
@@ -732,6 +732,8 @@ def set_variant_image(shop: str = Form(...), variant_id: str = Form(...), image_
 
 
 
+import csv
+
 @app.post("/import-csv")
 async def import_csv(
     shop: str = Form(...),
@@ -742,160 +744,205 @@ async def import_csv(
     if not token:
         raise HTTPException(400, "No token")
 
-    import pandas as pd
-
     contents = await file.read()
+
     with open("/tmp/import.csv", "wb") as f:
         f.write(contents)
 
-    df = pd.read_csv("/tmp/import.csv")
-
     results = []
 
-    for _, row in df.iterrows():
+    with open("/tmp/import.csv", newline='', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile)
 
-        handle = row.get("handle")
-        sku = row.get("SKU")
-        color_code = str(row.get("color_code"))
+        for row in reader:
 
-        # 🔥 1. TROVA PRODOTTO PER HANDLE
-        product_query = f"""
-        {{
-          products(first:1, query:"handle:{handle}") {{
-            edges {{
-              node {{
-                id
-                variants(first:50) {{
-                  edges {{
-                    node {{
-                      id
-                      sku
+            handle = row.get("handle")
+            sku = row.get("SKU")
+            color_code = str(row.get("color_code"))
+
+            if not handle or not sku:
+                results.append({"error": "Missing handle or SKU"})
+                continue
+
+            # 🔥 1. TROVA PRODOTTO
+            product_query = f"""
+            {{
+              products(first:1, query:"handle:{handle}") {{
+                edges {{
+                  node {{
+                    id
+                    variants(first:50) {{
+                      edges {{
+                        node {{
+                          id
+                          sku
+                        }}
+                      }}
                     }}
                   }}
                 }}
               }}
             }}
-          }}
-        }}
-        """
-
-        res = requests.post(
-            f"https://{shop}/admin/api/2026-04/graphql.json",
-            headers={
-                "X-Shopify-Access-Token": token,
-                "Content-Type": "application/json"
-            },
-            json={"query": product_query}
-        ).json()
-
-        edges = res.get("data", {}).get("products", {}).get("edges", [])
-
-        if not edges:
-            results.append({"handle": handle, "error": "Product not found"})
-            continue
-
-        product = edges[0]["node"]
-        product_id = product["id"]
-
-        # 🔥 2. TROVA VARIANTE PER SKU
-        variant_id = None
-
-        for v in product["variants"]["edges"]:
-            if v["node"]["sku"] == sku:
-                variant_id = v["node"]["id"]
-                break
-
-        if not variant_id:
-            results.append({"sku": sku, "error": "Variant not found"})
-            continue
-
-        # 🔥 3. CARICA IMMAGINI
-        image_urls = [
-            row.get("Image1"),
-            row.get("Image2"),
-            row.get("Image3")
-        ]
-
-        uploaded_ids = []
-
-        for image_url in image_urls:
-
-            if not image_url or not isinstance(image_url, str):
-                continue
-
-            img_res = requests.post(
-                f"https://{shop}/admin/api/2026-04/products/{product_id.split('/')[-1]}/images.json",
-                headers={
-                    "X-Shopify-Access-Token": token,
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "image": {
-                        "src": image_url
-                    }
-                }
-            ).json()
-
-            img = img_res.get("image")
-
-            if img:
-                uploaded_ids.append(img["id"])
-
-        # 🔥 4. ASSOCIA PRIMA IMMAGINE ALLA VARIANTE
-        if uploaded_ids:
-            requests.put(
-                f"https://{shop}/admin/api/2026-04/variants/{variant_id.split('/')[-1]}.json",
-                headers={
-                    "X-Shopify-Access-Token": token,
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "variant": {
-                        "id": variant_id.split("/")[-1],
-                        "image_id": uploaded_ids[0]
-                    }
-                }
-            )
-
-        # 🔥 5. SALVA GALLERY PER COLORE
-        if uploaded_ids:
-
-            mutation = """
-            mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-              metafieldsSet(metafields: $metafields) {
-                metafields { key value }
-                userErrors { message }
-              }
-            }
             """
 
-            requests.post(
+            res = requests.post(
                 f"https://{shop}/admin/api/2026-04/graphql.json",
                 headers={
                     "X-Shopify-Access-Token": token,
                     "Content-Type": "application/json"
                 },
-                json={
-                    "query": mutation,
-                    "variables": {
-                        "metafields": [{
-                            "ownerId": product_id,
-                            "namespace": "custom",
-                            "key": "color_gallery",
-                            "type": "json",
-                            "value": json.dumps({
-                                color_code: uploaded_ids
-                            })
-                        }]
-                    }
-                }
-            )
+                json={"query": product_query}
+            ).json()
 
-        results.append({
-            "handle": handle,
-            "sku": sku,
-            "status": "ok"
-        })
+            edges = res.get("data", {}).get("products", {}).get("edges", [])
+
+            if not edges:
+                results.append({"handle": handle, "error": "Product not found"})
+                continue
+
+            product = edges[0]["node"]
+            product_id = product["id"]
+            product_numeric = product_id.split("/")[-1]
+
+            # 🔥 2. TROVA VARIANTE
+            variant_id = None
+
+            for v in product["variants"]["edges"]:
+                if v["node"]["sku"] == sku:
+                    variant_id = v["node"]["id"]
+                    break
+
+            if not variant_id:
+                results.append({"sku": sku, "error": "Variant not found"})
+                continue
+
+            variant_numeric = variant_id.split("/")[-1]
+
+            # 🔥 3. UPLOAD IMMAGINI
+            image_urls = [
+                row.get("Image1"),
+                row.get("Image2"),
+                row.get("Image3")
+            ]
+
+            uploaded_ids = []
+
+            for image_url in image_urls:
+
+                if not image_url or not isinstance(image_url, str):
+                    continue
+
+                img_res = requests.post(
+                    f"https://{shop}/admin/api/2026-04/products/{product_numeric}/images.json",
+                    headers={
+                        "X-Shopify-Access-Token": token,
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "image": {
+                            "src": image_url
+                        }
+                    }
+                ).json()
+
+                img = img_res.get("image")
+
+                if img:
+                    uploaded_ids.append(img["id"])
+
+            # 🔥 4. ASSOCIA ALLA VARIANTE
+            if uploaded_ids:
+                requests.put(
+                    f"https://{shop}/admin/api/2026-04/variants/{variant_numeric}.json",
+                    headers={
+                        "X-Shopify-Access-Token": token,
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "variant": {
+                            "id": variant_numeric,
+                            "image_id": uploaded_ids[0]
+                        }
+                    }
+                )
+
+            # 🔥 5. METAFIELD MERGE (FIX IMPORTANTISSIMO)
+            if uploaded_ids:
+
+                # 👉 leggi esistente
+                get_meta_query = """
+                query ($id: ID!) {
+                  product(id: $id) {
+                    metafield(namespace: "custom", key: "color_gallery") {
+                      value
+                    }
+                  }
+                }
+                """
+
+                meta_res = requests.post(
+                    f"https://{shop}/admin/api/2026-04/graphql.json",
+                    headers={
+                        "X-Shopify-Access-Token": token,
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "query": get_meta_query,
+                        "variables": {"id": product_id}
+                    }
+                ).json()
+
+                metafield = meta_res.get("data", {}).get("product", {}).get("metafield")
+
+                gallery = {}
+
+                if metafield and metafield.get("value"):
+                    try:
+                        gallery = json.loads(metafield["value"])
+                    except:
+                        gallery = {}
+
+                # 👉 merge
+                if color_code not in gallery:
+                    gallery[color_code] = []
+
+                gallery[color_code].extend(uploaded_ids)
+
+                # 👉 salva
+                mutation = """
+                mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+                  metafieldsSet(metafields: $metafields) {
+                    metafields { value }
+                    userErrors { message }
+                  }
+                }
+                """
+
+                requests.post(
+                    f"https://{shop}/admin/api/2026-04/graphql.json",
+                    headers={
+                        "X-Shopify-Access-Token": token,
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "query": mutation,
+                        "variables": {
+                            "metafields": [{
+                                "ownerId": product_id,
+                                "namespace": "custom",
+                                "key": "color_gallery",
+                                "type": "json",
+                                "value": json.dumps(gallery)
+                            }]
+                        }
+                    }
+                )
+
+            results.append({
+                "handle": handle,
+                "sku": sku,
+                "status": "ok"
+            })
 
     return {
         "status": "IMPORT COMPLETATO",
