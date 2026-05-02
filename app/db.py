@@ -16,6 +16,24 @@ def init_db():
                 access_token TEXT NOT NULL
             );
             """)
+            cur.execute("""
+CREATE TABLE IF NOT EXISTS csv_catalog (
+    id SERIAL PRIMARY KEY,
+    shop TEXT NOT NULL,
+    handle TEXT,
+    brand TEXT,
+    title TEXT,
+    sku TEXT,
+    colore TEXT,
+    taglia TEXT,
+    color_code TEXT,
+    image1 TEXT,
+    image2 TEXT,
+    image3 TEXT,
+    raw JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+""")
 
 
 def save_shop_token(shop: str, token: str):
