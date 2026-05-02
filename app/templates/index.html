@@ -1,113 +1,125 @@
 <!doctype html>
-<html lang="it">
+<html>
 
 <head>
   <meta charset="utf-8">
-  <title>Media Manager</title>
+  <title>CSV Image Manager</title>
 
   <style>
     body {
       font-family: Arial;
-      background: #f6f6f7;
       padding: 30px;
+      background: #f6f6f7;
     }
 
-    .product {
-      background: #fff;
+    .card {
+      background: white;
       padding: 20px;
       margin-bottom: 20px;
       border-radius: 10px;
     }
 
-    .images {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+    img {
+      width: 80px;
+      margin: 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
     }
 
-    .images img {
-      width: 120px;
-      height: 120px;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-
-    button {
-      margin-top: 5px;
-      display: block;
+    img.selected {
+      border: 2px solid green;
     }
   </style>
 </head>
 
 <body>
 
-  <h1>Media Manager</h1>
+  <h1>Import CSV + Associazione immagini</h1>
 
-  <div id="products"></div>
+  <input type="file" id="csv">
+  <button onclick="uploadCSV()">Carica CSV</button>
+
+  <div id="results"></div>
 
   <script>
     const shop = "6uxkvv-2d.myshopify.com"
 
-    async function loadProducts() {
-      const res = await fetch(`/products?shop=${shop}`)
-      const products = await res.json()
+    async function uploadCSV() {
+      const file = document.getElementById("csv").files[0]
 
-      const container = document.getElementById("products")
+      const form = new FormData()
+      form.append("shop", shop)
+      form.append("file", file)
+
+      const res = await fetch("/csv/process", {
+        method: "POST",
+        body: form
+      })
+
+      const data = await res.json()
+      render(data)
+    }
+
+    function render(data) {
+      const container = document.getElementById("results")
       container.innerHTML = ""
 
-      products.forEach(p => {
+      data.forEach(item => {
         const div = document.createElement("div")
-        div.className = "product"
+        div.className = "card"
 
         div.innerHTML = `
-      <h2>${p.title}</h2>
+      <h2>${item.title}</h2>
+      <p><b>Variante:</b> ${item.variant_title}</p>
+      <p><b>Color Code:</b> ${item.color_code}</p>
 
-      <input type="file" onchange="upload('${p.id}', this.files)">
+      <h4>Shopify</h4>
+      ${item.images_shopify.map(i => `<img src="${i.url}">`).join("")}
 
-      <div class="images">
-        ${p.images.map(img => `
-          <div>
-            <img src="${img.url}">
-            <button onclick="deleteImg('${p.id}','${img.id}')">Elimina</button>
-          </div>
+      <h4>CSV (clicca per selezionare)</h4>
+      <div class="csv-images">
+        ${item.images_csv.filter(Boolean).map(i => `
+          <img src="${i}" onclick="toggle(this)">
         `).join("")}
       </div>
+
+      <button onclick="send('${item.product_id}','${item.variant_id}', this)">
+        Associa immagini selezionate
+      </button>
     `
 
         container.appendChild(div)
       })
     }
 
-    async function upload(productId, files) {
-      for (const file of files) {
-        const form = new FormData()
-        form.append("shop", shop)
-        form.append("product_id", productId)
-        form.append("file", file)
+    function toggle(el) {
+      el.classList.toggle("selected")
+    }
 
-        await fetch("/upload-product-image", {
-          method: "POST",
-          body: form
-        })
+    async function send(productId, variantId, btn) {
+      const images = Array.from(
+        btn.parentElement.querySelectorAll(".csv-images img.selected")
+      ).map(img => img.src)
+
+      if (!images.length) {
+        alert("Seleziona immagini")
+        return
       }
 
-      await loadProducts()
-    }
+      const form = new URLSearchParams()
+      form.append("shop", shop)
+      form.append("product_id", productId)
+      form.append("variant_id", variantId)
+      form.append("images", JSON.stringify(images))
 
-    async function deleteImg(productId, mediaId) {
-      await fetch("/product/media/delete", {
+      await fetch("/images/assign", {
         method: "POST",
-        body: new URLSearchParams({
-          shop,
-          product_id: productId,
-          media_id: mediaId
-        })
+        body: form
       })
 
-      await loadProducts()
+      alert("Immagini associate ✅")
     }
-
-    loadProducts()
   </script>
 
 </body>
