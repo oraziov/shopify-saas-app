@@ -1,525 +1,68 @@
 from fastapi import FastAPI, Request, HTTPException, UploadFile, Form, File, Query
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from urllib.parse import urlencode
-import requests
-import base64
 import requests
 import mimetypes
 import time
 import json
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
 import csv
-import json
 
-templates = Jinja2Templates(directory="app/templates")
+from fastapi.templating import Jinja2Templates
 
 from app.config import SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET, APP_URL
-from app.db import init_db, save_shop_token, get_shop_token
+from app.db import init_db, save_shop_token, get_shop_token, get_conn
 
 app = FastAPI()
+templates = Jinja2Templates(directory="app/templates")
 
 
-# 🔥 STARTUP
 @app.on_event("startup")
 def startup():
     init_db()
 
 
-# 🔹 ROOT (per evitare Not Found)
 @app.get("/")
 def root():
-    return {"status": "app running"}
+    return {"status": "ok"}
 
 
-# 🔹 INSTALL APP
+# 🔹 INSTALL
 @app.get("/install")
-def install(shop: str = Query(...)):
-    params = {
+def install(shop: str):
+    url = f"https://{shop}/admin/oauth/authorize?" + urlencode({
         "client_id": SHOPIFY_CLIENT_ID,
-        "scope": "read_products",
+        "scope": "read_products,write_products",
         "redirect_uri": f"{APP_URL}/callback",
-    }
-
-    url = f"https://{shop}/admin/oauth/authorize?{urlencode(params)}"
-
+    })
     return RedirectResponse(url)
 
 
-# 🔹 CALLBACK SHOPIFY
+# 🔹 CALLBACK
 @app.get("/callback")
 def callback(request: Request):
-    params = dict(request.query_params)
+    shop = request.query_params.get("shop")
+    code = request.query_params.get("code")
 
-    shop = params.get("shop")
-    code = params.get("code")
-
-    if not shop or not code:
-        raise HTTPException(status_code=400, detail="Missing shop or code")
-
-    print("SHOP CALLBACK:", shop)
-
-    response = requests.post(
+    res = requests.post(
         f"https://{shop}/admin/oauth/access_token",
         json={
             "client_id": SHOPIFY_CLIENT_ID,
             "client_secret": SHOPIFY_CLIENT_SECRET,
             "code": code,
         },
-    )
+    ).json()
 
-    print("TOKEN RESPONSE:", response.text)
-
-    if response.status_code != 200:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Token exchange failed: {response.text}",
-        )
-
-    data = response.json()
-    token = data.get("access_token")
+    token = res.get("access_token")
 
     if not token:
-        raise HTTPException(status_code=400, detail="No token returned")
+        raise HTTPException(400, "No token")
 
     save_shop_token(shop, token)
 
-    return {
-        "ok": True,
-        "shop": shop,
-        "message": "App installed successfully"
-    }
+    return {"ok": True}
 
 
-# 🔹 TEST API SHOPIFY
-@app.get("/test")
-def test(shop: str = Query(...)):
-    token = get_shop_token(shop)
-
-    if not token:
-        return {"error": "No token found. Install the app first."}
-
-    url = f"https://{shop}/admin/api/2024-01/products.json"
-
-    res = requests.get(
-        url,
-        headers={
-            "X-Shopify-Access-Token": token
-        }
-    )
-
-    return {
-        "status": res.status_code,
-        "response": res.json()
-    }
-
-
-
-
-@app.post("/upload")
-async def upload_image(shop: str = Form(...), file: UploadFile = File(...)):
-    token = get_shop_token(shop)
-
-    if not token:
-        raise HTTPException(400, "No token")
-
-    content = await file.read()
-    filename = file.filename or "upload.jpg"
-    mime_type = file.content_type or mimetypes.guess_type(filename)[0] or "image/jpeg"
-
-    # 1️⃣ STAGED UPLOAD
-    staged_query = """
-    mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
-      stagedUploadsCreate(input: $input) {
-        stagedTargets {
-          url
-          resourceUrl
-          parameters {
-            name
-            value
-          }
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-    """
-
-    staged_res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": staged_query,
-            "variables": {
-                "input": [{
-                    "filename": filename,
-                    "mimeType": mime_type,
-                    "resource": "IMAGE",
-                    "fileSize": str(len(content))
-                }]
-            }
-        }
-    ).json()
-
-    target = staged_res["data"]["stagedUploadsCreate"]["stagedTargets"][0]
-
-    # 2️⃣ UPLOAD FILE (PUT)
-    upload_headers = {
-        p["name"]: p["value"]
-        for p in target["parameters"]
-    }
-
-    upload_res = requests.put(
-        target["url"],
-        data=content,
-        headers=upload_headers
-    )
-
-    if upload_res.status_code not in [200, 201]:
-        raise HTTPException(400, "Upload to Shopify failed")
-
-    # 3️⃣ CREA FILE SU SHOPIFY
-    file_create_query = """
-    mutation fileCreate($files: [FileCreateInput!]!) {
-      fileCreate(files: $files) {
-        files {
-          id
-          fileStatus
-          ... on MediaImage {
-            image {
-              url
-            }
-          }
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }
-    """
-
-    file_res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": file_create_query,
-            "variables": {
-                "files": [{
-                    "originalSource": target["resourceUrl"],
-                    "contentType": "IMAGE"
-                }]
-            }
-        }
-    ).json()
-
-    file_data = file_res["data"]["fileCreate"]["files"][0]
-    file_id = file_data["id"]
-
-    # 4️⃣ WAIT UNTIL READY (FONDAMENTALE)
-    status_query = """
-    query ($id: ID!) {
-      node(id: $id) {
-        ... on MediaImage {
-          id
-          fileStatus
-          image {
-            url
-          }
-        }
-      }
-    }
-    """
-
-    for _ in range(10):
-        check = requests.post(
-            f"https://{shop}/admin/api/2026-04/graphql.json",
-            headers={
-                "X-Shopify-Access-Token": token,
-                "Content-Type": "application/json"
-            },
-            json={
-                "query": status_query,
-                "variables": {"id": file_id}
-            }
-        ).json()
-
-        node = check.get("data", {}).get("node")
-
-        if node and node.get("fileStatus") == "READY":
-            return {
-                "id": node["id"],
-                "url": node["image"]["url"],
-                "status": "READY"
-            }
-
-        time.sleep(1)
-
-    # fallback
-    return {
-        "id": file_id,
-        "status": "PROCESSING"
-    }
-
-@app.post("/attach")
-def attach_image(shop: str = Form(...), product_id: str = Form(...), image_url: str = Form(...)):
-    token = get_shop_token(shop)
-
-    if not token:
-        raise HTTPException(400, "No token")
-
-    mutation = """
-    mutation productCreateMedia($media: [CreateMediaInput!]!, $productId: ID!) {
-      productCreateMedia(media: $media, productId: $productId) {
-        media {
-          ... on MediaImage {
-            id
-            image {
-              url
-            }
-          }
-        }
-        mediaUserErrors {
-          field
-          message
-        }
-      }
-    }
-    """
-
-    res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": mutation,
-            "variables": {
-                "productId": product_id,
-                "media": [{
-                    "originalSource": image_url,
-                    "mediaContentType": "IMAGE"
-                }]
-            }
-        }
-    )
-
-    return res.json()
-
-
-
-
-@app.post("/gallery/add")
-def add_to_gallery(
-    shop: str = Form(...),
-    product_id: str = Form(...),
-    file_id: str = Form(...)
-):
-    token = get_shop_token(shop)
-
-    if not token:
-        raise HTTPException(400, "No token")
-
-    # GET EXISTING
-    query = """
-    query ($id: ID!) {
-      product(id: $id) {
-        metafield(namespace: "custom", key: "gallery") {
-          value
-        }
-      }
-    }
-    """
-
-    res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={"query": query, "variables": {"id": product_id}}
-    ).json()
-
-    print("METAFIELD RAW:", res)
-
-    metafield = res.get("data", {}).get("product", {}).get("metafield")
-
-    gallery = []
-
-    if metafield and metafield.get("value"):
-        try:
-            gallery = json.loads(metafield["value"])
-        except:
-            gallery = []
-
-    # ADD IMAGE
-    if file_id not in gallery:
-        gallery.append(file_id)
-
-    # SAVE
-    mutation = """
-    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-      metafieldsSet(metafields: $metafields) {
-        metafields {
-          value
-        }
-        userErrors {
-          message
-        }
-      }
-    }
-    """
-
-    save = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": mutation,
-            "variables": {
-                "metafields": [{
-                    "ownerId": product_id,
-                    "namespace": "custom",
-                    "key": "gallery",
-                    "type": "list.file_reference",
-                    "value": json.dumps(gallery)
-                }]
-            }
-        }
-    ).json()
-
-    print("SAVE RESPONSE:", save)
-
-    return save
-
-
-@app.get("/gallery/get")
-def get_gallery(shop: str, product_id: str):
-    token = get_shop_token(shop)
-
-    if not token:
-        raise HTTPException(400, "No token")
-
-    query = """
-    query ($id: ID!) {
-      product(id: $id) {
-        metafield(namespace: "custom", key: "gallery") {
-          references(first: 20) {
-            nodes {
-              ... on MediaImage {
-                id
-                image {
-                  url
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    """
-
-    res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": query,
-            "variables": {"id": product_id}
-        }
-    ).json()
-
-    nodes = (
-        res.get("data", {})
-        .get("product", {})
-        .get("metafield", {})
-        .get("references", {})
-        .get("nodes", [])
-    )
-
-    gallery = [
-        {
-            "id": n["id"],
-            "url": n["image"]["url"]
-        }
-        for n in nodes if n.get("image")
-    ]
-
-    return gallery
-
-
-
-
-@app.get("/ui", response_class=HTMLResponse)
-def ui(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-
-@app.post("/gallery/reorder")
-def reorder_gallery(
-    shop: str = Form(...),
-    product_id: str = Form(...),
-    file_ids: str = Form(...)
-):
-    import json
-
-    token = get_shop_token(shop)
-
-    if not token:
-        raise HTTPException(400, "No token")
-
-    ids = json.loads(file_ids)
-
-    mutation = """
-    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-      metafieldsSet(metafields: $metafields) {
-        metafields {
-          value
-        }
-        userErrors {
-          message
-        }
-      }
-    }
-    """
-
-    res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": mutation,
-            "variables": {
-                "metafields": [{
-                    "ownerId": product_id,
-                    "namespace": "custom",
-                    "key": "gallery",
-                    "type": "list.file_reference",
-                    "value": json.dumps(ids)
-                }]
-            }
-        }
-    )
-
-    return res.json()
-
-
-
+# 🔥 PRODUCTS
 @app.get("/products")
 def get_products(shop: str, query: str = ""):
     token = get_shop_token(shop)
@@ -531,19 +74,14 @@ def get_products(shop: str, query: str = ""):
           node {
             id
             title
-
             media(first: 20) {
               nodes {
                 id
-                mediaContentType
                 ... on MediaImage {
-                  image {
-                    url
-                  }
+                  image { url }
                 }
               }
             }
-
             variants(first: 50) {
               nodes {
                 id
@@ -562,169 +100,57 @@ def get_products(shop: str, query: str = ""):
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
         },
-        json={
-            "query": gql,
-            "variables": {"query": query}
-        }
+        json={"query": gql, "variables": {"query": query}}
     ).json()
 
-    products = []
+    out = []
 
-    for edge in res.get("data", {}).get("products", {}).get("edges", []):
-        node = edge["node"]
+    for edge in res["data"]["products"]["edges"]:
+        p = edge["node"]
 
         images = [
-            {
-                "id": m["id"],
-                "url": m["image"]["url"]
-            }
-            for m in node.get("media", {}).get("nodes", [])
+            {"id": m["id"], "url": m["image"]["url"]}
+            for m in p["media"]["nodes"]
             if m.get("image")
         ]
 
         variants = [
-            {
-                "id": v["id"],
-                "title": v["title"]
-            }
-            for v in node.get("variants", {}).get("nodes", [])
+            {"id": v["id"], "title": v["title"]}
+            for v in p["variants"]["nodes"]
         ]
 
-        products.append({
-            "id": node["id"],
-            "title": node["title"],
+        out.append({
+            "id": p["id"],
+            "title": p["title"],
             "images": images,
             "variants": variants
         })
 
-    return products
-
-@app.get("/product/images")
-def get_product_images(shop: str, product_id: str):
-    token = get_shop_token(shop)
-
-    product_numeric = product_id.split("/")[-1]
-
-    url = f"https://{shop}/admin/api/2026-04/products/{product_numeric}/images.json"
-
-    res = requests.get(
-        url,
-        headers={"X-Shopify-Access-Token": token}
-    ).json()
-
-    return res.get("images", [])
-
-@app.post("/upload-product-image")
-async def upload_product_image(
-    shop: str = Form(...),
-    product_id: str = Form(...),
-    file: UploadFile = File(...)
-):
-    # qui puoi riusare la tua funzione /upload
-    # ma invece di restituire solo file id, dopo READY fai attach al prodotto
-    uploaded = await upload_image(shop=shop, file=file)
-
-    image_url = uploaded.get("url")
-    if not image_url:
-        raise HTTPException(400, "Upload failed")
-
-    mutation = """
-    mutation AddMedia($productId: ID!, $media: [CreateMediaInput!]!) {
-      productCreateMedia(productId: $productId, media: $media) {
-        media {
-          id
-          ... on MediaImage {
-            image {
-              url
-            }
-          }
-        }
-        mediaUserErrors {
-          field
-          message
-        }
-      }
-    }
-    """
-
-    token = get_shop_token(shop)
-
-    res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": mutation,
-            "variables": {
-                "productId": product_id,
-                "media": [{
-                    "originalSource": image_url,
-                    "mediaContentType": "IMAGE"
-                }]
-            }
-        }
-    ).json()
-
-    return res
-
-@app.post("/product/media/delete")
-def delete_product_media_endpoint(
-    shop: str = Form(...),
-    product_id: str = Form(...),
-    media_id: str = Form(...)
-):
-    token = get_shop_token(shop)
-
-    mutation = """
-    mutation DeleteProductMedia($productId: ID!, $mediaIds: [ID!]!) {
-      productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
-        deletedMediaIds
-        mediaUserErrors {
-          field
-          message
-        }
-      }
-    }
-    """
-
-    res = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": mutation,
-            "variables": {
-                "productId": product_id,
-                "mediaIds": [media_id]
-            }
-        }
-    ).json()
-
-    return res
+    return out
 
 
+# 🔥 SET VARIANT IMAGE (FIX CRITICO)
 @app.post("/variant/image/set")
-def set_variant_image(shop: str = Form(...), variant_id: str = Form(...), image_id: str = Form(...)):
+def set_variant_image(
+    shop: str = Form(...),
+    variant_id: str = Form(...),
+    image_id: str = Form(...)
+):
     token = get_shop_token(shop)
 
     variant_numeric = variant_id.split("/")[-1]
-
-    url = f"https://{shop}/admin/api/2026-04/variants/{variant_numeric}.json"
+    image_numeric = image_id.split("/")[-1]
 
     res = requests.put(
-        url,
+        f"https://{shop}/admin/api/2026-04/variants/{variant_numeric}.json",
         headers={
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
         },
         json={
             "variant": {
-                "id": variant_numeric,
-                "image_id": image_id
+                "id": int(variant_numeric),
+                "image_id": int(image_numeric)
             }
         }
     )
@@ -732,234 +158,9 @@ def set_variant_image(shop: str = Form(...), variant_id: str = Form(...), image_
     return res.json()
 
 
-
-import csv
-
-@app.post("/import-csv")
-async def import_csv(
-    shop: str = Form(...),
-    file: UploadFile = File(...)
-):
-    token = get_shop_token(shop)
-
-    if not token:
-        raise HTTPException(400, "No token")
-
-    contents = await file.read()
-
-    with open("/tmp/import.csv", "wb") as f:
-        f.write(contents)
-
-    results = []
-
-    with open("/tmp/import.csv", newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
-
-        for row in reader:
-
-            handle = row.get("handle")
-            sku = row.get("SKU")
-            color_code = str(row.get("color_code"))
-
-            if not handle or not sku:
-                results.append({"error": "Missing handle or SKU"})
-                continue
-
-            # 🔥 1. TROVA PRODOTTO
-            product_query = f"""
-            {{
-              products(first:1, query:"handle:{handle}") {{
-                edges {{
-                  node {{
-                    id
-                    variants(first:50) {{
-                      edges {{
-                        node {{
-                          id
-                          sku
-                        }}
-                      }}
-                    }}
-                  }}
-                }}
-              }}
-            }}
-            """
-
-            res = requests.post(
-                f"https://{shop}/admin/api/2026-04/graphql.json",
-                headers={
-                    "X-Shopify-Access-Token": token,
-                    "Content-Type": "application/json"
-                },
-                json={"query": product_query}
-            ).json()
-
-            edges = res.get("data", {}).get("products", {}).get("edges", [])
-
-            if not edges:
-                results.append({"handle": handle, "error": "Product not found"})
-                continue
-
-            product = edges[0]["node"]
-            product_id = product["id"]
-            product_numeric = product_id.split("/")[-1]
-
-            # 🔥 2. TROVA VARIANTE
-            variant_id = None
-
-            for v in product["variants"]["edges"]:
-                if v["node"]["sku"] == sku:
-                    variant_id = v["node"]["id"]
-                    break
-
-            if not variant_id:
-                results.append({"sku": sku, "error": "Variant not found"})
-                continue
-
-            variant_numeric = variant_id.split("/")[-1]
-
-            # 🔥 3. UPLOAD IMMAGINI
-            image_urls = [
-                row.get("Image1"),
-                row.get("Image2"),
-                row.get("Image3")
-            ]
-
-            uploaded_ids = []
-
-            for image_url in image_urls:
-
-                if not image_url or not isinstance(image_url, str):
-                    continue
-
-                img_res = requests.post(
-                    f"https://{shop}/admin/api/2026-04/products/{product_numeric}/images.json",
-                    headers={
-                        "X-Shopify-Access-Token": token,
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "image": {
-                            "src": image_url
-                        }
-                    }
-                ).json()
-
-                img = img_res.get("image")
-
-                if img:
-                    uploaded_ids.append(img["id"])
-
-            # 🔥 4. ASSOCIA ALLA VARIANTE
-            if uploaded_ids:
-                requests.put(
-                    f"https://{shop}/admin/api/2026-04/variants/{variant_numeric}.json",
-                    headers={
-                        "X-Shopify-Access-Token": token,
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "variant": {
-                            "id": variant_numeric,
-                            "image_id": uploaded_ids[0]
-                        }
-                    }
-                )
-
-            # 🔥 5. METAFIELD MERGE (FIX IMPORTANTISSIMO)
-            if uploaded_ids:
-
-                # 👉 leggi esistente
-                get_meta_query = """
-                query ($id: ID!) {
-                  product(id: $id) {
-                    metafield(namespace: "custom", key: "color_gallery") {
-                      value
-                    }
-                  }
-                }
-                """
-
-                meta_res = requests.post(
-                    f"https://{shop}/admin/api/2026-04/graphql.json",
-                    headers={
-                        "X-Shopify-Access-Token": token,
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "query": get_meta_query,
-                        "variables": {"id": product_id}
-                    }
-                ).json()
-
-                metafield = meta_res.get("data", {}).get("product", {}).get("metafield")
-
-                gallery = {}
-
-                if metafield and metafield.get("value"):
-                    try:
-                        gallery = json.loads(metafield["value"])
-                    except:
-                        gallery = {}
-
-                # 👉 merge
-                if color_code not in gallery:
-                    gallery[color_code] = []
-
-                gallery[color_code].extend(uploaded_ids)
-
-                # 👉 salva
-                mutation = """
-                mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-                  metafieldsSet(metafields: $metafields) {
-                    metafields { value }
-                    userErrors { message }
-                  }
-                }
-                """
-
-                requests.post(
-                    f"https://{shop}/admin/api/2026-04/graphql.json",
-                    headers={
-                        "X-Shopify-Access-Token": token,
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "query": mutation,
-                        "variables": {
-                            "metafields": [{
-                                "ownerId": product_id,
-                                "namespace": "custom",
-                                "key": "color_gallery",
-                                "type": "json",
-                                "value": json.dumps(gallery)
-                            }]
-                        }
-                    }
-                )
-
-            results.append({
-                "handle": handle,
-                "sku": sku,
-                "status": "ok"
-            })
-
-    return {
-        "status": "IMPORT COMPLETATO",
-        "results": results
-    }
-
-
+# 🔥 CSV IMPORT (DB ONLY)
 @app.post("/csv/upload")
-async def upload_csv_map(
-    shop: str = Form(...),
-    file: UploadFile = File(...)
-):
-    token = get_shop_token(shop)
-    if not token:
-        raise HTTPException(400, "No token")
-
+async def upload_csv(shop: str = Form(...), file: UploadFile = File(...)):
     content = (await file.read()).decode("utf-8-sig").splitlines()
     reader = csv.DictReader(content)
 
@@ -969,219 +170,24 @@ async def upload_csv_map(
         with conn.cursor() as cur:
             cur.execute("DELETE FROM csv_catalog WHERE shop = %s", (shop,))
 
-            for row in rows:
+            for r in rows:
                 cur.execute("""
                 INSERT INTO csv_catalog
                 (shop, handle, brand, title, sku, colore, taglia, color_code, image1, image2, image3, raw)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 """, (
                     shop,
-                    row.get("handle"),
-                    row.get("Brand"),
-                    row.get("Title"),
-                    row.get("SKU"),
-                    row.get("Colore"),
-                    row.get("Taglia"),
-                    row.get("color_code"),
-                    row.get("Image1"),
-                    row.get("Image2"),
-                    row.get("Image3"),
-                    json.dumps(row),
+                    r.get("handle"),
+                    r.get("Brand"),
+                    r.get("Title"),
+                    r.get("SKU"),
+                    r.get("Colore"),
+                    r.get("Taglia"),
+                    r.get("color_code"),
+                    r.get("Image1"),
+                    r.get("Image2"),
+                    r.get("Image3"),
+                    json.dumps(r),
                 ))
 
-    return {
-        "ok": True,
-        "rows": len(rows)
-    }
-
-@app.get("/csv/catalog")
-def csv_catalog(
-    shop: str,
-    q: str = "",
-    brand: str = "",
-    colore: str = "",
-    color_code: str = "",
-):
-    params = [shop]
-    where = ["shop = %s"]
-
-    if q:
-        where.append("""
-        (
-          title ILIKE %s OR
-          brand ILIKE %s OR
-          colore ILIKE %s OR
-          sku ILIKE %s OR
-          handle ILIKE %s OR
-          color_code ILIKE %s
-        )
-        """)
-        like = f"%{q}%"
-        params.extend([like, like, like, like, like, like])
-
-    if brand:
-        where.append("brand ILIKE %s")
-        params.append(f"%{brand}%")
-
-    if colore:
-        where.append("colore ILIKE %s")
-        params.append(f"%{colore}%")
-
-    if color_code:
-        where.append("color_code = %s")
-        params.append(color_code)
-
-    sql = f"""
-    SELECT
-      handle,
-      brand,
-      title,
-      color_code,
-      colore,
-      json_agg(
-        json_build_object(
-          'sku', sku,
-          'taglia', taglia,
-          'image1', image1,
-          'image2', image2,
-          'image3', image3
-        )
-      ) AS variants
-    FROM csv_catalog
-    WHERE {" AND ".join(where)}
-    GROUP BY handle, brand, title, color_code, colore
-    ORDER BY handle DESC
-    LIMIT 100
-    """
-
-    with get_conn() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(sql, params)
-            return cur.fetchall()
-        
-
-@app.post("/csv/apply-color-images")
-def apply_color_images(
-    shop: str = Form(...),
-    handle: str = Form(...),
-    color_code: str = Form(...)
-):
-    token = get_shop_token(shop)
-    if not token:
-        raise HTTPException(400, "No token")
-
-    with get_conn() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("""
-                SELECT *
-                FROM csv_catalog
-                WHERE shop = %s AND handle = %s AND color_code = %s
-            """, (shop, handle, color_code))
-            rows = cur.fetchall()
-
-    if not rows:
-        raise HTTPException(404, "No CSV rows found for this handle/color_code")
-
-    product_query = """
-    query ($query: String!) {
-      products(first: 1, query: $query) {
-        edges {
-          node {
-            id
-            variants(first: 100) {
-              nodes {
-                id
-                sku
-              }
-            }
-          }
-        }
-      }
-    }
-    """
-
-    shopify_product = requests.post(
-        f"https://{shop}/admin/api/2026-04/graphql.json",
-        headers={
-            "X-Shopify-Access-Token": token,
-            "Content-Type": "application/json"
-        },
-        json={
-            "query": product_query,
-            "variables": {"query": f"handle:{handle}"}
-        }
-    ).json()
-
-    edges = shopify_product.get("data", {}).get("products", {}).get("edges", [])
-    if not edges:
-        raise HTTPException(404, "Product not found on Shopify")
-
-    product = edges[0]["node"]
-    product_id = product["id"]
-    product_numeric = product_id.split("/")[-1]
-
-    sku_to_variant = {
-        v["sku"]: v["id"]
-        for v in product["variants"]["nodes"]
-        if v.get("sku")
-    }
-
-    image_urls = []
-    for key in ["image1", "image2", "image3"]:
-        value = rows[0].get(key)
-        if value and value not in image_urls:
-            image_urls.append(value)
-
-    uploaded_product_image_ids = []
-
-    for image_url in image_urls:
-        image_res = requests.post(
-            f"https://{shop}/admin/api/2026-04/products/{product_numeric}/images.json",
-            headers={
-                "X-Shopify-Access-Token": token,
-                "Content-Type": "application/json"
-            },
-            json={
-                "image": {
-                    "src": image_url
-                }
-            }
-        ).json()
-
-        image = image_res.get("image")
-        if image:
-            uploaded_product_image_ids.append(image["id"])
-
-    if uploaded_product_image_ids:
-        first_image_id = uploaded_product_image_ids[0]
-
-        for row in rows:
-            sku = row.get("sku")
-            variant_id = sku_to_variant.get(sku)
-
-            if not variant_id:
-                continue
-
-            variant_numeric = variant_id.split("/")[-1]
-
-            requests.put(
-                f"https://{shop}/admin/api/2026-04/variants/{variant_numeric}.json",
-                headers={
-                    "X-Shopify-Access-Token": token,
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "variant": {
-                        "id": variant_numeric,
-                        "image_id": first_image_id
-                    }
-                }
-            )
-
-    return {
-        "ok": True,
-        "handle": handle,
-        "color_code": color_code,
-        "uploaded_images": uploaded_product_image_ids,
-        "matched_skus": [r.get("sku") for r in rows]
-    }
+    return {"ok": True, "rows": len(rows)}
