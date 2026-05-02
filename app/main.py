@@ -10,6 +10,7 @@ import json
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 import csv
+import json
 
 templates = Jinja2Templates(directory="app/templates")
 
@@ -947,4 +948,240 @@ async def import_csv(
     return {
         "status": "IMPORT COMPLETATO",
         "results": results
+    }
+
+
+@app.post("/csv/upload")
+async def upload_csv_map(
+    shop: str = Form(...),
+    file: UploadFile = File(...)
+):
+    token = get_shop_token(shop)
+    if not token:
+        raise HTTPException(400, "No token")
+
+    content = (await file.read()).decode("utf-8-sig").splitlines()
+    reader = csv.DictReader(content)
+
+    rows = list(reader)
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM csv_catalog WHERE shop = %s", (shop,))
+
+            for row in rows:
+                cur.execute("""
+                INSERT INTO csv_catalog
+                (shop, handle, brand, title, sku, colore, taglia, color_code, image1, image2, image3, raw)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """, (
+                    shop,
+                    row.get("handle"),
+                    row.get("Brand"),
+                    row.get("Title"),
+                    row.get("SKU"),
+                    row.get("Colore"),
+                    row.get("Taglia"),
+                    row.get("color_code"),
+                    row.get("Image1"),
+                    row.get("Image2"),
+                    row.get("Image3"),
+                    json.dumps(row),
+                ))
+
+    return {
+        "ok": True,
+        "rows": len(rows)
+    }
+
+@app.get("/csv/catalog")
+def csv_catalog(
+    shop: str,
+    q: str = "",
+    brand: str = "",
+    colore: str = "",
+    color_code: str = "",
+):
+    params = [shop]
+    where = ["shop = %s"]
+
+    if q:
+        where.append("""
+        (
+          title ILIKE %s OR
+          brand ILIKE %s OR
+          colore ILIKE %s OR
+          sku ILIKE %s OR
+          handle ILIKE %s OR
+          color_code ILIKE %s
+        )
+        """)
+        like = f"%{q}%"
+        params.extend([like, like, like, like, like, like])
+
+    if brand:
+        where.append("brand ILIKE %s")
+        params.append(f"%{brand}%")
+
+    if colore:
+        where.append("colore ILIKE %s")
+        params.append(f"%{colore}%")
+
+    if color_code:
+        where.append("color_code = %s")
+        params.append(color_code)
+
+    sql = f"""
+    SELECT
+      handle,
+      brand,
+      title,
+      color_code,
+      colore,
+      json_agg(
+        json_build_object(
+          'sku', sku,
+          'taglia', taglia,
+          'image1', image1,
+          'image2', image2,
+          'image3', image3
+        )
+      ) AS variants
+    FROM csv_catalog
+    WHERE {" AND ".join(where)}
+    GROUP BY handle, brand, title, color_code, colore
+    ORDER BY handle DESC
+    LIMIT 100
+    """
+
+    with get_conn() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(sql, params)
+            return cur.fetchall()
+        
+
+@app.post("/csv/apply-color-images")
+def apply_color_images(
+    shop: str = Form(...),
+    handle: str = Form(...),
+    color_code: str = Form(...)
+):
+    token = get_shop_token(shop)
+    if not token:
+        raise HTTPException(400, "No token")
+
+    with get_conn() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT *
+                FROM csv_catalog
+                WHERE shop = %s AND handle = %s AND color_code = %s
+            """, (shop, handle, color_code))
+            rows = cur.fetchall()
+
+    if not rows:
+        raise HTTPException(404, "No CSV rows found for this handle/color_code")
+
+    product_query = """
+    query ($query: String!) {
+      products(first: 1, query: $query) {
+        edges {
+          node {
+            id
+            variants(first: 100) {
+              nodes {
+                id
+                sku
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+
+    shopify_product = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": product_query,
+            "variables": {"query": f"handle:{handle}"}
+        }
+    ).json()
+
+    edges = shopify_product.get("data", {}).get("products", {}).get("edges", [])
+    if not edges:
+        raise HTTPException(404, "Product not found on Shopify")
+
+    product = edges[0]["node"]
+    product_id = product["id"]
+    product_numeric = product_id.split("/")[-1]
+
+    sku_to_variant = {
+        v["sku"]: v["id"]
+        for v in product["variants"]["nodes"]
+        if v.get("sku")
+    }
+
+    image_urls = []
+    for key in ["image1", "image2", "image3"]:
+        value = rows[0].get(key)
+        if value and value not in image_urls:
+            image_urls.append(value)
+
+    uploaded_product_image_ids = []
+
+    for image_url in image_urls:
+        image_res = requests.post(
+            f"https://{shop}/admin/api/2026-04/products/{product_numeric}/images.json",
+            headers={
+                "X-Shopify-Access-Token": token,
+                "Content-Type": "application/json"
+            },
+            json={
+                "image": {
+                    "src": image_url
+                }
+            }
+        ).json()
+
+        image = image_res.get("image")
+        if image:
+            uploaded_product_image_ids.append(image["id"])
+
+    if uploaded_product_image_ids:
+        first_image_id = uploaded_product_image_ids[0]
+
+        for row in rows:
+            sku = row.get("sku")
+            variant_id = sku_to_variant.get(sku)
+
+            if not variant_id:
+                continue
+
+            variant_numeric = variant_id.split("/")[-1]
+
+            requests.put(
+                f"https://{shop}/admin/api/2026-04/variants/{variant_numeric}.json",
+                headers={
+                    "X-Shopify-Access-Token": token,
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "variant": {
+                        "id": variant_numeric,
+                        "image_id": first_image_id
+                    }
+                }
+            )
+
+    return {
+        "ok": True,
+        "handle": handle,
+        "color_code": color_code,
+        "uploaded_images": uploaded_product_image_ids,
+        "matched_skus": [r.get("sku") for r in rows]
     }
