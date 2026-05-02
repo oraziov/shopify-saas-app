@@ -3,420 +3,84 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Shopify Media Manager</title>
-
-  <style>
-    body {
-      margin: 0;
-      background: #f6f6f7;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #202223;
-    }
-
-    .page {
-      max-width: 1300px;
-      margin: 0 auto;
-      padding: 32px;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-    }
-
-    .search {
-      width: 100%;
-      max-width: 420px;
-      padding: 12px;
-      border: 1px solid #c9cccf;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-size: 15px;
-    }
-
-    .card,
-    .product-manager {
-      background: #fff;
-      border: 1px solid #e1e3e5;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    .product-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .product-header h2 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .media-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-
-    .media-card,
-    .upload-card {
-      border: 1px solid #dfe3e8;
-      border-radius: 10px;
-      background: #fafbfb;
-      padding: 8px;
-      min-height: 170px;
-    }
-
-    .media-card img {
-      width: 100%;
-      height: 125px;
-      object-fit: cover;
-      border-radius: 8px;
-      background: #f6f6f7;
-    }
-
-    .upload-card {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #008060;
-      font-weight: 700;
-      cursor: pointer;
-      text-align: center;
-    }
-
-    .danger {
-      width: 100%;
-      margin-top: 8px;
-      color: #d72c0d;
-      border: 1px solid #d72c0d;
-      background: #fff;
-      border-radius: 6px;
-      padding: 7px;
-      cursor: pointer;
-    }
-
-    .variant-section {
-      border-top: 1px solid #e1e3e5;
-      padding-top: 14px;
-      margin-top: 14px;
-    }
-
-    .variant-row {
-      margin-bottom: 14px;
-    }
-
-    .variant-title {
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .variant-images {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .variant-images img {
-      width: 64px;
-      height: 64px;
-      object-fit: cover;
-      border-radius: 8px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      background: #f6f6f7;
-    }
-
-    .variant-images img:hover {
-      border-color: #008060;
-    }
-
-    .empty {
-      padding: 16px;
-      background: #f6f6f7;
-      border-radius: 8px;
-      color: #6d7175;
-    }
-
-    .status {
-      margin: 8px 0 0;
-      color: #008060;
-      font-weight: 600;
-    }
-  </style>
+  <title>Media Manager</title>
 </head>
 
 <body>
-  <div class="page">
-    <h1>Media Manager by OV</h1>
 
-    <input class="search" type="text" placeholder="Cerca prodotto..." oninput="searchProducts(this.value)">
-    <div class="card">
-      <h2>Import CSV</h2>
+  <h1>Media Manager</h1>
 
-      <input type="file" id="csvFile" accept=".csv">
-      <button onclick="uploadCSV()">Importa CSV</button>
+  <input placeholder="Cerca..." oninput="searchProducts(this.value)">
 
-      <p id="csvStatus"></p>
-    </div>
-    <div class="card">
-      <h2>Gestione immagini prodotti</h2>
-      <p>Carica immagini, eliminale o assegna un’immagine principale alla variante cliccando sull’immagine sotto la
-        variante.</p>
-      <p id="status" class="status"></p>
-    </div>
+  <h2>CSV</h2>
+  <input type="file" id="csv">
+  <button onclick="uploadCSV()">Upload CSV</button>
 
-    <div id="products"></div>
-  </div>
+  <hr>
+
+  <div id="products"></div>
 
   <script>
     const shop = "6uxkvv-2d.myshopify.com"
 
-    let searchTimer = null
-    let currentQuery = ""
+    async function loadProducts(q = "") {
+      const res = await fetch(`/products?shop=${shop}&query=${q}`)
+      const data = await res.json()
 
-    function cssSafe(id) {
-      return id.replaceAll("/", "-").replaceAll(":", "-")
-    }
-
-    function escapeHtml(value) {
-      return String(value || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;")
-    }
-
-    function setStatus(message) {
-      document.getElementById("status").innerText = message || ""
-    }
-
-    async function loadProducts(query = currentQuery) {
-      currentQuery = query
-      setStatus("Caricamento prodotti...")
-
-      try {
-        const res = await fetch(`/products?shop=${encodeURIComponent(shop)}&query=${encodeURIComponent(query)}`)
-        const products = await res.json()
-
-        if (!res.ok) {
-          throw new Error(JSON.stringify(products))
-        }
-
-        renderProducts(products)
-      } catch (error) {
-        document.getElementById("products").innerHTML =
-          `<div class="empty">Errore caricamento prodotti: ${escapeHtml(error.message)}</div>`
-      } finally {
-        setStatus("")
-      }
-    }
-
-    function renderProducts(products) {
       const container = document.getElementById("products")
       container.innerHTML = ""
 
-      if (!Array.isArray(products) || products.length === 0) {
-        container.innerHTML = `<div class="empty">Nessun prodotto trovato</div>`
-        return
-      }
+      data.forEach(p => {
+        const div = document.createElement("div")
 
-      products.forEach(product => {
-        const row = document.createElement("div")
-        row.className = "product-manager"
+        div.innerHTML = `
+      <h3>${p.title}</h3>
 
-        const images = Array.isArray(product.images) ? product.images : []
-        const variants = Array.isArray(product.variants) ? product.variants : []
-
-        const imagesHtml = images.length
-          ? images.map(img => `
-          <div class="media-card">
-            <img src="${escapeHtml(img.url)}" alt="">
-            <button class="danger" type="button" onclick="deleteMedia('${product.id}', '${img.id}')">
-              Elimina
-            </button>
-          </div>
-        `).join("")
-          : `<div class="empty">Nessuna immagine</div>`
-
-        const variantsHtml = variants.length
-          ? variants.map(variant => `
-          <div class="variant-row">
-            <div class="variant-title">${escapeHtml(variant.title)}</div>
-            <div class="variant-images">
-              ${images.length
-              ? images.map(img => `
-                      <img
-                        src="${escapeHtml(img.url)}"
-                        title="Assegna alla variante"
-                        onclick="assignImageToVariant('${variant.id}', '${img.id}')"
-                      >
-                    `).join("")
-              : `<span class="empty">Carica prima una foto prodotto</span>`
-            }
-            </div>
-          </div>
-        `).join("")
-          : `<div class="empty">Nessuna variante</div>`
-
-        row.innerHTML = `
-      <div class="product-header">
-        <h2>${escapeHtml(product.title)}</h2>
-        <span>${images.length} foto</span>
-      </div>
-
-      <div class="media-grid" id="media-${cssSafe(product.id)}">
-        ${imagesHtml}
-
-        <label class="upload-card">
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            hidden
-            onchange="uploadToProduct('${product.id}', this.files)"
-          >
-          + Aggiungi foto
-        </label>
-      </div>
-
-      <div class="variant-section">
-        <h3>Associa immagine a variante</h3>
-        ${variantsHtml}
-      </div>
+      ${p.images.map(img => `
+        <img src="${img.url}" width="80"
+        onclick="setVariant('${p.variants[0]?.id}','${img.id}')">
+      `).join("")}
     `
 
-        container.appendChild(row)
+        container.appendChild(div)
       })
     }
 
-    async function uploadToProduct(productId, files) {
-      if (!files || files.length === 0) return
-
-      setStatus("Upload immagini in corso...")
-
-      for (const file of files) {
-        const form = new FormData()
-        form.append("shop", shop)
-        form.append("product_id", productId)
-        form.append("file", file)
-
-        const res = await fetch("/upload-product-image", {
-          method: "POST",
-          body: form
-        })
-
-        const data = await res.json()
-
-        if (!res.ok || data.errors || data.detail) {
-          alert("Errore upload: " + JSON.stringify(data))
-          setStatus("")
-          return
-        }
-      }
-
-      setStatus("Upload completato ✅")
-      await loadProducts(currentQuery)
-    }
-
-    async function deleteMedia(productId, mediaId) {
-      if (!confirm("Eliminare questa foto dal prodotto?")) return
-
-      setStatus("Eliminazione immagine...")
-
-      const res = await fetch("/product/media/delete", {
+    async function setVariant(variantId, imageId) {
+      await fetch("/variant/image/set", {
         method: "POST",
         body: new URLSearchParams({
-          shop: shop,
-          product_id: productId,
-          media_id: mediaId
-        })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok || data.errors || data.detail) {
-        alert("Errore eliminazione: " + JSON.stringify(data))
-      }
-
-      setStatus("")
-      await loadProducts(currentQuery)
-    }
-
-    async function assignImageToVariant(variantId, imageId) {
-      setStatus("Associazione immagine alla variante...")
-
-      const res = await fetch("/variant/image/set", {
-        method: "POST",
-        body: new URLSearchParams({
-          shop: shop,
+          shop,
           variant_id: variantId,
           image_id: imageId
         })
       })
 
-      const data = await res.json()
-
-      if (!res.ok || data.errors || data.detail) {
-        alert("Errore associazione: " + JSON.stringify(data))
-      } else {
-        alert("Immagine assegnata alla variante ✅")
-      }
-
-      setStatus("")
-      await loadProducts(currentQuery)
-    }
-
-    function searchProducts(value) {
-      clearTimeout(searchTimer)
-
-      searchTimer = setTimeout(() => {
-        loadProducts(value)
-      }, 350)
+      alert("OK")
     }
 
     async function uploadCSV() {
-      const fileInput = document.getElementById("csvFile")
-      const file = fileInput.files[0]
-
-      if (!file) {
-        alert("Seleziona un file CSV")
-        return
-      }
+      const file = document.getElementById("csv").files[0]
 
       const form = new FormData()
       form.append("shop", shop)
       form.append("file", file)
 
-      document.getElementById("csvStatus").innerText = "Import in corso..."
-
-      const res = await fetch("/import-csv", {
+      await fetch("/csv/upload", {
         method: "POST",
         body: form
       })
 
-      const data = await res.json()
-
-      console.log(data)
-
-      document.getElementById("csvStatus").innerText = "Import completato ✅"
+      alert("CSV caricato")
     }
 
-    await fetch("/csv/apply-color-images", {
-      method: "POST",
-      body: new URLSearchParams({
-        shop,
-        handle,
-        color_code
-      })
-    })
+    function searchProducts(q) {
+      loadProducts(q)
+    }
+
     loadProducts()
   </script>
+
 </body>
 
 </html>

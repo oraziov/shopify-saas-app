@@ -21,9 +21,9 @@ def startup():
     init_db()
 
 
-@app.get("/")
-def root():
-    return {"status": "ok"}
+@app.get("/", response_class=HTMLResponse)
+def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 # 🔹 INSTALL
