@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>CSV Image Manager</title>
+  <title>CSV Manager</title>
 
   <style>
     body {
@@ -35,30 +35,53 @@
 
 <body>
 
-  <h1>Import CSV + Associazione immagini</h1>
+  <h1>CSV → Associazione immagini</h1>
 
   <input type="file" id="csv">
-  <button onclick="uploadCSV()">Carica CSV</button>
+  <button id="btnCsv">Carica CSV</button>
 
+  <div id="status"></div>
   <div id="results"></div>
 
   <script>
     const shop = "6uxkvv-2d.myshopify.com"
 
+    // 🔥 BOTTONE FIXATO
+    document.getElementById("btnCsv").addEventListener("click", uploadCSV)
+
     async function uploadCSV() {
+      alert("CLICK OK")
+
       const file = document.getElementById("csv").files[0]
+
+      if (!file) {
+        alert("Seleziona file")
+        return
+      }
+
+      document.getElementById("status").innerText = "Caricamento..."
 
       const form = new FormData()
       form.append("shop", shop)
       form.append("file", file)
 
-      const res = await fetch("/csv/process", {
-        method: "POST",
-        body: form
-      })
+      try {
+        const res = await fetch("/csv/process", {
+          method: "POST",
+          body: form
+        })
 
-      const data = await res.json()
-      render(data)
+        alert("STATUS: " + res.status)
+
+        const data = await res.json()
+
+        alert("Righe trovate: " + data.length)
+
+        render(data)
+
+      } catch (e) {
+        alert("Errore: " + e)
+      }
     }
 
     function render(data) {
@@ -72,20 +95,18 @@
         div.innerHTML = `
       <h2>${item.title}</h2>
       <p><b>Variante:</b> ${item.variant_title}</p>
-      <p><b>Color Code:</b> ${item.color_code}</p>
+      <p><b>Color:</b> ${item.color_code}</p>
 
       <h4>Shopify</h4>
       ${item.images_shopify.map(i => `<img src="${i.url}">`).join("")}
 
-      <h4>CSV (clicca per selezionare)</h4>
-      <div class="csv-images">
-        ${item.images_csv.filter(Boolean).map(i => `
-          <img src="${i}" onclick="toggle(this)">
-        `).join("")}
+      <h4>CSV (clicca)</h4>
+      <div class="csv">
+        ${item.images_csv.map(i => `<img src="${i}" onclick="toggle(this)">`).join("")}
       </div>
 
-      <button onclick="send('${item.product_id}','${item.variant_id}', this)">
-        Associa immagini selezionate
+      <button onclick='send(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
+        Associa immagini
       </button>
     `
 
@@ -97,28 +118,28 @@
       el.classList.toggle("selected")
     }
 
-    async function send(productId, variantId, btn) {
-      const images = Array.from(
-        btn.parentElement.querySelectorAll(".csv-images img.selected")
-      ).map(img => img.src)
+    async function send(item) {
+      const selected = Array.from(
+        event.target.parentElement.querySelectorAll(".csv img.selected")
+      ).map(i => i.src)
 
-      if (!images.length) {
+      if (!selected.length) {
         alert("Seleziona immagini")
         return
       }
 
       const form = new URLSearchParams()
       form.append("shop", shop)
-      form.append("product_id", productId)
-      form.append("variant_id", variantId)
-      form.append("images", JSON.stringify(images))
+      form.append("product_id", item.product_id)
+      form.append("variant_id", item.variant_id)
+      form.append("images", JSON.stringify(selected))
 
       await fetch("/images/assign", {
         method: "POST",
         body: form
       })
 
-      alert("Immagini associate ✅")
+      alert("OK immagini associate")
     }
   </script>
 

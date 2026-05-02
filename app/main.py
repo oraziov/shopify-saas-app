@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, Request, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import requests, json, csv, io
@@ -8,9 +8,11 @@ from app.db import init_db, get_shop_token
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
 
+
 @app.on_event("startup")
 def startup():
     init_db()
+
 
 # UI
 @app.get("/", response_class=HTMLResponse)
@@ -18,21 +20,41 @@ def ui(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-# 🔥 PROCESS CSV
+# 🔥 CSV PROCESS (CON DEBUG)
 @app.post("/csv/process")
 async def process_csv(shop: str = Form(...), file: UploadFile = File(...)):
+    print("🔥 CSV RECEIVED")
+
     token = get_shop_token(shop)
 
     contents = await file.read()
-    reader = csv.DictReader(io.StringIO(contents.decode("utf-8")))
+    text = contents.decode("utf-8")
+
+    print("📄 CSV preview:", text[:300])
+
+    reader = csv.DictReader(io.StringIO(text))
 
     results = []
 
     for row in reader:
-        handle = row.get("handle")
-        sku = row.get("SKU")
-        color_code = row.get("color_code")
+        print("➡️ ROW:", row)
 
+        # 🔥 compatibilità colonne
+        handle = row.get("handle") or row.get("Handle")
+        sku = row.get("SKU") or row.get("Variant SKU")
+        color_code = row.get("color_code") or row.get("Color Code")
+
+        images_csv = [
+            row.get("Image1"),
+            row.get("Image2"),
+            row.get("Image3"),
+            row.get("Image Src")
+        ]
+
+        if not handle:
+            continue
+
+        # 🔍 Shopify query
         query = f"""
         {{
           products(first:1, query:"handle:{handle}") {{
@@ -40,6 +62,7 @@ async def process_csv(shop: str = Form(...), file: UploadFile = File(...)):
               node {{
                 id
                 title
+
                 media(first:20) {{
                   nodes {{
                     ... on MediaImage {{
@@ -48,6 +71,7 @@ async def process_csv(shop: str = Form(...), file: UploadFile = File(...)):
                     }}
                   }}
                 }}
+
                 variants(first:50) {{
                   edges {{
                     node {{
@@ -73,11 +97,14 @@ async def process_csv(shop: str = Form(...), file: UploadFile = File(...)):
         ).json()
 
         edges = res.get("data", {}).get("products", {}).get("edges", [])
+
         if not edges:
+            print("❌ Product not found:", handle)
             continue
 
         product = edges[0]["node"]
 
+        # 🔍 trova variante
         variant = None
         for v in product["variants"]["edges"]:
             if v["node"]["sku"] == sku:
@@ -86,24 +113,22 @@ async def process_csv(shop: str = Form(...), file: UploadFile = File(...)):
         results.append({
             "product_id": product["id"],
             "title": product["title"],
-            "variant_id": variant["id"] if variant else None,
+            "variant_id": variant["id"] if variant else "",
             "variant_title": variant["title"] if variant else "",
             "color_code": color_code,
             "images_shopify": [
                 {"id": m["id"], "url": m["image"]["url"]}
                 for m in product["media"]["nodes"]
             ],
-            "images_csv": [
-                row.get("Image1"),
-                row.get("Image2"),
-                row.get("Image3")
-            ]
+            "images_csv": [i for i in images_csv if i]
         })
+
+    print("✅ RESULTS:", len(results))
 
     return results
 
 
-# 🔥 IMPORT IMMAGINI SELEZIONATE
+# 🔥 ASSOCIA IMMAGINI
 @app.post("/images/assign")
 def assign_images(
     shop: str = Form(...),
@@ -129,7 +154,7 @@ def assign_images(
         if res.get("image"):
             uploaded_ids.append(res["image"]["id"])
 
-    # assegna prima immagine alla variante
+    # assegna immagine alla variante
     if uploaded_ids and variant_id:
         requests.put(
             f"https://{shop}/admin/api/2026-04/variants/{variant_id.split('/')[-1]}.json",
