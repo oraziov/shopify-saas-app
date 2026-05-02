@@ -191,3 +191,126 @@ async def upload_csv(shop: str = Form(...), file: UploadFile = File(...)):
                 ))
 
     return {"ok": True, "rows": len(rows)}
+
+
+@app.post("/upload-product-image")
+async def upload_product_image(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    token = get_shop_token(shop)
+
+    content = await file.read()
+
+    filename = file.filename or "image.jpg"
+    mime_type = file.content_type or mimetypes.guess_type(filename)[0] or "image/jpeg"
+
+    # STAGED UPLOAD
+    staged_query = """
+    mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
+      stagedUploadsCreate(input: $input) {
+        stagedTargets {
+          url
+          resourceUrl
+          parameters {
+            name
+            value
+          }
+        }
+      }
+    }
+    """
+
+    staged_res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": staged_query,
+            "variables": {
+                "input": [{
+                    "filename": filename,
+                    "mimeType": mime_type,
+                    "resource": "IMAGE",
+                    "fileSize": str(len(content))
+                }]
+            }
+        }
+    ).json()
+
+    target = staged_res["data"]["stagedUploadsCreate"]["stagedTargets"][0]
+
+    upload_headers = {p["name"]: p["value"] for p in target["parameters"]}
+
+    requests.put(target["url"], data=content, headers=upload_headers)
+
+    # CREA MEDIA
+    create_query = """
+    mutation ($productId: ID!, $media: [CreateMediaInput!]!) {
+      productCreateMedia(productId: $productId, media: $media) {
+        media {
+          id
+          ... on MediaImage {
+            image { url }
+          }
+        }
+      }
+    }
+    """
+
+    res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": create_query,
+            "variables": {
+                "productId": product_id,
+                "media": [{
+                    "originalSource": target["resourceUrl"],
+                    "mediaContentType": "IMAGE"
+                }]
+            }
+        }
+    )
+
+    return res.json()
+
+
+@app.post("/product/media/delete")
+def delete_media(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    media_id: str = Form(...)
+):
+    token = get_shop_token(shop)
+
+    mutation = """
+    mutation ($productId: ID!, $mediaIds: [ID!]!) {
+      productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+        deletedMediaIds
+      }
+    }
+    """
+
+    res = requests.post(
+        f"https://{shop}/admin/api/2026-04/graphql.json",
+        headers={
+            "X-Shopify-Access-Token": token,
+            "Content-Type": "application/json"
+        },
+        json={
+            "query": mutation,
+            "variables": {
+                "productId": product_id,
+                "mediaIds": [media_id]
+            }
+        }
+    )
+
+    return res.json()
