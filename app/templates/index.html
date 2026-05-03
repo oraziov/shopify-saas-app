@@ -3,27 +3,26 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Image Manager — Shopify</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap"
     rel="stylesheet">
   <style>
     :root {
       --bg: #F5F3EE;
       --surface: #FFF;
-      --surface2: #F0EDE6;
+      --s2: #F0EDE6;
       --border: #D8D3C8;
       --text: #1A1714;
       --muted: #7A7468;
       --accent: #C84B2F;
-      --accent-light: #F5E8E4;
+      --al: #F5E8E4;
       --green: #2A6B4A;
-      --green-light: #E4F0EB;
+      --gl: #E4F0EB;
       --blue: #2C4FA3;
-      --blue-light: #E8EDFA;
-      --radius: 6px;
+      --bl: #E8EDFA;
+      --r: 6px;
       --mono: 'DM Mono', monospace;
       --serif: 'Fraunces', Georgia, serif;
     }
@@ -42,54 +41,55 @@
       min-height: 100vh;
     }
 
+    /* HEADER */
     header {
       background: var(--text);
       color: var(--bg);
-      padding: 13px 24px;
+      padding: 12px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 200;
     }
 
     header h1 {
       font-family: var(--serif);
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 300;
       letter-spacing: -.02em;
     }
 
-    header h1 span {
+    header h1 em {
       color: #C84B2F;
       font-style: italic;
     }
 
-    .header-right {
+    .hright {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
 
-    .header-status {
+    .hstat {
       font-size: 11px;
       color: #9A9488;
     }
 
-    .shop-inline {
+    .shopfield {
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .shop-inline label {
+    .shopfield label {
       font-size: 10px;
       color: #9A9488;
       white-space: nowrap;
     }
 
-    .shop-inline input {
+    .shopfield input {
       background: rgba(255, 255, 255, .1);
       border: 1px solid rgba(255, 255, 255, .2);
       border-radius: 4px;
@@ -98,23 +98,25 @@
       font-size: 11px;
       color: var(--bg);
       outline: none;
-      width: 220px;
+      width: 210px;
     }
 
-    .shop-inline input::placeholder {
+    .shopfield input::placeholder {
       color: #6A6460;
     }
 
-    .shop-inline input:focus {
+    .shopfield input:focus {
       border-color: rgba(255, 255, 255, .4);
     }
 
+    /* LAYOUT */
     .layout {
       display: grid;
-      grid-template-columns: 320px 1fr;
-      min-height: calc(100vh - 50px);
+      grid-template-columns: 300px 1fr;
+      min-height: calc(100vh - 48px);
     }
 
+    /* SIDEBAR */
     .sidebar {
       background: var(--surface);
       border-right: 1px solid var(--border);
@@ -123,73 +125,75 @@
       overflow: hidden;
     }
 
-    .csv-zone {
-      padding: 14px 16px;
+    .csvzone {
+      padding: 12px 14px;
       border-bottom: 1px solid var(--border);
     }
 
-    .csv-zone label {
+    .csvzone label {
       display: block;
       font-size: 10px;
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 8px;
+      margin-bottom: 7px;
     }
 
-    .drop-area {
+    .drop {
       border: 1.5px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
+      border-radius: var(--r);
+      padding: 12px;
       text-align: center;
       cursor: pointer;
       transition: all .15s;
       background: var(--bg);
     }
 
-    .drop-area:hover,
-    .drop-area.drag {
+    .drop:hover,
+    .drop.drag {
       border-color: var(--accent);
-      background: var(--accent-light);
+      background: var(--al);
     }
 
-    .drop-area input {
+    .drop input {
       display: none;
     }
 
-    .drop-area p {
+    .drop p {
       color: var(--muted);
       font-size: 11px;
       line-height: 1.5;
     }
 
-    .drop-area strong {
+    .drop strong {
       color: var(--text);
     }
 
+    /* FILTERS */
     .filters {
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
     }
 
-    .search-box {
+    .sbox {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 0 10px;
+      border-radius: var(--r);
+      padding: 0 9px;
     }
 
-    .search-box span {
+    .sbox span {
       color: var(--muted);
+      font-size: 14px;
     }
 
-    .search-box input {
+    .sbox input {
       flex: 1;
       background: transparent;
       border: none;
@@ -200,33 +204,32 @@
       outline: none;
     }
 
-    .filter-row {
+    .frow {
       display: flex;
-      gap: 6px;
+      gap: 5px;
     }
 
-    .filter-select {
+    .fsel {
       flex: 1;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 6px 8px;
+      border-radius: var(--r);
+      padding: 6px 7px;
       font-family: var(--mono);
       font-size: 11px;
       color: var(--text);
       outline: none;
-      cursor: pointer;
       min-width: 0;
     }
 
-    .filter-select:focus {
+    .fsel:focus {
       border-color: var(--accent);
     }
 
-    .filter-pills {
+    .pills {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 3px;
     }
 
     .pill {
@@ -235,7 +238,7 @@
       border-radius: 20px;
       cursor: pointer;
       border: 1px solid var(--border);
-      background: var(--surface2);
+      background: var(--s2);
       color: var(--muted);
       transition: all .12s;
       white-space: nowrap;
@@ -252,10 +255,10 @@
     .pill.active {
       background: var(--accent);
       border-color: var(--accent);
-      color: white;
+      color: #fff;
     }
 
-    .filter-stats {
+    .fstats {
       font-size: 10px;
       color: var(--muted);
       display: flex;
@@ -263,7 +266,7 @@
       align-items: center;
     }
 
-    .clear-btn {
+    .clr {
       font-size: 10px;
       color: var(--accent);
       cursor: pointer;
@@ -273,33 +276,34 @@
       padding: 0;
     }
 
-    .clear-btn:hover {
+    .clr:hover {
       text-decoration: underline;
     }
 
-    .product-list {
+    /* PRODUCT LIST */
+    .plist {
       flex: 1;
       overflow-y: auto;
     }
 
-    .product-item {
-      padding: 10px 16px;
+    .pitem {
+      padding: 9px 14px;
       border-bottom: 1px solid var(--border);
       cursor: pointer;
       transition: background .1s;
     }
 
-    .product-item:hover {
-      background: var(--surface2);
+    .pitem:hover {
+      background: var(--s2);
     }
 
-    .product-item.active {
-      background: var(--accent-light);
+    .pitem.active {
+      background: var(--al);
       border-left: 3px solid var(--accent);
-      padding-left: 13px;
+      padding-left: 11px;
     }
 
-    .pi-top {
+    .ptop {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
@@ -307,12 +311,12 @@
       margin-bottom: 2px;
     }
 
-    .pi-handle {
+    .phandle {
       font-size: 10px;
       color: var(--muted);
     }
 
-    .pi-title {
+    .ptitle {
       font-family: var(--serif);
       font-size: 13px;
       font-weight: 300;
@@ -320,9 +324,9 @@
       flex: 1;
     }
 
-    .pi-meta {
+    .pmeta {
       display: flex;
-      gap: 5px;
+      gap: 4px;
       flex-wrap: wrap;
       margin-top: 4px;
       align-items: center;
@@ -330,7 +334,7 @@
 
     .tag {
       font-size: 10px;
-      padding: 2px 6px;
+      padding: 2px 5px;
       border-radius: 3px;
       border: 1px solid var(--border);
       display: inline-flex;
@@ -338,51 +342,54 @@
       gap: 3px;
     }
 
-    .tag-color {
-      background: var(--surface2);
+    .tc {
+      background: var(--s2);
       color: var(--muted);
     }
 
-    .tag-img {
-      background: var(--green-light);
+    .ti {
+      background: var(--gl);
       color: var(--green);
       border-color: #B8D8C8;
     }
 
-    .tag-missing {
-      background: var(--accent-light);
-      color: var(--accent);
-      border-color: #E8B8A8;
-    }
-
-    .tag-brand {
+    .tb {
       background: var(--text);
       color: var(--bg);
       border-color: var(--text);
       font-size: 9px;
     }
 
-    .tag-code {
-      background: var(--blue-light);
+    .tk {
+      background: var(--bl);
       color: var(--blue);
       border-color: #C0CCEE;
       font-size: 9px;
     }
 
-    .no-results {
-      padding: 24px 16px;
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, .1);
+      flex-shrink: 0;
+    }
+
+    .nores {
+      padding: 20px 14px;
       text-align: center;
       color: var(--muted);
       font-size: 12px;
       line-height: 1.6;
     }
 
+    /* MAIN */
     .main {
       overflow-y: auto;
-      padding: 24px 28px;
+      padding: 22px 26px;
     }
 
-    .empty-state {
+    .empty {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -392,50 +399,50 @@
       gap: 12px;
     }
 
-    .empty-state .big {
+    .empty .big {
       font-size: 48px;
-      opacity: .25;
+      opacity: .2;
     }
 
-    .empty-state h2 {
+    .empty h2 {
       font-family: var(--serif);
       font-size: 22px;
       font-weight: 300;
       color: var(--muted);
     }
 
-    .empty-state p {
+    .empty p {
       color: var(--muted);
       font-size: 12px;
       max-width: 280px;
       line-height: 1.6;
     }
 
-    .product-detail {
+    /* DETAIL */
+    .detail {
       display: none;
     }
 
-    .product-detail.visible {
+    .detail.on {
       display: block;
     }
 
-    .detail-header {
-      margin-bottom: 20px;
+    .dhead {
+      margin-bottom: 18px;
     }
 
-    .detail-header h2 {
+    .dhead h2 {
       font-family: var(--serif);
-      font-size: 24px;
+      font-size: 23px;
       font-weight: 300;
       letter-spacing: -.02em;
-      line-height: 1.2;
-      margin-bottom: 8px;
+      margin-bottom: 7px;
     }
 
-    .detail-badges {
+    .dbadges {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
       align-items: center;
     }
 
@@ -450,30 +457,30 @@
       gap: 5px;
     }
 
-    .badge-handle {
-      background: var(--surface2);
+    .bh {
+      background: var(--s2);
       color: var(--muted);
       border-color: var(--border);
     }
 
-    .badge-brand {
+    .bb {
       background: var(--text);
       color: var(--bg);
     }
 
-    .badge-color {
-      background: var(--surface2);
+    .bc {
+      background: var(--s2);
       color: var(--text);
       border-color: var(--border);
     }
 
-    .badge-code {
-      background: var(--blue-light);
+    .bk {
+      background: var(--bl);
       color: var(--blue);
       border-color: #C0CCEE;
     }
 
-    .color-swatch {
+    .swatch {
       width: 16px;
       height: 16px;
       border-radius: 3px;
@@ -481,53 +488,88 @@
       flex-shrink: 0;
     }
 
-    .color-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      border: 1px solid rgba(0, 0, 0, .1);
-      flex-shrink: 0;
-      display: inline-block;
+    /* SECTION */
+    .sec {
+      margin-bottom: 26px;
     }
 
-    .section {
-      margin-bottom: 28px;
-    }
-
-    .section-title {
+    .sectitle {
       font-size: 10px;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 12px;
-      padding-bottom: 7px;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
-    .section-count {
+    .secn {
       font-size: 11px;
       color: var(--muted);
     }
 
-    .image-grid {
+    /* TAB BAR (variant selector) */
+    .tabbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+
+    .vtab {
+      font-size: 11px;
+      padding: 5px 11px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--s2);
+      color: var(--muted);
+      transition: all .12s;
+    }
+
+    .vtab:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .vtab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* GALLERY INFO BOX */
+    .ginfo {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      background: var(--bl);
+      border-radius: var(--r);
+      border: 1px solid #C0CCEE;
+      color: var(--blue);
+    }
+
+    /* IMAGE GRID */
+    .igrid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
       gap: 8px;
     }
 
-    .img-card {
+    .icard {
       position: relative;
-      border-radius: var(--radius);
+      border-radius: var(--r);
       overflow: hidden;
       border: 1px solid var(--border);
-      background: var(--surface2);
+      background: var(--s2);
       aspect-ratio: 3/4;
     }
 
-    .img-card img {
+    .icard img {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -535,11 +577,11 @@
       transition: transform .2s;
     }
 
-    .img-card:hover img {
+    .icard:hover img {
       transform: scale(1.04);
     }
 
-    .overlay {
+    .icard .ov {
       position: absolute;
       inset: 0;
       background: rgba(26, 23, 20, .55);
@@ -547,103 +589,150 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 7px;
+      gap: 6px;
       opacity: 0;
       transition: opacity .15s;
     }
 
-    .img-card:hover .overlay {
+    .icard:hover .ov {
       opacity: 1;
     }
 
-    .src-badge {
+    .icard.ingallery {
+      outline: 2px solid var(--green);
+      outline-offset: -2px;
+    }
+
+    .icard.ingallery::after {
+      content: '✓';
       position: absolute;
-      bottom: 6px;
-      left: 6px;
+      top: 5px;
+      right: 5px;
+      background: var(--green);
+      color: #fff;
+      font-size: 10px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      display: grid;
+      place-items: center;
+    }
+
+    .sbadge {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
       font-size: 9px;
-      padding: 2px 5px;
+      padding: 2px 4px;
       border-radius: 3px;
     }
 
-    .src-shopify {
+    .ss {
       background: #96BF48;
       color: #2A4000;
     }
 
-    .src-csv {
-      background: #5C6AC4;
-      color: white;
+    .sg {
+      background: var(--green);
+      color: #fff;
     }
 
-    .overlay-btn {
+    .obtn {
       background: rgba(255, 255, 255, .15);
       border: 1px solid rgba(255, 255, 255, .3);
       border-radius: 4px;
-      color: white;
-      padding: 5px 10px;
+      color: #fff;
+      padding: 4px 9px;
       font-family: var(--mono);
       font-size: 10px;
       cursor: pointer;
-      width: 108px;
+      width: 106px;
       text-align: center;
       transition: background .1s;
     }
 
-    .overlay-btn:hover {
+    .obtn:hover {
       background: rgba(255, 255, 255, .28);
     }
 
-    .overlay-btn.del:hover {
+    .obtn.del:hover {
       background: rgba(200, 75, 47, .7);
     }
 
-    .upload-zone-big {
+    .obtn.add {
+      background: rgba(42, 107, 74, .6);
+    }
+
+    .obtn.add:hover {
+      background: rgba(42, 107, 74, .85);
+    }
+
+    .obtn.rem {
+      background: rgba(200, 75, 47, .4);
+    }
+
+    .obtn.rem:hover {
+      background: rgba(200, 75, 47, .7);
+    }
+
+    /* UPLOAD */
+    .upzone {
       border: 1.5px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
+      border-radius: var(--r);
+      padding: 16px;
       text-align: center;
       background: var(--bg);
       transition: all .15s;
       cursor: pointer;
-      margin-bottom: 10px;
+      margin-bottom: 9px;
     }
 
-    .upload-zone-big:hover {
+    .upzone:hover {
       border-color: var(--accent);
-      background: var(--accent-light);
+      background: var(--al);
     }
 
-    .upload-zone-big input {
+    .upzone input {
       display: none;
     }
 
-    .url-row {
+    .urlrow {
       display: flex;
-      gap: 8px;
+      gap: 7px;
     }
 
-    .url-row input {
+    .urlrow input {
       flex: 1;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 10px;
+      border-radius: var(--r);
+      padding: 7px 9px;
       font-family: var(--mono);
       font-size: 12px;
       color: var(--text);
       outline: none;
     }
 
-    .url-row input:focus {
+    .urlrow input:focus {
       border-color: var(--accent);
+    }
+
+    /* ACTIONS */
+    .syncbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 7px 14px;
-      border-radius: var(--radius);
+      padding: 7px 13px;
+      border-radius: var(--r);
       font-family: var(--mono);
       font-size: 12px;
       cursor: pointer;
@@ -652,43 +741,65 @@
       white-space: nowrap;
     }
 
-    .btn-primary {
+    .bprim {
       background: var(--text);
       color: var(--bg);
       border-color: var(--text);
     }
 
-    .btn-primary:hover {
+    .bprim:hover {
       background: #3A3530;
     }
 
-    .variants-grid {
+    .bgrn {
+      background: var(--green);
+      color: #fff;
+      border-color: var(--green);
+    }
+
+    .bgrn:hover {
+      background: #1E5038;
+    }
+
+    .bout {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .bout:hover {
+      background: var(--s2);
+    }
+
+    /* VARIANT CHIPS */
+    .vchips {
       display: flex;
       flex-wrap: wrap;
       gap: 5px;
     }
 
-    .variant-chip {
+    .vchip {
       font-size: 11px;
-      padding: 4px 9px;
+      padding: 4px 8px;
       border-radius: 4px;
-      background: var(--surface2);
+      background: var(--s2);
       border: 1px solid var(--border);
       color: var(--muted);
     }
 
-    .variant-chip strong {
+    .vchip strong {
       color: var(--text);
     }
 
+    /* TOAST */
     #toast {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
+      bottom: 18px;
+      right: 18px;
       background: var(--text);
       color: var(--bg);
-      padding: 10px 16px;
-      border-radius: var(--radius);
+      padding: 9px 14px;
+      border-radius: var(--r);
       font-size: 12px;
       transform: translateY(60px);
       opacity: 0;
@@ -702,26 +813,26 @@
       opacity: 1;
     }
 
-    #toast.success {
+    #toast.ok {
       background: var(--green);
     }
 
-    #toast.error {
+    #toast.err {
       background: var(--accent);
     }
 
-    .spinner {
+    .spin {
       display: inline-block;
       width: 12px;
       height: 12px;
       border: 2px solid currentColor;
       border-top-color: transparent;
       border-radius: 50%;
-      animation: spin .7s linear infinite;
+      animation: sp .7s linear infinite;
       vertical-align: middle;
     }
 
-    @keyframes spin {
+    @keyframes sp {
       to {
         transform: rotate(360deg);
       }
@@ -732,96 +843,114 @@
 <body>
 
   <header>
-    <h1>Image <span>Manager</span></h1>
-    <div class="header-right">
-      <div class="shop-inline">
+    <h1>Image <em>Manager</em></h1>
+    <div class="hright">
+      <div class="shopfield">
         <label>Shop</label>
-        <input type="text" id="shopInput" placeholder="mionegozio.myshopify.com">
+        <input id="shopInput" type="text" placeholder="negozio.myshopify.com">
       </div>
-      <span class="header-status" id="headerStatus">Nessun CSV</span>
+      <span class="hstat" id="hstat">Nessun CSV</span>
     </div>
   </header>
 
   <div class="layout">
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-
-      <div class="csv-zone">
+      <div class="csvzone">
         <label>CSV Prodotti</label>
-        <div class="drop-area" id="dropArea" onclick="document.getElementById('csvFile').click()">
-          <input type="file" id="csvFile" accept=".csv">
-          <p><strong>Clicca o trascina</strong> il CSV<br>handle · SKU · Colore · color_code · Image1/2/3</p>
+        <div class="drop" id="drop" onclick="document.getElementById('csvfile').click()">
+          <input type="file" id="csvfile" accept=".csv">
+          <p><strong>Clicca o trascina</strong> il CSV<br>handle · SKU · Colore · color_code</p>
         </div>
       </div>
 
       <div class="filters">
-        <div class="search-box">
+        <div class="sbox">
           <span>⌕</span>
-          <input type="text" id="searchInput" placeholder="Titolo, handle, SKU, colore, codice…">
+          <input id="search" type="text" placeholder="Titolo, handle, SKU, colore, codice…">
         </div>
-        <div class="filter-row">
-          <select class="filter-select" id="filterBrand">
+        <div class="frow">
+          <select class="fsel" id="fbrand">
             <option value="">Tutti i brand</option>
           </select>
-          <select class="filter-select" id="filterStatus">
-            <option value="">Tutti gli stati</option>
-            <option value="with">Con immagini CSV</option>
-            <option value="without">Senza immagini</option>
+          <select class="fsel" id="fstatus">
+            <option value="">Tutti</option>
+            <option value="ok">Con immagini Shopify</option>
+            <option value="no">Senza immagini</option>
           </select>
         </div>
-        <div class="filter-pills" id="colorPills"></div>
-        <div class="filter-stats">
-          <span id="filterStats">0 prodotti</span>
-          <button class="clear-btn" onclick="clearFilters()">✕ Reset</button>
+        <div class="pills" id="colorpills"></div>
+        <div class="fstats">
+          <span id="fcount">0 prodotti</span>
+          <button class="clr" onclick="clearF()">✕ Reset</button>
         </div>
       </div>
 
-      <div class="product-list" id="productList">
-        <div class="no-results">Carica un CSV per iniziare</div>
+      <div class="plist" id="plist">
+        <div class="nores">Carica un CSV per iniziare</div>
       </div>
     </aside>
 
+    <!-- MAIN -->
     <main class="main">
-      <div class="empty-state" id="emptyState">
+      <div class="empty" id="empty">
         <div class="big">🖼</div>
         <h2>Seleziona un prodotto</h2>
-        <p>Carica il CSV, filtra per brand o colore, e gestisci le immagini Shopify</p>
+        <p>Carica il CSV, filtra per brand o colore e gestisci la gallery di ogni variante</p>
       </div>
 
-      <div class="product-detail" id="productDetail">
+      <div class="detail" id="detail">
 
-        <div class="detail-header">
-          <h2 id="detailTitle">—</h2>
-          <div class="detail-badges" id="detailBadges"></div>
+        <!-- Header prodotto -->
+        <div class="dhead">
+          <h2 id="dtitle">—</h2>
+          <div class="dbadges" id="dbadges"></div>
         </div>
 
-        <div class="section">
-          <div class="section-title">Immagini su Shopify <span class="section-count" id="shopifyCount"></span></div>
-          <div class="image-grid" id="shopifyImages">
-            <p style="color:var(--muted);font-size:12px;">Seleziona un prodotto…</p>
+        <!-- Immagini prodotto su Shopify -->
+        <div class="sec">
+          <div class="sectitle">
+            Immagini prodotto su Shopify
+            <span class="secn" id="mediacount"></span>
           </div>
+
+          <!-- Selezione variante per gallery -->
+          <div class="ginfo">
+            Seleziona una variante per vedere e modificare la sua <strong>gallery</strong> (metafield custom.gallery).
+            Le immagini con ✓ sono già nella gallery della variante selezionata.
+          </div>
+
+          <div style="margin-bottom:10px;">
+            <span style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);">Variante
+              attiva →</span>
+            <div class="tabbar" id="vtabs" style="margin-top:6px;"></div>
+          </div>
+
+          <div class="syncbar">
+            <button class="btn bgrn" onclick="syncAllVariants()">⟳ Applica gallery a tutte le varianti colore</button>
+          </div>
+
+          <div class="igrid" id="mediaGrid"></div>
         </div>
 
-        <div class="section">
-          <div class="section-title">Immagini dal CSV <span class="section-count" id="csvCount"></span></div>
-          <div class="image-grid" id="csvImages"></div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Aggiungi immagini</div>
-          <div class="upload-zone-big" onclick="document.getElementById('fileInput').click()">
-            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple>
+        <!-- Upload -->
+        <div class="sec">
+          <div class="sectitle">Aggiungi immagini al prodotto</div>
+          <div class="upzone" onclick="document.getElementById('fileinput').click()">
+            <input type="file" id="fileinput" accept="image/jpeg,image/png,image/webp" multiple>
             <p style="font-size:13px;margin-bottom:4px;">⬆ Carica file dal computer</p>
             <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP — selezione multipla</p>
           </div>
-          <div class="url-row">
-            <input type="text" id="urlInput" placeholder="Oppure incolla un URL immagine… https://…">
-            <button class="btn btn-primary" onclick="uploadManualUrl()">⬆ Carica</button>
+          <div class="urlrow">
+            <input id="urlinput" type="text" placeholder="Oppure incolla URL immagine… https://…">
+            <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-title">Varianti</div>
-          <div class="variants-grid" id="variantsGrid"></div>
+        <!-- Varianti -->
+        <div class="sec">
+          <div class="sectitle">Tutte le varianti</div>
+          <div class="vchips" id="vchips"></div>
         </div>
 
       </div>
@@ -831,17 +960,20 @@
   <div id="toast"></div>
 
   <script>
-    // STATE
-    let allProducts = [], filtered = [], current = null, shopifyData = null;
+    // ── STATE ─────────────────────────────────────────────────────────────────────
+    let all = [], filt = [], cur = null, shopData = null, activeVariantId = null;
     let fSearch = '', fBrand = '', fColor = '', fStatus = '';
 
-    // UTILS
     const $ = id => document.getElementById(id);
     const shop = () => $('shopInput').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-    function toast(msg, type = '') { const el = $('toast'); el.textContent = msg; el.className = 'show ' + type; clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3000); }
+
+    function toast(msg, type = '') {
+      const el = $('toast'); el.textContent = msg; el.className = 'show ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
+      clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3200);
+    }
     function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-    const COLOR_MAP = {
+    const CMAP = {
       NERO: '#1A1A1A', NERO1: '#2A2A2A', BIANCO: '#F0EEE8', AVORIO: '#F5EFD8',
       BURRO: '#F5ECC0', BEIGE: '#D4C5A9', NUDO: '#E8C9A0', TORTORA: '#C4B49A',
       FANGO: '#9E8B72', CAMMELLO: '#C19A6B', TABACCO: '#8B6340', MARRONE: '#6B3D26',
@@ -850,235 +982,273 @@
       CELESTE: '#8AC4E0', LILLA: '#9A7AC8', ROSA: '#E8A0B0', BORDEAUX: '#7A1A2A',
       GRIGIO: '#909090', GIALLO: '#E8D040',
     };
+    const cdot = (c, s = 8) => `<span class="dot" style="width:${s}px;height:${s}px;background:${CMAP[c] || '#CCC'};"></span>`;
 
-    function colorDot(colore, size = 8) {
-      const c = COLOR_MAP[colore] || '#CCC';
-      return `<span class="color-dot" style="width:${size}px;height:${size}px;background:${c};"></span>`;
-    }
-
-    // CSV UPLOAD
-    $('csvFile').addEventListener('change', e => e.target.files[0] && loadCSV(e.target.files[0]));
-    const dropArea = $('dropArea');
-    dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('drag'); });
-    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag'));
-    dropArea.addEventListener('drop', e => { e.preventDefault(); dropArea.classList.remove('drag'); e.dataTransfer.files[0] && loadCSV(e.dataTransfer.files[0]); });
+    // ── CSV ───────────────────────────────────────────────────────────────────────
+    $('csvfile').addEventListener('change', e => e.target.files[0] && loadCSV(e.target.files[0]));
+    const dropEl = $('drop');
+    dropEl.addEventListener('dragover', e => { e.preventDefault(); dropEl.classList.add('drag'); });
+    dropEl.addEventListener('dragleave', () => dropEl.classList.remove('drag'));
+    dropEl.addEventListener('drop', e => { e.preventDefault(); dropEl.classList.remove('drag'); e.dataTransfer.files[0] && loadCSV(e.dataTransfer.files[0]); });
 
     async function loadCSV(file) {
-      $('headerStatus').textContent = 'Parsing…';
+      $('hstat').textContent = 'Parsing…';
       const form = new FormData(); form.append('file', file);
       try {
         const res = await fetch('/api/csv/parse', { method: 'POST', body: form });
         if (!res.ok) throw new Error(await res.text());
-        allProducts = await res.json();
-        $('headerStatus').textContent = `${allProducts.length} prodotti · ${file.name}`;
-        buildFilters(); applyFilters();
-        toast(`CSV caricato: ${allProducts.length} prodotti`, 'success');
-      } catch (err) { toast('Errore CSV: ' + err.message, 'error'); $('headerStatus').textContent = 'Errore'; }
+        all = await res.json();
+        $('hstat').textContent = `${all.length} prodotti · ${file.name}`;
+        buildFilters(); applyF();
+        toast(`CSV caricato: ${all.length} prodotti`, 'ok');
+      } catch (e) { toast('Errore CSV: ' + e.message, 'err'); $('hstat').textContent = 'Errore'; }
     }
 
-    // BUILD FILTERS
+    // ── FILTERS ───────────────────────────────────────────────────────────────────
     function buildFilters() {
-      const brands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))].sort();
-      $('filterBrand').innerHTML = '<option value="">Tutti i brand</option>' + brands.map(b => `<option value="${esc(b)}">${b}</option>`).join('');
-
-      const colors = [...new Set(allProducts.map(p => p.colore).filter(Boolean))].sort();
-      $('colorPills').innerHTML = colors.map(c =>
-        `<span class="pill" data-color="${esc(c)}" onclick="toggleColor('${esc(c)}')">${colorDot(c, 8)} ${c}</span>`
-      ).join('');
+      const brands = [...new Set(all.map(p => p.brand).filter(Boolean))].sort();
+      $('fbrand').innerHTML = '<option value="">Tutti i brand</option>' + brands.map(b => `<option value="${esc(b)}">${b}</option>`).join('');
+      const colors = [...new Set(all.map(p => p.colore).filter(Boolean))].sort();
+      $('colorpills').innerHTML = colors.map(c => `<span class="pill" data-c="${esc(c)}" onclick="toggleC('${esc(c)}')">${cdot(c)} ${c}</span>`).join('');
     }
 
-    function toggleColor(c) {
-      fColor = fColor === c ? '' : c;
-      document.querySelectorAll('#colorPills .pill').forEach(p => p.classList.toggle('active', p.dataset.color === fColor));
-      applyFilters();
-    }
+    function toggleC(c) { fColor = fColor === c ? '' : c; document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.c === fColor)); applyF(); }
+    $('fbrand').addEventListener('change', e => { fBrand = e.target.value; applyF(); });
+    $('fstatus').addEventListener('change', e => { fStatus = e.target.value; applyF(); });
+    $('search').addEventListener('input', e => { fSearch = e.target.value.toLowerCase(); applyF(); });
+    function clearF() { fSearch = ''; fBrand = ''; fColor = ''; fStatus = ''; $('search').value = ''; $('fbrand').value = ''; $('fstatus').value = ''; document.querySelectorAll('.pill').forEach(p => p.classList.remove('active')); applyF(); }
 
-    $('filterBrand').addEventListener('change', e => { fBrand = e.target.value; applyFilters(); });
-    $('filterStatus').addEventListener('change', e => { fStatus = e.target.value; applyFilters(); });
-    $('searchInput').addEventListener('input', e => { fSearch = e.target.value.toLowerCase(); applyFilters(); });
-
-    function clearFilters() {
-      fSearch = ''; fBrand = ''; fColor = ''; fStatus = '';
-      $('searchInput').value = ''; $('filterBrand').value = ''; $('filterStatus').value = '';
-      document.querySelectorAll('#colorPills .pill').forEach(p => p.classList.remove('active'));
-      applyFilters();
-    }
-
-    // APPLY FILTERS
-    function applyFilters() {
-      filtered = allProducts.filter(p => {
-        if (fSearch) {
-          const skus = p.variants.map(v => v.sku.toLowerCase()).join(' ');
-          const h = [p.title, String(p.handle), p.brand, p.colore, String(p.color_code), skus].join(' ').toLowerCase();
-          if (!h.includes(fSearch)) return false;
-        }
+    function applyF() {
+      filt = all.filter(p => {
+        if (fSearch) { const t = [p.title, String(p.handle), p.brand, p.colore, String(p.color_code), p.variants.map(v => v.sku).join(' ')].join(' ').toLowerCase(); if (!t.includes(fSearch)) return false; }
         if (fBrand && p.brand !== fBrand) return false;
         if (fColor && p.colore !== fColor) return false;
-        if (fStatus === 'with' && !p.images_csv.length) return false;
-        if (fStatus === 'without' && p.images_csv.length) return false;
         return true;
       });
-      $('filterStats').textContent = `${filtered.length} / ${allProducts.length} prodotti`;
+      $('fcount').textContent = `${filt.length} / ${all.length} prodotti`;
       renderList();
     }
 
-    // RENDER LIST
+    // ── LIST ──────────────────────────────────────────────────────────────────────
     function renderList() {
-      const list = $('productList');
-      if (!filtered.length) { list.innerHTML = '<div class="no-results">Nessun prodotto corrisponde ai filtri</div>'; return; }
-      list.innerHTML = filtered.map(p => {
-        const gi = allProducts.indexOf(p);
-        const isActive = current && allProducts.indexOf(current) === gi;
-        const imgTag = p.images_csv.length
-          ? `<span class="tag tag-img">🖼 ${p.images_csv.length}</span>`
-          : `<span class="tag tag-missing">⚠ 0</span>`;
-        return `<div class="product-item${isActive ? ' active' : ''}" data-idx="${gi}" onclick="selectProduct(${gi})">
-      <div class="pi-top"><span class="pi-handle">${p.handle}</span><span class="tag tag-brand">${esc(p.brand)}</span></div>
-      <div class="pi-title">${esc(p.title) || '(senza titolo)'}</div>
-      <div class="pi-meta">
-        <span class="tag tag-color">${colorDot(p.colore)} ${esc(p.colore)}</span>
-        <span class="tag tag-code">#${esc(String(p.color_code))}</span>
-        ${imgTag}
+      const list = $('plist');
+      if (!filt.length) { list.innerHTML = '<div class="nores">Nessun prodotto trovato</div>'; return; }
+      list.innerHTML = filt.map(p => {
+        const gi = all.indexOf(p);
+        const active = cur && all.indexOf(cur) === gi;
+        return `<div class="pitem${active ? ' active' : ''}" data-i="${gi}" onclick="selProd(${gi})">
+      <div class="ptop"><span class="phandle">${p.handle}</span><span class="tag tb">${esc(p.brand)}</span></div>
+      <div class="ptitle">${esc(p.title) || '(senza titolo)'}</div>
+      <div class="pmeta">
+        <span class="tag tc">${cdot(p.colore)} ${esc(p.colore)}</span>
+        <span class="tag tk">#${esc(String(p.color_code))}</span>
         <span class="tag" style="font-size:9px;">${p.variants.length} taglie</span>
       </div>
     </div>`;
       }).join('');
     }
 
-    // SELECT PRODUCT
-    async function selectProduct(idx) {
-      current = allProducts[idx]; shopifyData = null;
-      document.querySelectorAll('.product-item').forEach(el => el.classList.remove('active'));
-      document.querySelector(`.product-item[data-idx="${idx}"]`)?.classList.add('active');
-      $('emptyState').style.display = 'none';
-      $('productDetail').classList.add('visible');
+    // ── SELECT PRODUCT ────────────────────────────────────────────────────────────
+    async function selProd(idx) {
+      cur = all[idx]; shopData = null; activeVariantId = null;
+      document.querySelectorAll('.pitem').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.pitem[data-i="${idx}"]`)?.classList.add('active');
+      $('empty').style.display = 'none';
+      $('detail').classList.add('on');
 
-      $('detailTitle').textContent = current.title || current.handle;
-      const sw = COLOR_MAP[current.colore] || '#CCC';
-      $('detailBadges').innerHTML = `
-    <span class="badge badge-handle">${esc(String(current.handle))}</span>
-    <span class="badge badge-brand">${esc(current.brand)}</span>
-    <span class="badge badge-color"><span class="color-swatch" style="background:${sw}"></span>${esc(current.colore)}</span>
-    <span class="badge badge-code">codice #${esc(String(current.color_code))}</span>`;
+      $('dtitle').textContent = cur.title || cur.handle;
+      const sw = CMAP[cur.colore] || '#CCC';
+      $('dbadges').innerHTML = `
+    <span class="badge bh">${esc(String(cur.handle))}</span>
+    <span class="badge bb">${esc(cur.brand)}</span>
+    <span class="badge bc"><span class="swatch" style="background:${sw}"></span>${esc(cur.colore)}</span>
+    <span class="badge bk">codice #${esc(String(cur.color_code))}</span>`;
 
-      $('variantsGrid').innerHTML = current.variants.map(v =>
-        `<span class="variant-chip"><strong>${esc(v.taglia)}</strong> — ${esc(v.sku)}</span>`).join('');
+      $('vchips').innerHTML = cur.variants.map(v => `<span class="vchip"><strong>${esc(v.taglia)}</strong> — ${esc(v.sku)}</span>`).join('');
 
-      renderCSVImages();
-      await loadShopifyImages();
+      await loadShopify();
     }
 
-    // CSV IMAGES
-    function renderCSVImages() {
-      $('csvCount').textContent = `${current.images_csv.length} immagini`;
-      const grid = $('csvImages');
-      if (!current.images_csv.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessuna immagine nel CSV per questo prodotto</p>'; return; }
-      grid.innerHTML = current.images_csv.map((url, i) => `
-    <div class="img-card" id="cimg-${i}">
-      <img src="${esc(url)}" loading="lazy" onerror="this.style.opacity=.3">
-      <span class="src-badge src-csv">CSV</span>
-      <div class="overlay">
-        <button class="overlay-btn" onclick="uploadFromUrl('${esc(url)}',${i})">⬆ Carica su Shopify</button>
-        <a class="overlay-btn" href="${esc(url)}" target="_blank">↗ Apri</a>
-      </div>
-    </div>`).join('');
-    }
+    // ── LOAD SHOPIFY ──────────────────────────────────────────────────────────────
+    async function loadShopify() {
+      $('mediacount').textContent = '';
+      $('mediaGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Carico da Shopify…</p>`;
+      $('vtabs').innerHTML = '';
 
-    // SHOPIFY IMAGES
-    async function loadShopifyImages() {
-      const grid = $('shopifyImages');
-      $('shopifyCount').textContent = '';
-      grid.innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spinner"></span> Carico da Shopify…</p>`;
       const s = shop();
-      if (!s) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Inserisci il dominio shop nell\'header</p>'; return; }
+      if (!s) { $('mediaGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;">Inserisci il dominio shop nell\'header</p>'; return; }
+
       try {
-        const firstSku = (current.variants[0] || {}).sku || '';
-        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(current.handle)}&sku=${encodeURIComponent(firstSku)}`);
+        const firstSku = (cur.variants[0] || {}).sku || '';
+        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(cur.handle)}&sku=${encodeURIComponent(firstSku)}`);
         const data = await res.json();
-        if (!res.ok) { grid.innerHTML = `<p style="color:var(--accent);font-size:12px;">⚠ ${esc(data.error)}</p>`; return; }
-        shopifyData = data;
-        $('shopifyCount').textContent = `${data.media.length} immagini`;
-        renderShopifyImages(data.media);
-      } catch (err) { grid.innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(err.message)}</p>`; }
+        if (!res.ok) { $('mediaGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">⚠ ${esc(data.error)}</p>`; return; }
+        shopData = data;
+        $('mediacount').textContent = `${data.media.length} immagini`;
+
+        // Filter variants to current color_code by matching SKU from CSV
+        const csvSkus = new Set(cur.variants.map(v => v.sku));
+        const colorVariants = data.variants.filter(v => csvSkus.has(v.sku));
+        const displayVariants = colorVariants.length ? colorVariants : data.variants;
+
+        // Build variant tabs
+        $('vtabs').innerHTML = displayVariants.map((v, i) => {
+          const opt = v.options.find(o => o.name.toLowerCase() === 'taglia' || o.name.toLowerCase() === 'size') || v.options[1] || v.options[0] || {};
+          return `<span class="vtab${i === 0 ? ' active' : ''}" data-vid="${esc(v.id)}" onclick="selectVariant('${esc(v.id)}',this)">${esc(opt.value || v.title)}</span>`;
+        }).join('');
+
+        if (displayVariants.length) {
+          activeVariantId = displayVariants[0].id;
+          renderMedia(data.media, displayVariants[0].gallery || []);
+        } else {
+          renderMedia(data.media, []);
+        }
+      } catch (e) { $('mediaGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`; }
     }
 
-    function renderShopifyImages(media) {
-      const grid = $('shopifyImages');
+    function selectVariant(vid, el) {
+      activeVariantId = vid;
+      document.querySelectorAll('.vtab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      const v = shopData.variants.find(x => x.id === vid);
+      renderMedia(shopData.media, v ? v.gallery : []);
+    }
+
+    function renderMedia(media, gallery) {
+      const galleryIds = new Set(gallery.map(g => g.id));
+      const grid = $('mediaGrid');
       if (!media.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessuna immagine su Shopify per questo prodotto</p>'; return; }
-      grid.innerHTML = media.map(m => `
-    <div class="img-card" id="simg-${m.id.replace(/\W/g, '_')}">
+      grid.innerHTML = media.map(m => {
+        const inG = galleryIds.has(m.id);
+        return `<div class="icard${inG ? ' ingallery' : ''}" id="mc-${m.id.replace(/\W/g, '_')}">
       <img src="${esc(m.url)}" loading="lazy">
-      <span class="src-badge src-shopify">Shopify</span>
-      <div class="overlay">
-        <button class="overlay-btn del" onclick="deleteMedia('${esc(m.id)}')">✕ Elimina</button>
-        <a class="overlay-btn" href="${esc(m.url)}" target="_blank">↗ Apri</a>
+      <span class="sbadge ${inG ? 'sg' : 'ss'}">${inG ? 'Gallery' : 'Shopify'}</span>
+      <div class="ov">
+        ${inG
+            ? `<button class="obtn rem" onclick="removeFromGallery('${esc(m.id)}')">✕ Rimuovi gallery</button>`
+            : `<button class="obtn add" onclick="addToGallery('${esc(m.id)}')">+ Aggiungi gallery</button>`
+          }
+        <button class="obtn del" onclick="deleteMedia('${esc(m.id)}')">🗑 Elimina</button>
+        <a class="obtn" href="${esc(m.url)}" target="_blank">↗ Apri</a>
       </div>
-    </div>`).join('');
+    </div>`;
+      }).join('');
     }
 
-    // UPLOAD FROM URL (CSV)
-    async function uploadFromUrl(url, idx) {
-      if (!shopifyData) { toast('Prodotto Shopify non trovato', 'error'); return; }
-      const card = $(`cimg-${idx}`); if (card) card.style.opacity = '.5';
+    // ── GALLERY ACTIONS ───────────────────────────────────────────────────────────
+    async function addToGallery(mediaId) {
+      if (!activeVariantId) { toast('Seleziona prima una variante', 'err'); return; }
       const form = new FormData();
-      form.append('shop', shop()); form.append('product_id', shopifyData.id);
-      form.append('image_url', url); form.append('alt', current.title);
+      form.append('shop', shop()); form.append('variant_id', activeVariantId); form.append('media_id', mediaId);
       try {
-        const res = await fetch('/api/shopify/media/upload-url', { method: 'POST', body: form });
+        const res = await fetch('/api/shopify/variant/gallery/add', { method: 'POST', body: form });
         const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); return; }
-        toast('Immagine caricata su Shopify!', 'success'); await loadShopifyImages();
-      } catch (err) { toast('Errore: ' + err.message, 'error'); }
-      finally { if (card) card.style.opacity = '1'; }
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        toast('Aggiunto alla gallery!', 'ok');
+        // Update local state
+        const v = shopData.variants.find(x => x.id === activeVariantId);
+        const m = shopData.media.find(x => x.id === mediaId);
+        if (v && m && !v.gallery.find(g => g.id === mediaId)) v.gallery.push(m);
+        renderMedia(shopData.media, v ? v.gallery : []);
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
-    // UPLOAD MANUAL URL
-    async function uploadManualUrl() {
-      const inp = $('urlInput'); const url = inp.value.trim();
-      if (!url || !url.startsWith('http')) { toast('Inserisci un URL valido', 'error'); return; }
-      if (!shopifyData) { toast('Seleziona prima un prodotto con shop configurato', 'error'); return; }
+    async function removeFromGallery(mediaId) {
+      if (!activeVariantId) { toast('Seleziona prima una variante', 'err'); return; }
+      const params = new URLSearchParams({ shop: shop(), variant_id: activeVariantId, media_id: mediaId });
+      try {
+        const res = await fetch('/api/shopify/variant/gallery/item?' + params, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        toast('Rimosso dalla gallery', 'ok');
+        const v = shopData.variants.find(x => x.id === activeVariantId);
+        if (v) v.gallery = v.gallery.filter(g => g.id !== mediaId);
+        renderMedia(shopData.media, v ? v.gallery : []);
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    }
+
+    async function syncAllVariants() {
+      if (!shopData || !activeVariantId) { toast('Carica prima un prodotto e seleziona una variante', 'err'); return; }
+      const v = shopData.variants.find(x => x.id === activeVariantId);
+      if (!v || !v.gallery.length) { toast('La variante selezionata non ha immagini in gallery', 'err'); return; }
+
+      const csvSkus = new Set(cur.variants.map(x => x.sku));
+      const colorVariants = shopData.variants.filter(x => csvSkus.has(x.sku));
+      const vids = colorVariants.length ? colorVariants.map(x => x.id) : shopData.variants.map(x => x.id);
+      const mids = v.gallery.map(g => g.id);
+
+      const form = new FormData();
+      form.append('shop', shop()); form.append('variant_ids', JSON.stringify(vids)); form.append('media_ids', JSON.stringify(mids));
+      try {
+        toast('Sincronizzazione in corso…');
+        const res = await fetch('/api/shopify/variant/gallery/sync', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        toast(`Gallery applicata a ${data.updated_variants} varianti!`, 'ok');
+        // Update all color variants locally
+        colorVariants.forEach(cv => { cv.gallery = [...v.gallery]; });
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    }
+
+    // ── DELETE MEDIA ──────────────────────────────────────────────────────────────
+    async function deleteMedia(mediaId) {
+      if (!confirm('Eliminare questa immagine dal prodotto Shopify?')) return;
+      const params = new URLSearchParams({ shop: shop(), product_id: shopData.id, media_id: mediaId });
+      try {
+        const res = await fetch('/api/shopify/media?' + params, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        toast('Immagine eliminata', 'ok');
+        shopData.media = shopData.media.filter(m => m.id !== mediaId);
+        shopData.variants.forEach(v => { v.gallery = v.gallery.filter(g => g.id !== mediaId); });
+        const av = shopData.variants.find(x => x.id === activeVariantId);
+        renderMedia(shopData.media, av ? av.gallery : []);
+        $('mediacount').textContent = `${shopData.media.length} immagini`;
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    }
+
+    // ── UPLOAD URL ────────────────────────────────────────────────────────────────
+    async function uploadUrl() {
+      const inp = $('urlinput'); const url = inp.value.trim();
+      if (!url || !url.startsWith('http')) { toast('URL non valido', 'err'); return; }
+      if (!shopData) { toast('Seleziona un prodotto', 'err'); return; }
       toast('Caricamento…'); inp.disabled = true;
       const form = new FormData();
-      form.append('shop', shop()); form.append('product_id', shopifyData.id);
-      form.append('image_url', url); form.append('alt', current.title);
+      form.append('shop', shop()); form.append('product_id', shopData.id); form.append('image_url', url); form.append('alt', cur.title);
       try {
         const res = await fetch('/api/shopify/media/upload-url', { method: 'POST', body: form });
         const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); return; }
-        toast('Immagine caricata!', 'success'); inp.value = ''; await loadShopifyImages();
-      } catch (err) { toast('Errore: ' + err.message, 'error'); }
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        toast('Immagine caricata!', 'ok'); inp.value = '';
+        shopData.media.push({ id: data.id, url: data.url, alt: '', status: data.status });
+        const av = shopData.variants.find(x => x.id === activeVariantId);
+        renderMedia(shopData.media, av ? av.gallery : []);
+        $('mediacount').textContent = `${shopData.media.length} immagini`;
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
       finally { inp.disabled = false; }
     }
 
-    // UPLOAD FILE
-    $('fileInput').addEventListener('change', async e => {
-      if (!shopifyData) { toast('Seleziona prima un prodotto con shop configurato', 'error'); return; }
+    // ── UPLOAD FILE ───────────────────────────────────────────────────────────────
+    $('fileinput').addEventListener('change', async e => {
+      if (!shopData) { toast('Seleziona un prodotto', 'err'); return; }
       const files = Array.from(e.target.files);
       for (const file of files) {
         toast(`Caricamento ${file.name}…`);
         const form = new FormData();
-        form.append('shop', shop()); form.append('product_id', shopifyData.id); form.append('file', file);
+        form.append('shop', shop()); form.append('product_id', shopData.id); form.append('file', file);
         try {
           const res = await fetch('/api/shopify/media/upload-file', { method: 'POST', body: form });
           const data = await res.json();
-          if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); continue; }
-          toast(`${file.name} caricato!`, 'success');
-        } catch (err) { toast('Errore: ' + err.message, 'error'); }
+          if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); continue; }
+          toast(`${file.name} caricato!`, 'ok');
+          if (data.id) shopData.media.push({ id: data.id, url: data.url, alt: '', status: data.status });
+        } catch (err) { toast('Errore: ' + err.message, 'err'); }
       }
-      await loadShopifyImages(); e.target.value = '';
+      const av = shopData.variants.find(x => x.id === activeVariantId);
+      renderMedia(shopData.media, av ? av.gallery : []);
+      $('mediacount').textContent = `${shopData.media.length} immagini`;
+      e.target.value = '';
     });
-
-    // DELETE MEDIA
-    async function deleteMedia(mediaId) {
-      if (!confirm('Eliminare questa immagine da Shopify?')) return;
-      const params = new URLSearchParams({ shop: shop(), product_id: shopifyData.id, media_id: mediaId });
-      try {
-        const res = await fetch('/api/shopify/media?' + params, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); return; }
-        toast('Immagine eliminata', 'success'); await loadShopifyImages();
-      } catch (err) { toast('Errore: ' + err.message, 'error'); }
-    }
   </script>
 </body>
 
