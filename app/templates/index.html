@@ -12,7 +12,7 @@
   <style>
     :root {
       --bg: #F5F3EE;
-      --surface: #FFFFFF;
+      --surface: #FFF;
       --surface2: #F0EDE6;
       --border: #D8D3C8;
       --text: #1A1714;
@@ -21,6 +21,8 @@
       --accent-light: #F5E8E4;
       --green: #2A6B4A;
       --green-light: #E4F0EB;
+      --blue: #2C4FA3;
+      --blue-light: #E8EDFA;
       --radius: 6px;
       --mono: 'DM Mono', monospace;
       --serif: 'Fraunces', Georgia, serif;
@@ -40,11 +42,10 @@
       min-height: 100vh;
     }
 
-    /* ── HEADER ── */
     header {
       background: var(--text);
       color: var(--bg);
-      padding: 18px 32px;
+      padding: 13px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -55,9 +56,9 @@
 
     header h1 {
       font-family: var(--serif);
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 300;
-      letter-spacing: -0.02em;
+      letter-spacing: -.02em;
     }
 
     header h1 span {
@@ -65,140 +66,227 @@
       font-style: italic;
     }
 
-    .header-meta {
-      font-size: 11px;
-      color: #9A9488;
+    .header-right {
       display: flex;
       align-items: center;
       gap: 16px;
     }
 
-    /* ── LAYOUT ── */
-    .layout {
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      min-height: calc(100vh - 58px);
+    .header-status {
+      font-size: 11px;
+      color: #9A9488;
     }
 
-    /* ── SIDEBAR ── */
+    .shop-inline {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .shop-inline label {
+      font-size: 10px;
+      color: #9A9488;
+      white-space: nowrap;
+    }
+
+    .shop-inline input {
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 4px;
+      padding: 5px 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--bg);
+      outline: none;
+      width: 220px;
+    }
+
+    .shop-inline input::placeholder {
+      color: #6A6460;
+    }
+
+    .shop-inline input:focus {
+      border-color: rgba(255, 255, 255, .4);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      min-height: calc(100vh - 50px);
+    }
+
     .sidebar {
       background: var(--surface);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
-    .sidebar-header {
-      padding: 20px;
+    .csv-zone {
+      padding: 14px 16px;
       border-bottom: 1px solid var(--border);
     }
 
-    .sidebar-header label {
+    .csv-zone label {
       display: block;
       font-size: 10px;
-      letter-spacing: 0.08em;
+      letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    .upload-zone {
+    .drop-area {
       border: 1.5px dashed var(--border);
       border-radius: var(--radius);
-      padding: 20px;
+      padding: 14px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all .15s;
       background: var(--bg);
     }
 
-    .upload-zone:hover,
-    .upload-zone.drag {
+    .drop-area:hover,
+    .drop-area.drag {
       border-color: var(--accent);
       background: var(--accent-light);
     }
 
-    .upload-zone input {
+    .drop-area input {
       display: none;
     }
 
-    .upload-zone .icon {
-      font-size: 22px;
-      margin-bottom: 6px;
-    }
-
-    .upload-zone p {
+    .drop-area p {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
+      line-height: 1.5;
     }
 
-    .upload-zone strong {
+    .drop-area strong {
       color: var(--text);
     }
 
-    .shop-field {
-      padding: 16px 20px;
+    .filters {
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .shop-field label {
-      display: block;
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    .shop-field input {
-      width: 100%;
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 8px 10px;
+      padding: 0 10px;
+    }
+
+    .search-box span {
+      color: var(--muted);
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 7px 0;
       font-family: var(--mono);
       font-size: 12px;
       color: var(--text);
       outline: none;
     }
 
-    .shop-field input:focus {
+    .filter-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .filter-select {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+      min-width: 0;
+    }
+
+    .filter-select:focus {
       border-color: var(--accent);
     }
 
-    /* ── PRODUCT LIST ── */
+    .filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .pill {
+      font-size: 10px;
+      padding: 3px 7px;
+      border-radius: 20px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      transition: all .12s;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .filter-stats {
+      font-size: 10px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .clear-btn {
+      font-size: 10px;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: var(--mono);
+      padding: 0;
+    }
+
+    .clear-btn:hover {
+      text-decoration: underline;
+    }
+
     .product-list {
       flex: 1;
       overflow-y: auto;
     }
 
-    .product-list-header {
-      padding: 12px 20px;
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .product-count {
-      background: var(--surface2);
-      border-radius: 20px;
-      padding: 2px 8px;
-      font-size: 10px;
-    }
-
     .product-item {
-      padding: 12px 20px;
+      padding: 10px 16px;
       border-bottom: 1px solid var(--border);
       cursor: pointer;
-      transition: background 0.1s;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
+      transition: background .1s;
     }
 
     .product-item:hover {
@@ -208,51 +296,90 @@
     .product-item.active {
       background: var(--accent-light);
       border-left: 3px solid var(--accent);
-      padding-left: 17px;
+      padding-left: 13px;
     }
 
-    .product-item .pi-handle {
+    .pi-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+
+    .pi-handle {
       font-size: 10px;
       color: var(--muted);
     }
 
-    .product-item .pi-title {
+    .pi-title {
       font-family: var(--serif);
       font-size: 13px;
       font-weight: 300;
       line-height: 1.3;
+      flex: 1;
     }
 
-    .product-item .pi-meta {
+    .pi-meta {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       flex-wrap: wrap;
-      margin-top: 2px;
+      margin-top: 4px;
+      align-items: center;
     }
 
     .tag {
       font-size: 10px;
       padding: 2px 6px;
       border-radius: 3px;
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .tag-color {
       background: var(--surface2);
       color: var(--muted);
-      border: 1px solid var(--border);
     }
 
-    .tag.color {
-      background: #EEE9E2;
-    }
-
-    .tag.images {
+    .tag-img {
       background: var(--green-light);
       color: var(--green);
       border-color: #B8D8C8;
     }
 
-    /* ── MAIN PANEL ── */
+    .tag-missing {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-color: #E8B8A8;
+    }
+
+    .tag-brand {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+      font-size: 9px;
+    }
+
+    .tag-code {
+      background: var(--blue-light);
+      color: var(--blue);
+      border-color: #C0CCEE;
+      font-size: 9px;
+    }
+
+    .no-results {
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
     .main {
       overflow-y: auto;
-      padding: 28px 32px;
+      padding: 24px 28px;
     }
 
     .empty-state {
@@ -265,14 +392,14 @@
       gap: 12px;
     }
 
-    .empty-state .big-icon {
+    .empty-state .big {
       font-size: 48px;
-      opacity: 0.3;
+      opacity: .25;
     }
 
     .empty-state h2 {
       font-family: var(--serif);
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 300;
       color: var(--muted);
     }
@@ -280,10 +407,10 @@
     .empty-state p {
       color: var(--muted);
       font-size: 12px;
-      max-width: 300px;
+      max-width: 280px;
+      line-height: 1.6;
     }
 
-    /* ── PRODUCT DETAIL ── */
     .product-detail {
       display: none;
     }
@@ -293,26 +420,23 @@
     }
 
     .detail-header {
-      margin-bottom: 24px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
+      margin-bottom: 20px;
     }
 
     .detail-header h2 {
       font-family: var(--serif);
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 300;
-      letter-spacing: -0.02em;
+      letter-spacing: -.02em;
       line-height: 1.2;
+      margin-bottom: 8px;
     }
 
-    .detail-header .detail-meta {
+    .detail-badges {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-top: 6px;
+      align-items: center;
     }
 
     .badge {
@@ -320,18 +444,16 @@
       padding: 3px 8px;
       border-radius: 3px;
       font-family: var(--mono);
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .badge-handle {
       background: var(--surface2);
       color: var(--muted);
-      border: 1px solid var(--border);
-    }
-
-    .badge-color {
-      background: #EEE9E2;
-      color: #5A4F40;
-      border: 1px solid #D8CFBF;
+      border-color: var(--border);
     }
 
     .badge-brand {
@@ -339,29 +461,61 @@
       color: var(--bg);
     }
 
-    /* ── SECTION ── */
+    .badge-color {
+      background: var(--surface2);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .badge-code {
+      background: var(--blue-light);
+      color: var(--blue);
+      border-color: #C0CCEE;
+    }
+
+    .color-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 1px solid rgba(0, 0, 0, .12);
+      flex-shrink: 0;
+    }
+
+    .color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, .1);
+      flex-shrink: 0;
+      display: inline-block;
+    }
+
     .section {
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
     .section-title {
       font-size: 10px;
-      letter-spacing: 0.1em;
+      letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 14px;
-      padding-bottom: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 7px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
-    /* ── IMAGE GRIDS ── */
+    .section-count {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
     .image-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
     }
 
     .img-card {
@@ -371,7 +525,6 @@
       border: 1px solid var(--border);
       background: var(--surface2);
       aspect-ratio: 3/4;
-      cursor: pointer;
     }
 
     .img-card img {
@@ -379,42 +532,31 @@
       height: 100%;
       object-fit: cover;
       display: block;
-      transition: transform 0.2s;
+      transition: transform .2s;
     }
 
     .img-card:hover img {
       transform: scale(1.04);
     }
 
-    .img-card .img-actions {
+    .overlay {
       position: absolute;
       inset: 0;
-      background: rgba(26, 23, 20, 0.55);
+      background: rgba(26, 23, 20, .55);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 7px;
       opacity: 0;
-      transition: opacity 0.15s;
+      transition: opacity .15s;
     }
 
-    .img-card:hover .img-actions {
+    .img-card:hover .overlay {
       opacity: 1;
     }
 
-    .img-card .img-status {
-      position: absolute;
-      top: 6px;
-      left: 6px;
-      font-size: 9px;
-      padding: 2px 5px;
-      border-radius: 3px;
-      background: rgba(26, 23, 20, 0.7);
-      color: white;
-    }
-
-    .img-card .img-source {
+    .src-badge {
       position: absolute;
       bottom: 6px;
       left: 6px;
@@ -423,68 +565,91 @@
       border-radius: 3px;
     }
 
-    .img-card .img-source.shopify {
+    .src-shopify {
       background: #96BF48;
       color: #2A4000;
     }
 
-    .img-card .img-source.csv {
+    .src-csv {
       background: #5C6AC4;
       color: white;
     }
 
-    .btn-icon {
-      background: rgba(255, 255, 255, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: var(--radius);
+    .overlay-btn {
+      background: rgba(255, 255, 255, .15);
+      border: 1px solid rgba(255, 255, 255, .3);
+      border-radius: 4px;
       color: white;
-      padding: 6px 12px;
+      padding: 5px 10px;
       font-family: var(--mono);
-      font-size: 11px;
+      font-size: 10px;
       cursor: pointer;
-      transition: background 0.1s;
-      width: 110px;
+      width: 108px;
       text-align: center;
+      transition: background .1s;
     }
 
-    .btn-icon:hover {
-      background: rgba(255, 255, 255, 0.25);
+    .overlay-btn:hover {
+      background: rgba(255, 255, 255, .28);
     }
 
-    .btn-icon.danger:hover {
-      background: rgba(200, 75, 47, 0.7);
+    .overlay-btn.del:hover {
+      background: rgba(200, 75, 47, .7);
     }
 
-    /* ── UPLOAD AREA ── */
-    .upload-section {
+    .upload-zone-big {
       border: 1.5px dashed var(--border);
       border-radius: var(--radius);
-      padding: 24px;
+      padding: 18px;
       text-align: center;
       background: var(--bg);
-      transition: all 0.15s;
+      transition: all .15s;
+      cursor: pointer;
+      margin-bottom: 10px;
     }
 
-    .upload-section:hover {
+    .upload-zone-big:hover {
       border-color: var(--accent);
       background: var(--accent-light);
     }
 
-    .upload-section input {
+    .upload-zone-big input {
       display: none;
+    }
+
+    .url-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .url-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .url-row input:focus {
+      border-color: var(--accent);
     }
 
     .btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
+      gap: 5px;
+      padding: 7px 14px;
       border-radius: var(--radius);
       font-family: var(--mono);
       font-size: 12px;
       cursor: pointer;
       border: 1px solid;
-      transition: all 0.15s;
+      transition: all .15s;
+      white-space: nowrap;
     }
 
     .btn-primary {
@@ -497,41 +662,39 @@
       background: #3A3530;
     }
 
-    .btn-outline {
-      background: transparent;
-      color: var(--text);
-      border-color: var(--border);
+    .variants-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
     }
 
-    .btn-outline:hover {
+    .variant-chip {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 4px;
       background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
     }
 
-    .btn-danger {
-      background: transparent;
-      color: var(--accent);
-      border-color: var(--accent);
+    .variant-chip strong {
+      color: var(--text);
     }
 
-    .btn-danger:hover {
-      background: var(--accent-light);
-    }
-
-    /* ── TOAST ── */
     #toast {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 20px;
+      right: 20px;
       background: var(--text);
       color: var(--bg);
-      padding: 12px 18px;
+      padding: 10px 16px;
       border-radius: var(--radius);
       font-size: 12px;
-      transform: translateY(80px);
+      transform: translateY(60px);
       opacity: 0;
-      transition: all 0.25s;
+      transition: all .22s;
       z-index: 999;
-      max-width: 320px;
+      max-width: 300px;
     }
 
     #toast.show {
@@ -547,15 +710,14 @@
       background: var(--accent);
     }
 
-    /* ── LOADING ── */
     .spinner {
       display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border: 2px solid currentColor;
       border-top-color: transparent;
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
+      animation: spin .7s linear infinite;
       vertical-align: middle;
     }
 
@@ -564,77 +726,6 @@
         transform: rotate(360deg);
       }
     }
-
-    .loading-overlay {
-      display: none;
-      position: absolute;
-      inset: 0;
-      background: rgba(245, 243, 238, 0.8);
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      border-radius: var(--radius);
-    }
-
-    .loading-overlay.visible {
-      display: flex;
-    }
-
-    /* ── VARIANTS TABLE ── */
-    .variants-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    .variants-table th {
-      text-align: left;
-      padding: 6px 10px;
-      font-size: 10px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .variants-table td {
-      padding: 7px 10px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text);
-    }
-
-    .variants-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    /* ── SEARCH ── */
-    .search-wrap {
-      padding: 12px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .search-wrap input {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 7px 10px;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--text);
-      outline: none;
-    }
-
-    .search-wrap input:focus {
-      border-color: var(--accent);
-    }
-
-    .no-results {
-      padding: 24px 20px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-    }
   </style>
 </head>
 
@@ -642,482 +733,351 @@
 
   <header>
     <h1>Image <span>Manager</span></h1>
-    <div class="header-meta">
-      <span id="header-status">Nessun CSV caricato</span>
+    <div class="header-right">
+      <div class="shop-inline">
+        <label>Shop</label>
+        <input type="text" id="shopInput" placeholder="mionegozio.myshopify.com">
+      </div>
+      <span class="header-status" id="headerStatus">Nessun CSV</span>
     </div>
   </header>
 
   <div class="layout">
-
-    <!-- ── SIDEBAR ── -->
     <aside class="sidebar">
 
-      <div class="sidebar-header">
-        <label>Importa CSV prodotti</label>
-        <div class="upload-zone" id="dropZone" onclick="document.getElementById('csvInput').click()">
-          <input type="file" id="csvInput" accept=".csv">
-          <div class="icon">⬆</div>
-          <p><strong>Clicca o trascina</strong> il CSV</p>
-          <p style="margin-top:4px; font-size:11px;">handle, SKU, Image1/2/3, Colore…</p>
+      <div class="csv-zone">
+        <label>CSV Prodotti</label>
+        <div class="drop-area" id="dropArea" onclick="document.getElementById('csvFile').click()">
+          <input type="file" id="csvFile" accept=".csv">
+          <p><strong>Clicca o trascina</strong> il CSV<br>handle · SKU · Colore · color_code · Image1/2/3</p>
         </div>
       </div>
 
-      <div class="shop-field">
-        <label>Shop Shopify</label>
-        <input type="text" id="shopInput" placeholder="mionegozio.myshopify.com" value="">
-      </div>
-
-      <div class="search-wrap">
-        <input type="text" id="searchInput" placeholder="Cerca per titolo, handle, colore…">
-      </div>
-
-      <div class="product-list-header">
-        <span>Prodotti</span>
-        <span class="product-count" id="productCount">0</span>
+      <div class="filters">
+        <div class="search-box">
+          <span>⌕</span>
+          <input type="text" id="searchInput" placeholder="Titolo, handle, SKU, colore, codice…">
+        </div>
+        <div class="filter-row">
+          <select class="filter-select" id="filterBrand">
+            <option value="">Tutti i brand</option>
+          </select>
+          <select class="filter-select" id="filterStatus">
+            <option value="">Tutti gli stati</option>
+            <option value="with">Con immagini CSV</option>
+            <option value="without">Senza immagini</option>
+          </select>
+        </div>
+        <div class="filter-pills" id="colorPills"></div>
+        <div class="filter-stats">
+          <span id="filterStats">0 prodotti</span>
+          <button class="clear-btn" onclick="clearFilters()">✕ Reset</button>
+        </div>
       </div>
 
       <div class="product-list" id="productList">
         <div class="no-results">Carica un CSV per iniziare</div>
       </div>
-
     </aside>
 
-    <!-- ── MAIN PANEL ── -->
     <main class="main">
-
       <div class="empty-state" id="emptyState">
-        <div class="big-icon">🖼</div>
+        <div class="big">🖼</div>
         <h2>Seleziona un prodotto</h2>
-        <p>Carica il CSV e clicca su un prodotto per visualizzare e gestire le sue immagini</p>
+        <p>Carica il CSV, filtra per brand o colore, e gestisci le immagini Shopify</p>
       </div>
 
       <div class="product-detail" id="productDetail">
 
         <div class="detail-header">
-          <div>
-            <h2 id="detailTitle">—</h2>
-            <div class="detail-meta" id="detailMeta"></div>
+          <h2 id="detailTitle">—</h2>
+          <div class="detail-badges" id="detailBadges"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Immagini su Shopify <span class="section-count" id="shopifyCount"></span></div>
+          <div class="image-grid" id="shopifyImages">
+            <p style="color:var(--muted);font-size:12px;">Seleziona un prodotto…</p>
           </div>
         </div>
 
-        <!-- Immagini Shopify -->
         <div class="section">
-          <div class="section-title">
-            <span>Immagini su Shopify</span>
-            <span id="shopifyLoadStatus"></span>
-          </div>
-          <div class="image-grid" id="shopifyImages" style="position:relative; min-height:80px;">
-            <div class="loading-overlay visible" id="shopifyLoader">
-              <span class="spinner"></span>&nbsp; Carico da Shopify…
-            </div>
-          </div>
-        </div>
-
-        <!-- Immagini CSV -->
-        <div class="section">
-          <div class="section-title">
-            <span>Immagini dal CSV</span>
-            <span id="csvImgCount" style="font-size:11px; color:var(--muted)"></span>
-          </div>
+          <div class="section-title">Immagini dal CSV <span class="section-count" id="csvCount"></span></div>
           <div class="image-grid" id="csvImages"></div>
         </div>
 
-        <!-- Upload extra immagini -->
         <div class="section">
           <div class="section-title">Aggiungi immagini</div>
-
-          <!-- File locale -->
-          <div class="upload-section" onclick="document.getElementById('fileUploadInput').click()"
-            style="margin-bottom:12px;">
-            <input type="file" id="fileUploadInput" accept="image/jpeg,image/png,image/webp" multiple>
-            <p style="font-size:13px; margin-bottom:8px;">⬆ Carica file dal tuo computer</p>
-            <p style="color:var(--muted); font-size:11px;">JPG, PNG, WebP — più file selezionabili</p>
+          <div class="upload-zone-big" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple>
+            <p style="font-size:13px;margin-bottom:4px;">⬆ Carica file dal computer</p>
+            <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP — selezione multipla</p>
           </div>
-
-          <!-- URL manuale -->
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input type="text" id="manualUrlInput" placeholder="Incolla URL immagine… https://example.com/img.jpg"
-              style="flex:1; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius);
-                   padding:8px 10px; font-family:var(--mono); font-size:12px; color:var(--text); outline:none;">
-            <button class="btn btn-primary" onclick="uploadManualUrl()">⬆ Carica URL</button>
+          <div class="url-row">
+            <input type="text" id="urlInput" placeholder="Oppure incolla un URL immagine… https://…">
+            <button class="btn btn-primary" onclick="uploadManualUrl()">⬆ Carica</button>
           </div>
         </div>
 
-        <!-- Varianti -->
         <div class="section">
           <div class="section-title">Varianti</div>
-          <table class="variants-table">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Taglia</th>
-              </tr>
-            </thead>
-            <tbody id="variantsBody"></tbody>
-          </table>
+          <div class="variants-grid" id="variantsGrid"></div>
         </div>
 
-      </div><!-- /product-detail -->
+      </div>
     </main>
   </div>
 
   <div id="toast"></div>
 
   <script>
-    // ── STATE ────────────────────────────────────────────────────────────────────
-    let allProducts = [];
-    let currentProduct = null;
-    let shopifyProductData = null;
+    // STATE
+    let allProducts = [], filtered = [], current = null, shopifyData = null;
+    let fSearch = '', fBrand = '', fColor = '', fStatus = '';
 
-    // ── UTILS ────────────────────────────────────────────────────────────────────
-    function shop() {
-      return document.getElementById('shopInput').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // UTILS
+    const $ = id => document.getElementById(id);
+    const shop = () => $('shopInput').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+    function toast(msg, type = '') { const el = $('toast'); el.textContent = msg; el.className = 'show ' + type; clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3000); }
+    function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    const COLOR_MAP = {
+      NERO: '#1A1A1A', NERO1: '#2A2A2A', BIANCO: '#F0EEE8', AVORIO: '#F5EFD8',
+      BURRO: '#F5ECC0', BEIGE: '#D4C5A9', NUDO: '#E8C9A0', TORTORA: '#C4B49A',
+      FANGO: '#9E8B72', CAMMELLO: '#C19A6B', TABACCO: '#8B6340', MARRONE: '#6B3D26',
+      KAKI: '#8A8A4A', MILITARE: '#4A5A35', PRATO: '#3A6B3A', VERDE: '#2A7A3A',
+      DENIM: '#3A5A8A', BLU: '#1A3A7A', BLU1: '#2A4A9A', AZZURRO: '#5A9AC8',
+      CELESTE: '#8AC4E0', LILLA: '#9A7AC8', ROSA: '#E8A0B0', BORDEAUX: '#7A1A2A',
+      GRIGIO: '#909090', GIALLO: '#E8D040',
+    };
+
+    function colorDot(colore, size = 8) {
+      const c = COLOR_MAP[colore] || '#CCC';
+      return `<span class="color-dot" style="width:${size}px;height:${size}px;background:${c};"></span>`;
     }
 
-    function toast(msg, type = '') {
-      const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.className = 'show ' + type;
-      clearTimeout(el._t);
-      el._t = setTimeout(() => el.className = '', 3200);
-    }
-
-    // ── CSV UPLOAD ───────────────────────────────────────────────────────────────
-    document.getElementById('csvInput').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      await loadCSV(file);
-    });
-
-    // Drag & drop
-    const dropZone = document.getElementById('dropZone');
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
-    dropZone.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('drag');
-      const file = e.dataTransfer.files[0];
-      if (file) await loadCSV(file);
-    });
+    // CSV UPLOAD
+    $('csvFile').addEventListener('change', e => e.target.files[0] && loadCSV(e.target.files[0]));
+    const dropArea = $('dropArea');
+    dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('drag'); });
+    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag'));
+    dropArea.addEventListener('drop', e => { e.preventDefault(); dropArea.classList.remove('drag'); e.dataTransfer.files[0] && loadCSV(e.dataTransfer.files[0]); });
 
     async function loadCSV(file) {
-      const form = new FormData();
-      form.append('file', file);
-
-      document.getElementById('header-status').textContent = 'Parsing CSV…';
-
+      $('headerStatus').textContent = 'Parsing…';
+      const form = new FormData(); form.append('file', file);
       try {
         const res = await fetch('/api/csv/parse', { method: 'POST', body: form });
         if (!res.ok) throw new Error(await res.text());
         allProducts = await res.json();
-
-        document.getElementById('header-status').textContent =
-          `${allProducts.length} prodotti — ${file.name}`;
-        document.getElementById('productCount').textContent = allProducts.length;
-
-        renderProductList(allProducts);
+        $('headerStatus').textContent = `${allProducts.length} prodotti · ${file.name}`;
+        buildFilters(); applyFilters();
         toast(`CSV caricato: ${allProducts.length} prodotti`, 'success');
-      } catch (err) {
-        toast('Errore parsing CSV: ' + err.message, 'error');
-        document.getElementById('header-status').textContent = 'Errore CSV';
-      }
+      } catch (err) { toast('Errore CSV: ' + err.message, 'error'); $('headerStatus').textContent = 'Errore'; }
     }
 
-    // ── SEARCH ──────────────────────────────────────────────────────────────────
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase();
-      const filtered = allProducts.filter(p =>
-        p.title.toLowerCase().includes(q) ||
-        String(p.handle).toLowerCase().includes(q) ||
-        p.colore.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q)
-      );
-      renderProductList(filtered);
-      document.getElementById('productCount').textContent = filtered.length;
-    });
+    // BUILD FILTERS
+    function buildFilters() {
+      const brands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))].sort();
+      $('filterBrand').innerHTML = '<option value="">Tutti i brand</option>' + brands.map(b => `<option value="${esc(b)}">${b}</option>`).join('');
 
-    // ── RENDER PRODUCT LIST ──────────────────────────────────────────────────────
-    function renderProductList(products) {
-      const list = document.getElementById('productList');
+      const colors = [...new Set(allProducts.map(p => p.colore).filter(Boolean))].sort();
+      $('colorPills').innerHTML = colors.map(c =>
+        `<span class="pill" data-color="${esc(c)}" onclick="toggleColor('${esc(c)}')">${colorDot(c, 8)} ${c}</span>`
+      ).join('');
+    }
 
-      if (!products.length) {
-        list.innerHTML = '<div class="no-results">Nessun prodotto trovato</div>';
-        return;
-      }
+    function toggleColor(c) {
+      fColor = fColor === c ? '' : c;
+      document.querySelectorAll('#colorPills .pill').forEach(p => p.classList.toggle('active', p.dataset.color === fColor));
+      applyFilters();
+    }
 
-      list.innerHTML = products.map((p, i) => `
-    <div class="product-item" data-idx="${allProducts.indexOf(p)}" onclick="selectProduct(${allProducts.indexOf(p)})">
-      <div class="pi-handle">${p.handle}</div>
-      <div class="pi-title">${p.title || '(senza titolo)'}</div>
+    $('filterBrand').addEventListener('change', e => { fBrand = e.target.value; applyFilters(); });
+    $('filterStatus').addEventListener('change', e => { fStatus = e.target.value; applyFilters(); });
+    $('searchInput').addEventListener('input', e => { fSearch = e.target.value.toLowerCase(); applyFilters(); });
+
+    function clearFilters() {
+      fSearch = ''; fBrand = ''; fColor = ''; fStatus = '';
+      $('searchInput').value = ''; $('filterBrand').value = ''; $('filterStatus').value = '';
+      document.querySelectorAll('#colorPills .pill').forEach(p => p.classList.remove('active'));
+      applyFilters();
+    }
+
+    // APPLY FILTERS
+    function applyFilters() {
+      filtered = allProducts.filter(p => {
+        if (fSearch) {
+          const skus = p.variants.map(v => v.sku.toLowerCase()).join(' ');
+          const h = [p.title, String(p.handle), p.brand, p.colore, String(p.color_code), skus].join(' ').toLowerCase();
+          if (!h.includes(fSearch)) return false;
+        }
+        if (fBrand && p.brand !== fBrand) return false;
+        if (fColor && p.colore !== fColor) return false;
+        if (fStatus === 'with' && !p.images_csv.length) return false;
+        if (fStatus === 'without' && p.images_csv.length) return false;
+        return true;
+      });
+      $('filterStats').textContent = `${filtered.length} / ${allProducts.length} prodotti`;
+      renderList();
+    }
+
+    // RENDER LIST
+    function renderList() {
+      const list = $('productList');
+      if (!filtered.length) { list.innerHTML = '<div class="no-results">Nessun prodotto corrisponde ai filtri</div>'; return; }
+      list.innerHTML = filtered.map(p => {
+        const gi = allProducts.indexOf(p);
+        const isActive = current && allProducts.indexOf(current) === gi;
+        const imgTag = p.images_csv.length
+          ? `<span class="tag tag-img">🖼 ${p.images_csv.length}</span>`
+          : `<span class="tag tag-missing">⚠ 0</span>`;
+        return `<div class="product-item${isActive ? ' active' : ''}" data-idx="${gi}" onclick="selectProduct(${gi})">
+      <div class="pi-top"><span class="pi-handle">${p.handle}</span><span class="tag tag-brand">${esc(p.brand)}</span></div>
+      <div class="pi-title">${esc(p.title) || '(senza titolo)'}</div>
       <div class="pi-meta">
-        <span class="tag color">${p.colore || '—'}</span>
-        <span class="tag images">🖼 ${p.images_csv.length}</span>
-        <span class="tag">${p.variants.length} taglie</span>
+        <span class="tag tag-color">${colorDot(p.colore)} ${esc(p.colore)}</span>
+        <span class="tag tag-code">#${esc(String(p.color_code))}</span>
+        ${imgTag}
+        <span class="tag" style="font-size:9px;">${p.variants.length} taglie</span>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+      }).join('');
     }
 
-    // ── SELECT PRODUCT ───────────────────────────────────────────────────────────
+    // SELECT PRODUCT
     async function selectProduct(idx) {
-      currentProduct = allProducts[idx];
-      shopifyProductData = null;
-
-      // highlight sidebar
+      current = allProducts[idx]; shopifyData = null;
       document.querySelectorAll('.product-item').forEach(el => el.classList.remove('active'));
-      const el = document.querySelector(`.product-item[data-idx="${idx}"]`);
-      if (el) el.classList.add('active');
+      document.querySelector(`.product-item[data-idx="${idx}"]`)?.classList.add('active');
+      $('emptyState').style.display = 'none';
+      $('productDetail').classList.add('visible');
 
-      // show detail panel
-      document.getElementById('emptyState').style.display = 'none';
-      const detail = document.getElementById('productDetail');
-      detail.classList.add('visible');
+      $('detailTitle').textContent = current.title || current.handle;
+      const sw = COLOR_MAP[current.colore] || '#CCC';
+      $('detailBadges').innerHTML = `
+    <span class="badge badge-handle">${esc(String(current.handle))}</span>
+    <span class="badge badge-brand">${esc(current.brand)}</span>
+    <span class="badge badge-color"><span class="color-swatch" style="background:${sw}"></span>${esc(current.colore)}</span>
+    <span class="badge badge-code">codice #${esc(String(current.color_code))}</span>`;
 
-      // fill header
-      document.getElementById('detailTitle').textContent = currentProduct.title || currentProduct.handle;
-      document.getElementById('detailMeta').innerHTML = `
-    <span class="badge badge-handle">${currentProduct.handle}</span>
-    <span class="badge badge-brand">${currentProduct.brand}</span>
-    <span class="badge badge-color">${currentProduct.colore} · #${currentProduct.color_code}</span>
-  `;
+      $('variantsGrid').innerHTML = current.variants.map(v =>
+        `<span class="variant-chip"><strong>${esc(v.taglia)}</strong> — ${esc(v.sku)}</span>`).join('');
 
-      // variants
-      const tbody = document.getElementById('variantsBody');
-      tbody.innerHTML = currentProduct.variants.map(v => `
-    <tr><td>${v.sku}</td><td>${v.taglia}</td></tr>
-  `).join('');
-
-      // CSV images
       renderCSVImages();
-
-      // Shopify images
       await loadShopifyImages();
     }
 
-    // ── CSV IMAGES ───────────────────────────────────────────────────────────────
+    // CSV IMAGES
     function renderCSVImages() {
-      const p = currentProduct;
-      document.getElementById('csvImgCount').textContent = `${p.images_csv.length} immagini`;
-
-      const grid = document.getElementById('csvImages');
-      if (!p.images_csv.length) {
-        grid.innerHTML = '<p style="color:var(--muted); font-size:12px;">Nessuna immagine nel CSV</p>';
-        return;
-      }
-
-      grid.innerHTML = p.images_csv.map((url, i) => `
-    <div class="img-card" id="csv-img-${i}">
-      <img src="${url}" loading="lazy" onerror="this.parentElement.style.opacity=0.4">
-      <span class="img-source csv">CSV</span>
-      <div class="img-actions">
-        <button class="btn-icon" onclick="uploadFromUrl('${escHtml(url)}', ${i})">⬆ Carica su Shopify</button>
-        <a class="btn-icon" href="${escHtml(url)}" target="_blank">↗ Apri originale</a>
+      $('csvCount').textContent = `${current.images_csv.length} immagini`;
+      const grid = $('csvImages');
+      if (!current.images_csv.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessuna immagine nel CSV per questo prodotto</p>'; return; }
+      grid.innerHTML = current.images_csv.map((url, i) => `
+    <div class="img-card" id="cimg-${i}">
+      <img src="${esc(url)}" loading="lazy" onerror="this.style.opacity=.3">
+      <span class="src-badge src-csv">CSV</span>
+      <div class="overlay">
+        <button class="overlay-btn" onclick="uploadFromUrl('${esc(url)}',${i})">⬆ Carica su Shopify</button>
+        <a class="overlay-btn" href="${esc(url)}" target="_blank">↗ Apri</a>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
     }
 
-    // ── SHOPIFY IMAGES ───────────────────────────────────────────────────────────
+    // SHOPIFY IMAGES
     async function loadShopifyImages() {
-      const grid = document.getElementById('shopifyImages');
-      const statusEl = document.getElementById('shopifyLoadStatus');
-
-      grid.innerHTML = `<div class="loading-overlay visible" id="shopifyLoader">
-    <span class="spinner"></span>&nbsp; Carico da Shopify…
-  </div>`;
-      statusEl.textContent = '';
-
+      const grid = $('shopifyImages');
+      $('shopifyCount').textContent = '';
+      grid.innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spinner"></span> Carico da Shopify…</p>`;
       const s = shop();
-      if (!s) {
-        grid.innerHTML = '<p style="color:var(--muted); font-size:12px; padding:8px 0">Inserisci il dominio shop per visualizzare le immagini Shopify</p>';
-        return;
-      }
-
+      if (!s) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Inserisci il dominio shop nell\'header</p>'; return; }
       try {
-        const handle = currentProduct.handle;
-        // Use first variant SKU as fallback search key (handle in CSV is numeric)
-        const firstSku = (currentProduct.variants[0] || {}).sku || '';
-        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(handle)}&sku=${encodeURIComponent(firstSku)}`);
+        const firstSku = (current.variants[0] || {}).sku || '';
+        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(current.handle)}&sku=${encodeURIComponent(firstSku)}`);
         const data = await res.json();
-
-        if (!res.ok) {
-          grid.innerHTML = `<p style="color:var(--accent); font-size:12px;">${data.error || 'Errore Shopify'}</p>`;
-          return;
-        }
-
-        shopifyProductData = data;
-        statusEl.textContent = `${data.media.length} immagini`;
-
+        if (!res.ok) { grid.innerHTML = `<p style="color:var(--accent);font-size:12px;">⚠ ${esc(data.error)}</p>`; return; }
+        shopifyData = data;
+        $('shopifyCount').textContent = `${data.media.length} immagini`;
         renderShopifyImages(data.media);
-
-      } catch (err) {
-        grid.innerHTML = `<p style="color:var(--accent); font-size:12px;">Errore: ${err.message}</p>`;
-      }
+      } catch (err) { grid.innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(err.message)}</p>`; }
     }
 
     function renderShopifyImages(media) {
-      const grid = document.getElementById('shopifyImages');
-
-      if (!media.length) {
-        grid.innerHTML = '<p style="color:var(--muted); font-size:12px; padding:8px 0">Nessuna immagine su Shopify</p>';
-        return;
-      }
-
+      const grid = $('shopifyImages');
+      if (!media.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessuna immagine su Shopify per questo prodotto</p>'; return; }
       grid.innerHTML = media.map(m => `
-    <div class="img-card" id="shopify-${m.id.replace(/\//g, '_')}">
-      <img src="${m.url}" loading="lazy">
-      <span class="img-source shopify">Shopify</span>
-      ${m.status ? `<span class="img-status">${m.status}</span>` : ''}
-      <div class="img-actions">
-        <button class="btn-icon danger" onclick="deleteMedia('${escHtml(m.id)}')">✕ Elimina</button>
-        <a class="btn-icon" href="${escHtml(m.url)}" target="_blank">↗ Apri</a>
+    <div class="img-card" id="simg-${m.id.replace(/\W/g, '_')}">
+      <img src="${esc(m.url)}" loading="lazy">
+      <span class="src-badge src-shopify">Shopify</span>
+      <div class="overlay">
+        <button class="overlay-btn del" onclick="deleteMedia('${esc(m.id)}')">✕ Elimina</button>
+        <a class="overlay-btn" href="${esc(m.url)}" target="_blank">↗ Apri</a>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
     }
 
-    // ── UPLOAD FROM URL ──────────────────────────────────────────────────────────
-    async function uploadFromUrl(url, csvIdx) {
-      if (!shopifyProductData) {
-        toast('Prodotto Shopify non caricato. Verifica il dominio shop.', 'error');
-        return;
-      }
-
-      const s = shop();
-      const card = document.getElementById(`csv-img-${csvIdx}`);
-      if (card) card.style.opacity = '0.5';
-
+    // UPLOAD FROM URL (CSV)
+    async function uploadFromUrl(url, idx) {
+      if (!shopifyData) { toast('Prodotto Shopify non trovato', 'error'); return; }
+      const card = $(`cimg-${idx}`); if (card) card.style.opacity = '.5';
       const form = new FormData();
-      form.append('shop', s);
-      form.append('product_id', shopifyProductData.id);
-      form.append('image_url', url);
-      form.append('alt', currentProduct.title);
-
-      try {
-        const res = await fetch('/api/shopify/media/upload-url', { method: 'POST', body: form });
-        const data = await res.json();
-
-        if (!res.ok) {
-          toast('Errore upload: ' + JSON.stringify(data.errors || data.error), 'error');
-          if (card) card.style.opacity = '1';
-          return;
-        }
-
-        toast('Immagine caricata su Shopify!', 'success');
-        await loadShopifyImages();
-        if (card) card.style.opacity = '1';
-
-      } catch (err) {
-        toast('Errore: ' + err.message, 'error');
-        if (card) card.style.opacity = '1';
-      }
-    }
-
-    // ── UPLOAD FILE ──────────────────────────────────────────────────────────────
-    document.getElementById('fileUploadInput').addEventListener('change', async (e) => {
-      if (!shopifyProductData) {
-        toast('Seleziona prima un prodotto e verifica il dominio shop', 'error');
-        return;
-      }
-
-      const files = Array.from(e.target.files);
-      if (!files.length) return;
-
-      const s = shop();
-
-      for (const file of files) {
-        toast(`Caricamento ${file.name}…`);
-
-        const form = new FormData();
-        form.append('shop', s);
-        form.append('product_id', shopifyProductData.id);
-        form.append('file', file);
-
-        try {
-          const res = await fetch('/api/shopify/media/upload-file', { method: 'POST', body: form });
-          const data = await res.json();
-
-          if (!res.ok) {
-            toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error');
-            continue;
-          }
-
-          toast(`${file.name} caricato!`, 'success');
-
-        } catch (err) {
-          toast('Errore: ' + err.message, 'error');
-        }
-      }
-
-      await loadShopifyImages();
-      e.target.value = '';
-    });
-
-    // ── DELETE MEDIA ─────────────────────────────────────────────────────────────
-    async function deleteMedia(mediaId) {
-      if (!confirm('Eliminare questa immagine da Shopify?')) return;
-      if (!shopifyProductData) return;
-
-      const s = shop();
-
-      try {
-        const params = new URLSearchParams({
-          shop: s,
-          product_id: shopifyProductData.id,
-          media_id: mediaId,
-        });
-
-        const res = await fetch('/api/shopify/media?' + params, { method: 'DELETE' });
-        const data = await res.json();
-
-        if (!res.ok) {
-          toast('Errore eliminazione: ' + JSON.stringify(data.errors || data.error), 'error');
-          return;
-        }
-
-        toast('Immagine eliminata', 'success');
-        await loadShopifyImages();
-
-      } catch (err) {
-        toast('Errore: ' + err.message, 'error');
-      }
-    }
-
-    // ── UPLOAD MANUAL URL ────────────────────────────────────────────────────────
-    async function uploadManualUrl() {
-      const urlInput = document.getElementById('manualUrlInput');
-      const imageUrl = urlInput.value.trim();
-
-      if (!imageUrl) { toast('Inserisci un URL valido', 'error'); return; }
-      if (!imageUrl.startsWith('http')) { toast('URL non valido — deve iniziare con http', 'error'); return; }
-      if (!shopifyProductData) { toast('Seleziona prima un prodotto e verifica il dominio shop', 'error'); return; }
-
-      toast('Caricamento URL…');
-      urlInput.disabled = true;
-
-      const form = new FormData();
-      form.append('shop', shop());
-      form.append('product_id', shopifyProductData.id);
-      form.append('image_url', imageUrl);
-      form.append('alt', currentProduct.title);
-
+      form.append('shop', shop()); form.append('product_id', shopifyData.id);
+      form.append('image_url', url); form.append('alt', current.title);
       try {
         const res = await fetch('/api/shopify/media/upload-url', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); return; }
-        toast('Immagine caricata!', 'success');
-        urlInput.value = '';
-        await loadShopifyImages();
-      } catch (err) {
-        toast('Errore: ' + err.message, 'error');
-      } finally {
-        urlInput.disabled = false;
-      }
+        toast('Immagine caricata su Shopify!', 'success'); await loadShopifyImages();
+      } catch (err) { toast('Errore: ' + err.message, 'error'); }
+      finally { if (card) card.style.opacity = '1'; }
     }
 
-    // ── HELPERS ──────────────────────────────────────────────────────────────────
-    function escHtml(str) {
-      return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // UPLOAD MANUAL URL
+    async function uploadManualUrl() {
+      const inp = $('urlInput'); const url = inp.value.trim();
+      if (!url || !url.startsWith('http')) { toast('Inserisci un URL valido', 'error'); return; }
+      if (!shopifyData) { toast('Seleziona prima un prodotto con shop configurato', 'error'); return; }
+      toast('Caricamento…'); inp.disabled = true;
+      const form = new FormData();
+      form.append('shop', shop()); form.append('product_id', shopifyData.id);
+      form.append('image_url', url); form.append('alt', current.title);
+      try {
+        const res = await fetch('/api/shopify/media/upload-url', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); return; }
+        toast('Immagine caricata!', 'success'); inp.value = ''; await loadShopifyImages();
+      } catch (err) { toast('Errore: ' + err.message, 'error'); }
+      finally { inp.disabled = false; }
+    }
+
+    // UPLOAD FILE
+    $('fileInput').addEventListener('change', async e => {
+      if (!shopifyData) { toast('Seleziona prima un prodotto con shop configurato', 'error'); return; }
+      const files = Array.from(e.target.files);
+      for (const file of files) {
+        toast(`Caricamento ${file.name}…`);
+        const form = new FormData();
+        form.append('shop', shop()); form.append('product_id', shopifyData.id); form.append('file', file);
+        try {
+          const res = await fetch('/api/shopify/media/upload-file', { method: 'POST', body: form });
+          const data = await res.json();
+          if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); continue; }
+          toast(`${file.name} caricato!`, 'success');
+        } catch (err) { toast('Errore: ' + err.message, 'error'); }
+      }
+      await loadShopifyImages(); e.target.value = '';
+    });
+
+    // DELETE MEDIA
+    async function deleteMedia(mediaId) {
+      if (!confirm('Eliminare questa immagine da Shopify?')) return;
+      const params = new URLSearchParams({ shop: shop(), product_id: shopifyData.id, media_id: mediaId });
+      try {
+        const res = await fetch('/api/shopify/media?' + params, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); return; }
+        toast('Immagine eliminata', 'success'); await loadShopifyImages();
+      } catch (err) { toast('Errore: ' + err.message, 'error'); }
     }
   </script>
 </body>
