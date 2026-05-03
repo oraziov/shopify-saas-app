@@ -103,15 +103,23 @@ async def parse_csv(file: UploadFile = File(...)):
 # ── SHOPIFY: fetch product media ─────────────────────────────────────────────
 
 @app.get("/api/shopify/product")
-async def get_shopify_product(shop: str, handle: str):
-    """Fetch product + media from Shopify by handle."""
+async def get_shopify_product(shop: str, handle: str, sku: str = ""):
+    """
+    Fetch product + media from Shopify.
+    Tries productByHandle first; if not found (numeric handle from CSV),
+    falls back to searching by SKU via the products query.
+    """
     token = get_shop_token(shop)
     if not token:
         return JSONResponse(status_code=401, content={"error": "Shop not authenticated"})
 
-    query = """
-    query ($handle: String!) {
-      productByHandle(handle: $handle) {
+    headers = {
+        "X-Shopify-Access-Token": token,
+        "Content-Type": "application/json",
+    }
+    url = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+
+    MEDIA_FRAGMENT = """
         id
         title
         media(first: 30) {
@@ -125,25 +133,51 @@ async def get_shopify_product(shop: str, handle: str):
             }
           }
         }
-      }
-    }
     """
 
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
-            headers={
-                "X-Shopify-Access-Token": token,
-                "Content-Type": "application/json",
-            },
-            json={"query": query, "variables": {"handle": handle}},
-        )
 
-    data = resp.json()
-    product = (data.get("data") or {}).get("productByHandle")
+        # 1️⃣ Try productByHandle (works when handle is a real slug)
+        resp = await client.post(url, headers=headers, json={
+            "query": f"query ($h: String!) {{ productByHandle(handle: $h) {{ {MEDIA_FRAGMENT} }} }}",
+            "variables": {"h": handle},
+        })
+        product = (resp.json().get("data") or {}).get("productByHandle")
+
+        # 2️⃣ Fallback: search by SKU (handles numeric codes like 330650)
+        if not product and sku:
+            resp2 = await client.post(url, headers=headers, json={
+                "query": f"""
+                query ($q: String!) {{
+                  products(first: 1, query: $q) {{
+                    edges {{ node {{ {MEDIA_FRAGMENT} }} }}
+                  }}
+                }}
+                """,
+                "variables": {"q": f"sku:{sku}"},
+            })
+            edges = (resp2.json().get("data") or {}).get("products", {}).get("edges", [])
+            if edges:
+                product = edges[0]["node"]
+
+        # 3️⃣ Fallback: search by title keywords
+        if not product:
+            resp3 = await client.post(url, headers=headers, json={
+                "query": f"""
+                query ($q: String!) {{
+                  products(first: 1, query: $q) {{
+                    edges {{ node {{ {MEDIA_FRAGMENT} }} }}
+                  }}
+                }}
+                """,
+                "variables": {"q": f"tag:{handle} OR sku:{handle}"},
+            })
+            edges = (resp3.json().get("data") or {}).get("products", {}).get("edges", [])
+            if edges:
+                product = edges[0]["node"]
 
     if not product:
-        return JSONResponse(status_code=404, content={"error": "Product not found"})
+        return JSONResponse(status_code=404, content={"error": f"Prodotto non trovato (handle={handle}, sku={sku})"})
 
     media = [
         {

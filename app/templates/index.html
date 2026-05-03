@@ -722,13 +722,24 @@
           <div class="image-grid" id="csvImages"></div>
         </div>
 
-        <!-- Upload file locale -->
+        <!-- Upload extra immagini -->
         <div class="section">
-          <div class="section-title">Carica immagine locale</div>
-          <div class="upload-section" onclick="document.getElementById('fileUploadInput').click()">
+          <div class="section-title">Aggiungi immagini</div>
+
+          <!-- File locale -->
+          <div class="upload-section" onclick="document.getElementById('fileUploadInput').click()"
+            style="margin-bottom:12px;">
             <input type="file" id="fileUploadInput" accept="image/jpeg,image/png,image/webp" multiple>
-            <p style="font-size:13px; margin-bottom:8px;">⬆ Clicca per caricare un file</p>
-            <p style="color:var(--muted); font-size:11px;">JPG, PNG, WebP — max 20MB</p>
+            <p style="font-size:13px; margin-bottom:8px;">⬆ Carica file dal tuo computer</p>
+            <p style="color:var(--muted); font-size:11px;">JPG, PNG, WebP — più file selezionabili</p>
+          </div>
+
+          <!-- URL manuale -->
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="text" id="manualUrlInput" placeholder="Incolla URL immagine… https://example.com/img.jpg"
+              style="flex:1; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius);
+                   padding:8px 10px; font-family:var(--mono); font-size:12px; color:var(--text); outline:none;">
+            <button class="btn btn-primary" onclick="uploadManualUrl()">⬆ Carica URL</button>
           </div>
         </div>
 
@@ -924,7 +935,9 @@
 
       try {
         const handle = currentProduct.handle;
-        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(handle)}`);
+        // Use first variant SKU as fallback search key (handle in CSV is numeric)
+        const firstSku = (currentProduct.variants[0] || {}).sku || '';
+        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(handle)}&sku=${encodeURIComponent(firstSku)}`);
         const data = await res.json();
 
         if (!res.ok) {
@@ -1067,6 +1080,38 @@
 
       } catch (err) {
         toast('Errore: ' + err.message, 'error');
+      }
+    }
+
+    // ── UPLOAD MANUAL URL ────────────────────────────────────────────────────────
+    async function uploadManualUrl() {
+      const urlInput = document.getElementById('manualUrlInput');
+      const imageUrl = urlInput.value.trim();
+
+      if (!imageUrl) { toast('Inserisci un URL valido', 'error'); return; }
+      if (!imageUrl.startsWith('http')) { toast('URL non valido — deve iniziare con http', 'error'); return; }
+      if (!shopifyProductData) { toast('Seleziona prima un prodotto e verifica il dominio shop', 'error'); return; }
+
+      toast('Caricamento URL…');
+      urlInput.disabled = true;
+
+      const form = new FormData();
+      form.append('shop', shop());
+      form.append('product_id', shopifyProductData.id);
+      form.append('image_url', imageUrl);
+      form.append('alt', currentProduct.title);
+
+      try {
+        const res = await fetch('/api/shopify/media/upload-url', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error'); return; }
+        toast('Immagine caricata!', 'success');
+        urlInput.value = '';
+        await loadShopifyImages();
+      } catch (err) {
+        toast('Errore: ' + err.message, 'error');
+      } finally {
+        urlInput.disabled = false;
       }
     }
 
