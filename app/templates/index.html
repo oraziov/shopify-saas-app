@@ -1,148 +1,1080 @@
 <!doctype html>
-<html>
+<html lang="it">
 
 <head>
   <meta charset="utf-8">
-  <title>CSV Manager</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Image Manager — Shopify</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap"
+    rel="stylesheet">
   <style>
+    :root {
+      --bg: #F5F3EE;
+      --surface: #FFFFFF;
+      --surface2: #F0EDE6;
+      --border: #D8D3C8;
+      --text: #1A1714;
+      --muted: #7A7468;
+      --accent: #C84B2F;
+      --accent-light: #F5E8E4;
+      --green: #2A6B4A;
+      --green-light: #E4F0EB;
+      --radius: 6px;
+      --mono: 'DM Mono', monospace;
+      --serif: 'Fraunces', Georgia, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: Arial;
-      padding: 30px;
-      background: #f6f6f7;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      min-height: 100vh;
     }
 
-    .card {
-      background: white;
+    /* ── HEADER ── */
+    header {
+      background: var(--text);
+      color: var(--bg);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+    }
+
+    header h1 span {
+      color: #C84B2F;
+      font-style: italic;
+    }
+
+    .header-meta {
+      font-size: 11px;
+      color: #9A9488;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: calc(100vh - 58px);
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
       padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 10px;
+      border-bottom: 1px solid var(--border);
     }
 
-    img {
-      width: 80px;
-      margin: 5px;
-      border-radius: 6px;
+    .sidebar-header label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .upload-zone {
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
       cursor: pointer;
-      border: 2px solid transparent;
+      transition: all 0.15s;
+      background: var(--bg);
     }
 
-    img.selected {
-      border: 2px solid green;
+    .upload-zone:hover,
+    .upload-zone.drag {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .upload-zone input {
+      display: none;
+    }
+
+    .upload-zone .icon {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .upload-zone p {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .upload-zone strong {
+      color: var(--text);
+    }
+
+    .shop-field {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .shop-field label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .shop-field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .shop-field input:focus {
+      border-color: var(--accent);
+    }
+
+    /* ── PRODUCT LIST ── */
+    .product-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .product-list-header {
+      padding: 12px 20px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .product-count {
+      background: var(--surface2);
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: 10px;
+    }
+
+    .product-item {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .product-item:hover {
+      background: var(--surface2);
+    }
+
+    .product-item.active {
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      padding-left: 17px;
+    }
+
+    .product-item .pi-handle {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .product-item .pi-title {
+      font-family: var(--serif);
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.3;
+    }
+
+    .product-item .pi-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+
+    .tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .tag.color {
+      background: #EEE9E2;
+    }
+
+    .tag.images {
+      background: var(--green-light);
+      color: var(--green);
+      border-color: #B8D8C8;
+    }
+
+    /* ── MAIN PANEL ── */
+    .main {
+      overflow-y: auto;
+      padding: 28px 32px;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 60vh;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .empty-state .big-icon {
+      font-size: 48px;
+      opacity: 0.3;
+    }
+
+    .empty-state h2 {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 300;
+      color: var(--muted);
+    }
+
+    .empty-state p {
+      color: var(--muted);
+      font-size: 12px;
+      max-width: 300px;
+    }
+
+    /* ── PRODUCT DETAIL ── */
+    .product-detail {
+      display: none;
+    }
+
+    .product-detail.visible {
+      display: block;
+    }
+
+    .detail-header {
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .detail-header h2 {
+      font-family: var(--serif);
+      font-size: 26px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .detail-header .detail-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .badge {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-family: var(--mono);
+    }
+
+    .badge-handle {
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .badge-color {
+      background: #EEE9E2;
+      color: #5A4F40;
+      border: 1px solid #D8CFBF;
+    }
+
+    .badge-brand {
+      background: var(--text);
+      color: var(--bg);
+    }
+
+    /* ── SECTION ── */
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ── IMAGE GRIDS ── */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .img-card {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      aspect-ratio: 3/4;
+      cursor: pointer;
+    }
+
+    .img-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.2s;
+    }
+
+    .img-card:hover img {
+      transform: scale(1.04);
+    }
+
+    .img-card .img-actions {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 23, 20, 0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .img-card:hover .img-actions {
+      opacity: 1;
+    }
+
+    .img-card .img-status {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      background: rgba(26, 23, 20, 0.7);
+      color: white;
+    }
+
+    .img-card .img-source {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    .img-card .img-source.shopify {
+      background: #96BF48;
+      color: #2A4000;
+    }
+
+    .img-card .img-source.csv {
+      background: #5C6AC4;
+      color: white;
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: var(--radius);
+      color: white;
+      padding: 6px 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.1s;
+      width: 110px;
+      text-align: center;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-icon.danger:hover {
+      background: rgba(200, 75, 47, 0.7);
+    }
+
+    /* ── UPLOAD AREA ── */
+    .upload-section {
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      background: var(--bg);
+      transition: all 0.15s;
+    }
+
+    .upload-section:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .upload-section input {
+      display: none;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+    }
+
+    .btn-primary:hover {
+      background: #3A3530;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .btn-outline:hover {
+      background: var(--surface2);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .btn-danger:hover {
+      background: var(--accent-light);
+    }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--text);
+      color: var(--bg);
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.25s;
+      z-index: 999;
+      max-width: 320px;
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #toast.success {
+      background: var(--green);
+    }
+
+    #toast.error {
+      background: var(--accent);
+    }
+
+    /* ── LOADING ── */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(245, 243, 238, 0.8);
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: var(--radius);
+    }
+
+    .loading-overlay.visible {
+      display: flex;
+    }
+
+    /* ── VARIANTS TABLE ── */
+    .variants-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .variants-table th {
+      text-align: left;
+      padding: 6px 10px;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .variants-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .variants-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ── SEARCH ── */
+    .search-wrap {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-wrap input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .search-wrap input:focus {
+      border-color: var(--accent);
+    }
+
+    .no-results {
+      padding: 24px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
     }
   </style>
 </head>
 
 <body>
 
-  <h1>CSV → Associazione immagini</h1>
+  <header>
+    <h1>Image <span>Manager</span></h1>
+    <div class="header-meta">
+      <span id="header-status">Nessun CSV caricato</span>
+    </div>
+  </header>
 
-  <input type="file" id="csv">
-  <button id="btnCsv">Carica CSV</button>
+  <div class="layout">
 
-  <div id="status"></div>
-  <div id="results"></div>
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar">
 
-  <script>
-    const shop = "6uxkvv-2d.myshopify.com"
-
-    // 🔥 BOTTONE FIXATO
-    document.getElementById("btnCsv").addEventListener("click", uploadCSV)
-
-    async function uploadCSV() {
-      alert("CLICK OK")
-
-      const file = document.getElementById("csv").files[0]
-
-      if (!file) {
-        alert("Seleziona file")
-        return
-      }
-
-      document.getElementById("status").innerText = "Caricamento..."
-
-      const form = new FormData()
-      form.append("shop", shop)
-      form.append("file", file)
-
-      try {
-        const res = await fetch("/csv/process", {
-          method: "POST",
-          body: form
-        })
-
-        alert("STATUS: " + res.status)
-
-        const data = await res.json()
-
-        alert("Righe trovate: " + data.length)
-
-        render(data)
-
-      } catch (e) {
-        alert("Errore: " + e)
-      }
-    }
-
-    function render(data) {
-      const container = document.getElementById("results")
-      container.innerHTML = ""
-
-      data.forEach(item => {
-        const div = document.createElement("div")
-        div.className = "card"
-
-        div.innerHTML = `
-      <h2>${item.title}</h2>
-      <p><b>Variante:</b> ${item.variant_title}</p>
-      <p><b>Color:</b> ${item.color_code}</p>
-
-      <h4>Shopify</h4>
-      ${item.images_shopify.map(i => `<img src="${i.url}">`).join("")}
-
-      <h4>CSV (clicca)</h4>
-      <div class="csv">
-        ${item.images_csv.map(i => `<img src="${i}" onclick="toggle(this)">`).join("")}
+      <div class="sidebar-header">
+        <label>Importa CSV prodotti</label>
+        <div class="upload-zone" id="dropZone" onclick="document.getElementById('csvInput').click()">
+          <input type="file" id="csvInput" accept=".csv">
+          <div class="icon">⬆</div>
+          <p><strong>Clicca o trascina</strong> il CSV</p>
+          <p style="margin-top:4px; font-size:11px;">handle, SKU, Image1/2/3, Colore…</p>
+        </div>
       </div>
 
-      <button onclick='send(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
-        Associa immagini
-      </button>
-    `
+      <div class="shop-field">
+        <label>Shop Shopify</label>
+        <input type="text" id="shopInput" placeholder="mionegozio.myshopify.com" value="">
+      </div>
 
-        container.appendChild(div)
-      })
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Cerca per titolo, handle, colore…">
+      </div>
+
+      <div class="product-list-header">
+        <span>Prodotti</span>
+        <span class="product-count" id="productCount">0</span>
+      </div>
+
+      <div class="product-list" id="productList">
+        <div class="no-results">Carica un CSV per iniziare</div>
+      </div>
+
+    </aside>
+
+    <!-- ── MAIN PANEL ── -->
+    <main class="main">
+
+      <div class="empty-state" id="emptyState">
+        <div class="big-icon">🖼</div>
+        <h2>Seleziona un prodotto</h2>
+        <p>Carica il CSV e clicca su un prodotto per visualizzare e gestire le sue immagini</p>
+      </div>
+
+      <div class="product-detail" id="productDetail">
+
+        <div class="detail-header">
+          <div>
+            <h2 id="detailTitle">—</h2>
+            <div class="detail-meta" id="detailMeta"></div>
+          </div>
+        </div>
+
+        <!-- Immagini Shopify -->
+        <div class="section">
+          <div class="section-title">
+            <span>Immagini su Shopify</span>
+            <span id="shopifyLoadStatus"></span>
+          </div>
+          <div class="image-grid" id="shopifyImages" style="position:relative; min-height:80px;">
+            <div class="loading-overlay visible" id="shopifyLoader">
+              <span class="spinner"></span>&nbsp; Carico da Shopify…
+            </div>
+          </div>
+        </div>
+
+        <!-- Immagini CSV -->
+        <div class="section">
+          <div class="section-title">
+            <span>Immagini dal CSV</span>
+            <span id="csvImgCount" style="font-size:11px; color:var(--muted)"></span>
+          </div>
+          <div class="image-grid" id="csvImages"></div>
+        </div>
+
+        <!-- Upload file locale -->
+        <div class="section">
+          <div class="section-title">Carica immagine locale</div>
+          <div class="upload-section" onclick="document.getElementById('fileUploadInput').click()">
+            <input type="file" id="fileUploadInput" accept="image/jpeg,image/png,image/webp" multiple>
+            <p style="font-size:13px; margin-bottom:8px;">⬆ Clicca per caricare un file</p>
+            <p style="color:var(--muted); font-size:11px;">JPG, PNG, WebP — max 20MB</p>
+          </div>
+        </div>
+
+        <!-- Varianti -->
+        <div class="section">
+          <div class="section-title">Varianti</div>
+          <table class="variants-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Taglia</th>
+              </tr>
+            </thead>
+            <tbody id="variantsBody"></tbody>
+          </table>
+        </div>
+
+      </div><!-- /product-detail -->
+    </main>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // ── STATE ────────────────────────────────────────────────────────────────────
+    let allProducts = [];
+    let currentProduct = null;
+    let shopifyProductData = null;
+
+    // ── UTILS ────────────────────────────────────────────────────────────────────
+    function shop() {
+      return document.getElementById('shopInput').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
     }
 
-    function toggle(el) {
-      el.classList.toggle("selected")
+    function toast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'show ' + type;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 3200);
     }
 
-    async function send(item) {
-      const selected = Array.from(
-        event.target.parentElement.querySelectorAll(".csv img.selected")
-      ).map(i => i.src)
+    // ── CSV UPLOAD ───────────────────────────────────────────────────────────────
+    document.getElementById('csvInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      await loadCSV(file);
+    });
 
-      if (!selected.length) {
-        alert("Seleziona immagini")
-        return
+    // Drag & drop
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+    dropZone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag');
+      const file = e.dataTransfer.files[0];
+      if (file) await loadCSV(file);
+    });
+
+    async function loadCSV(file) {
+      const form = new FormData();
+      form.append('file', file);
+
+      document.getElementById('header-status').textContent = 'Parsing CSV…';
+
+      try {
+        const res = await fetch('/api/csv/parse', { method: 'POST', body: form });
+        if (!res.ok) throw new Error(await res.text());
+        allProducts = await res.json();
+
+        document.getElementById('header-status').textContent =
+          `${allProducts.length} prodotti — ${file.name}`;
+        document.getElementById('productCount').textContent = allProducts.length;
+
+        renderProductList(allProducts);
+        toast(`CSV caricato: ${allProducts.length} prodotti`, 'success');
+      } catch (err) {
+        toast('Errore parsing CSV: ' + err.message, 'error');
+        document.getElementById('header-status').textContent = 'Errore CSV';
+      }
+    }
+
+    // ── SEARCH ──────────────────────────────────────────────────────────────────
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const filtered = allProducts.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        String(p.handle).toLowerCase().includes(q) ||
+        p.colore.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q)
+      );
+      renderProductList(filtered);
+      document.getElementById('productCount').textContent = filtered.length;
+    });
+
+    // ── RENDER PRODUCT LIST ──────────────────────────────────────────────────────
+    function renderProductList(products) {
+      const list = document.getElementById('productList');
+
+      if (!products.length) {
+        list.innerHTML = '<div class="no-results">Nessun prodotto trovato</div>';
+        return;
       }
 
-      const form = new URLSearchParams()
-      form.append("shop", shop)
-      form.append("product_id", item.product_id)
-      form.append("variant_id", item.variant_id)
-      form.append("images", JSON.stringify(selected))
+      list.innerHTML = products.map((p, i) => `
+    <div class="product-item" data-idx="${allProducts.indexOf(p)}" onclick="selectProduct(${allProducts.indexOf(p)})">
+      <div class="pi-handle">${p.handle}</div>
+      <div class="pi-title">${p.title || '(senza titolo)'}</div>
+      <div class="pi-meta">
+        <span class="tag color">${p.colore || '—'}</span>
+        <span class="tag images">🖼 ${p.images_csv.length}</span>
+        <span class="tag">${p.variants.length} taglie</span>
+      </div>
+    </div>
+  `).join('');
+    }
 
-      await fetch("/images/assign", {
-        method: "POST",
-        body: form
-      })
+    // ── SELECT PRODUCT ───────────────────────────────────────────────────────────
+    async function selectProduct(idx) {
+      currentProduct = allProducts[idx];
+      shopifyProductData = null;
 
-      alert("OK immagini associate")
+      // highlight sidebar
+      document.querySelectorAll('.product-item').forEach(el => el.classList.remove('active'));
+      const el = document.querySelector(`.product-item[data-idx="${idx}"]`);
+      if (el) el.classList.add('active');
+
+      // show detail panel
+      document.getElementById('emptyState').style.display = 'none';
+      const detail = document.getElementById('productDetail');
+      detail.classList.add('visible');
+
+      // fill header
+      document.getElementById('detailTitle').textContent = currentProduct.title || currentProduct.handle;
+      document.getElementById('detailMeta').innerHTML = `
+    <span class="badge badge-handle">${currentProduct.handle}</span>
+    <span class="badge badge-brand">${currentProduct.brand}</span>
+    <span class="badge badge-color">${currentProduct.colore} · #${currentProduct.color_code}</span>
+  `;
+
+      // variants
+      const tbody = document.getElementById('variantsBody');
+      tbody.innerHTML = currentProduct.variants.map(v => `
+    <tr><td>${v.sku}</td><td>${v.taglia}</td></tr>
+  `).join('');
+
+      // CSV images
+      renderCSVImages();
+
+      // Shopify images
+      await loadShopifyImages();
+    }
+
+    // ── CSV IMAGES ───────────────────────────────────────────────────────────────
+    function renderCSVImages() {
+      const p = currentProduct;
+      document.getElementById('csvImgCount').textContent = `${p.images_csv.length} immagini`;
+
+      const grid = document.getElementById('csvImages');
+      if (!p.images_csv.length) {
+        grid.innerHTML = '<p style="color:var(--muted); font-size:12px;">Nessuna immagine nel CSV</p>';
+        return;
+      }
+
+      grid.innerHTML = p.images_csv.map((url, i) => `
+    <div class="img-card" id="csv-img-${i}">
+      <img src="${url}" loading="lazy" onerror="this.parentElement.style.opacity=0.4">
+      <span class="img-source csv">CSV</span>
+      <div class="img-actions">
+        <button class="btn-icon" onclick="uploadFromUrl('${escHtml(url)}', ${i})">⬆ Carica su Shopify</button>
+        <a class="btn-icon" href="${escHtml(url)}" target="_blank">↗ Apri originale</a>
+      </div>
+    </div>
+  `).join('');
+    }
+
+    // ── SHOPIFY IMAGES ───────────────────────────────────────────────────────────
+    async function loadShopifyImages() {
+      const grid = document.getElementById('shopifyImages');
+      const statusEl = document.getElementById('shopifyLoadStatus');
+
+      grid.innerHTML = `<div class="loading-overlay visible" id="shopifyLoader">
+    <span class="spinner"></span>&nbsp; Carico da Shopify…
+  </div>`;
+      statusEl.textContent = '';
+
+      const s = shop();
+      if (!s) {
+        grid.innerHTML = '<p style="color:var(--muted); font-size:12px; padding:8px 0">Inserisci il dominio shop per visualizzare le immagini Shopify</p>';
+        return;
+      }
+
+      try {
+        const handle = currentProduct.handle;
+        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(handle)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          grid.innerHTML = `<p style="color:var(--accent); font-size:12px;">${data.error || 'Errore Shopify'}</p>`;
+          return;
+        }
+
+        shopifyProductData = data;
+        statusEl.textContent = `${data.media.length} immagini`;
+
+        renderShopifyImages(data.media);
+
+      } catch (err) {
+        grid.innerHTML = `<p style="color:var(--accent); font-size:12px;">Errore: ${err.message}</p>`;
+      }
+    }
+
+    function renderShopifyImages(media) {
+      const grid = document.getElementById('shopifyImages');
+
+      if (!media.length) {
+        grid.innerHTML = '<p style="color:var(--muted); font-size:12px; padding:8px 0">Nessuna immagine su Shopify</p>';
+        return;
+      }
+
+      grid.innerHTML = media.map(m => `
+    <div class="img-card" id="shopify-${m.id.replace(/\//g, '_')}">
+      <img src="${m.url}" loading="lazy">
+      <span class="img-source shopify">Shopify</span>
+      ${m.status ? `<span class="img-status">${m.status}</span>` : ''}
+      <div class="img-actions">
+        <button class="btn-icon danger" onclick="deleteMedia('${escHtml(m.id)}')">✕ Elimina</button>
+        <a class="btn-icon" href="${escHtml(m.url)}" target="_blank">↗ Apri</a>
+      </div>
+    </div>
+  `).join('');
+    }
+
+    // ── UPLOAD FROM URL ──────────────────────────────────────────────────────────
+    async function uploadFromUrl(url, csvIdx) {
+      if (!shopifyProductData) {
+        toast('Prodotto Shopify non caricato. Verifica il dominio shop.', 'error');
+        return;
+      }
+
+      const s = shop();
+      const card = document.getElementById(`csv-img-${csvIdx}`);
+      if (card) card.style.opacity = '0.5';
+
+      const form = new FormData();
+      form.append('shop', s);
+      form.append('product_id', shopifyProductData.id);
+      form.append('image_url', url);
+      form.append('alt', currentProduct.title);
+
+      try {
+        const res = await fetch('/api/shopify/media/upload-url', { method: 'POST', body: form });
+        const data = await res.json();
+
+        if (!res.ok) {
+          toast('Errore upload: ' + JSON.stringify(data.errors || data.error), 'error');
+          if (card) card.style.opacity = '1';
+          return;
+        }
+
+        toast('Immagine caricata su Shopify!', 'success');
+        await loadShopifyImages();
+        if (card) card.style.opacity = '1';
+
+      } catch (err) {
+        toast('Errore: ' + err.message, 'error');
+        if (card) card.style.opacity = '1';
+      }
+    }
+
+    // ── UPLOAD FILE ──────────────────────────────────────────────────────────────
+    document.getElementById('fileUploadInput').addEventListener('change', async (e) => {
+      if (!shopifyProductData) {
+        toast('Seleziona prima un prodotto e verifica il dominio shop', 'error');
+        return;
+      }
+
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+
+      const s = shop();
+
+      for (const file of files) {
+        toast(`Caricamento ${file.name}…`);
+
+        const form = new FormData();
+        form.append('shop', s);
+        form.append('product_id', shopifyProductData.id);
+        form.append('file', file);
+
+        try {
+          const res = await fetch('/api/shopify/media/upload-file', { method: 'POST', body: form });
+          const data = await res.json();
+
+          if (!res.ok) {
+            toast('Errore: ' + JSON.stringify(data.errors || data.error), 'error');
+            continue;
+          }
+
+          toast(`${file.name} caricato!`, 'success');
+
+        } catch (err) {
+          toast('Errore: ' + err.message, 'error');
+        }
+      }
+
+      await loadShopifyImages();
+      e.target.value = '';
+    });
+
+    // ── DELETE MEDIA ─────────────────────────────────────────────────────────────
+    async function deleteMedia(mediaId) {
+      if (!confirm('Eliminare questa immagine da Shopify?')) return;
+      if (!shopifyProductData) return;
+
+      const s = shop();
+
+      try {
+        const params = new URLSearchParams({
+          shop: s,
+          product_id: shopifyProductData.id,
+          media_id: mediaId,
+        });
+
+        const res = await fetch('/api/shopify/media?' + params, { method: 'DELETE' });
+        const data = await res.json();
+
+        if (!res.ok) {
+          toast('Errore eliminazione: ' + JSON.stringify(data.errors || data.error), 'error');
+          return;
+        }
+
+        toast('Immagine eliminata', 'success');
+        await loadShopifyImages();
+
+      } catch (err) {
+        toast('Errore: ' + err.message, 'error');
+      }
+    }
+
+    // ── HELPERS ──────────────────────────────────────────────────────────────────
+    function escHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
   </script>
-
 </body>
 
 </html>
