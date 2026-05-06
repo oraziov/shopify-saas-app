@@ -157,30 +157,64 @@
       line-height: 1.5;
     }
 
-    .search-wrap {
-      padding: 10px 14px;
+    .filter-wrap {
+      padding: 8px 14px;
       border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    .sbox {
-      display: flex;
-      align-items: center;
-      gap: 5px;
+    .fsel {
+      width: 100%;
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--r);
-      padding: 0 9px;
-    }
-
-    .sbox input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      padding: 7px 0;
+      padding: 6px 8px;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text);
       outline: none;
+    }
+
+    .fsel:focus {
+      border-color: var(--accent);
+    }
+
+    .colors-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .chip {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .cdot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid rgba(0, 0, 0, .1);
+    }
+
+    .ccount {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 10px;
+      background: var(--s2);
+      color: var(--muted);
+      border: 1px solid var(--border);
     }
 
     .plist-header {
@@ -532,8 +566,16 @@
       </div>
       <div class="search-wrap">
         <div class="sbox">
-          <input id="search" type="text" placeholder="⌕ Cerca prodotto…">
+          <input id="search" type="text" placeholder="⌕ Cerca titolo, handle…">
         </div>
+      </div>
+      <div class="filter-wrap">
+        <select class="fsel" id="fbrand">
+          <option value="">Tutti i brand</option>
+        </select>
+        <select class="fsel" id="ftitle">
+          <option value="">Tutti i modelli</option>
+        </select>
       </div>
       <div class="plist-header">
         <span>Prodotti</span>
@@ -585,6 +627,7 @@
 
   <script>
     let all = [], cur = null, shopData = null;
+    let fSearch = '', fBrand = '', fTitle = '';
     const $ = id => document.getElementById(id);
     const shop = () => $('shopInput').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
 
@@ -594,6 +637,15 @@
       clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3500);
     }
     function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    const CMAP = {
+      NERO: '#1A1A1A', NERO1: '#2A2A2A', BIANCO: '#F0EEE8', AVORIO: '#F5EFD8', BURRO: '#F5ECC0',
+      BEIGE: '#D4C5A9', NUDO: '#E8C9A0', TORTORA: '#C4B49A', FANGO: '#9E8B72', CAMMELLO: '#C19A6B',
+      TABACCO: '#8B6340', MARRONE: '#6B3D26', KAKI: '#8A8A4A', MILITARE: '#4A5A35', PRATO: '#3A6B3A',
+      VERDE: '#2A7A3A', DENIM: '#3A5A8A', BLU: '#1A3A7A', BLU1: '#2A4A9A', AZZURRO: '#5A9AC8',
+      CELESTE: '#8AC4E0', LILLA: '#9A7AC8', ROSA: '#E8A0B0', BORDEAUX: '#7A1A2A', GRIGIO: '#909090', GIALLO: '#E8D040',
+    };
+    const cdot = c => `<span class="cdot" style="background:${CMAP[c] || '#CCC'}"></span>`;
 
     // CSV
     $('csvfile').addEventListener('change', e => e.target.files[0] && loadCSV(e.target.files[0]));
@@ -610,17 +662,38 @@
         if (!res.ok) throw new Error(await res.text());
         all = await res.json();
         $('hstat').textContent = `${all.length} prodotti · ${file.name}`;
-        renderList(all);
+        buildFilters(); applyF();
         toast(`${all.length} prodotti caricati`, 'ok');
       } catch (e) { toast('Errore CSV: ' + e.message, 'err'); }
     }
 
-    // SEARCH
-    $('search').addEventListener('input', e => {
-      const q = e.target.value.toLowerCase();
-      const filtered = q ? all.filter(p => [p.title, String(p.handle), p.brand].join(' ').toLowerCase().includes(q)) : all;
-      renderList(filtered);
+    function buildFilters() {
+      const brands = [...new Set(all.map(p => p.brand).filter(Boolean))].sort();
+      $('fbrand').innerHTML = '<option value="">Tutti i brand</option>' + brands.map(b => `<option>${esc(b)}</option>`).join('');
+      const titles = [...new Set(all.map(p => p.title).filter(Boolean))].sort();
+      $('ftitle').innerHTML = '<option value="">Tutti i modelli</option>' + titles.map(t => `<option>${esc(t)}</option>`).join('');
+    }
+
+    $('fbrand').addEventListener('change', e => {
+      fBrand = e.target.value;
+      // Rebuild title filter based on selected brand
+      const titles = [...new Set(all.filter(p => !fBrand || p.brand === fBrand).map(p => p.title).filter(Boolean))].sort();
+      $('ftitle').innerHTML = '<option value="">Tutti i modelli</option>' + titles.map(t => `<option>${esc(t)}</option>`).join('');
+      fTitle = '';
+      applyF();
     });
+    $('ftitle').addEventListener('change', e => { fTitle = e.target.value; applyF(); });
+    $('search').addEventListener('input', e => { fSearch = e.target.value.toLowerCase(); applyF(); });
+
+    function applyF() {
+      const filtered = all.filter(p => {
+        if (fSearch && ![p.title, String(p.handle), p.brand].join(' ').toLowerCase().includes(fSearch)) return false;
+        if (fBrand && p.brand !== fBrand) return false;
+        if (fTitle && p.title !== fTitle) return false;
+        return true;
+      });
+      renderList(filtered);
+    }
 
     function renderList(items) {
       $('pcount').textContent = items.length;
@@ -628,10 +701,15 @@
       $('plist').innerHTML = items.map(p => {
         const gi = all.indexOf(p);
         const active = cur && all.indexOf(cur) === gi;
+        const colorChips = p.colors.map(c => `
+      <span class="chip">${cdot(c.colore)} ${esc(c.colore)} <span style="color:var(--blue);font-size:9px;">#${esc(c.color_code)}</span></span>
+    `).join('');
         return `<div class="pitem${active ? ' active' : ''}" data-i="${gi}" onclick="selProd(${gi})">
       <div class="phandle">${p.handle}</div>
       <div class="ptitle">${esc(p.title) || '(senza titolo)'}</div>
       <span class="pbrand">${esc(p.brand)}</span>
+      <span class="ccount" style="margin-left:4px;">${p.colors.length} colori</span>
+      <div class="colors-wrap">${colorChips}</div>
     </div>`;
       }).join('');
     }
@@ -675,7 +753,6 @@
     </div>`).join('');
     }
 
-    // DELETE
     async function deleteImg(imgId) {
       if (!confirm('Eliminare questa immagine da Shopify?')) return;
       const params = new URLSearchParams({ shop: shop(), product_id: shopData.id, image_id: imgId });
@@ -689,7 +766,6 @@
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
-    // UPLOAD URL
     async function uploadUrl() {
       const inp = $('urlinput'); const url = inp.value.trim();
       if (!url.startsWith('http')) { toast('URL non valido', 'err'); return; }
@@ -710,7 +786,6 @@
       finally { inp.disabled = false; }
     }
 
-    // UPLOAD FILE
     $('fileinput').addEventListener('change', async e => {
       if (!shopData) { toast('Seleziona prima un prodotto', 'err'); return; }
       for (const file of Array.from(e.target.files)) {

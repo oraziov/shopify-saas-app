@@ -34,21 +34,32 @@ async def parse_csv(file: UploadFile = File(...)):
         text = contents.decode("latin-1")
 
     reader = csv.DictReader(io.StringIO(text))
-    seen = set()
-    products = []
+    products: dict[str, dict] = {}
 
     for row in reader:
         handle = str(row.get("handle") or "").strip()
-        if not handle or handle in seen:
+        if not handle:
             continue
-        seen.add(handle)
-        products.append({
-            "handle": handle,
-            "brand": str(row.get("Brand") or "").strip(),
-            "title": str(row.get("Title") or "").strip(),
-        })
+        colore = str(row.get("Colore") or row.get("colore") or "").strip()
+        color_code = str(row.get("color_code") or "").strip()
 
-    return products
+        if handle not in products:
+            products[handle] = {
+                "handle": handle,
+                "brand": str(row.get("Brand") or "").strip(),
+                "title": str(row.get("Title") or "").strip(),
+                "colors": [],
+            }
+
+        # Add color if not already present
+        existing = [c["color_code"] for c in products[handle]["colors"]]
+        if color_code not in existing:
+            products[handle]["colors"].append({
+                "colore": colore,
+                "color_code": color_code,
+            })
+
+    return list(products.values())
 
 
 @app.get("/api/shopify/product")
