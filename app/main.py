@@ -1,518 +1,368 @@
-<!doctype html>
-<html lang="it">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Image Manager — Shopify</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#F5F3EE;--surface:#FFF;--s2:#F0EDE6;--border:#D8D3C8;
-  --text:#1A1714;--muted:#7A7468;--accent:#C84B2F;--al:#F5E8E4;
-  --green:#2A6B4A;--gl:#E4F0EB;--blue:#2C4FA3;--bl:#E8EDFA;
-  --r:6px;--mono:'DM Mono',monospace;--serif:'Fraunces',Georgia,serif;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100vh;}
+import csv
+import io
+import json
+import logging
 
-/* HEADER */
-header{background:var(--text);color:var(--bg);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
-header h1{font-family:var(--serif);font-size:19px;font-weight:300;letter-spacing:-.02em;}
-header h1 em{color:#C84B2F;font-style:italic;}
-.hright{display:flex;align-items:center;gap:14px;}
-.hstat{font-size:11px;color:#9A9488;}
-.shopwrap{display:flex;align-items:center;gap:6px;}
-.shopwrap label{font-size:10px;color:#9A9488;white-space:nowrap;}
-.shopwrap input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:5px 8px;font-family:var(--mono);font-size:11px;color:var(--bg);outline:none;width:220px;}
-.shopwrap input::placeholder{color:#6A6460;}
-.shopwrap input:focus{border-color:rgba(255,255,255,.4);}
+import httpx
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 
-/* LAYOUT */
-.layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 48px);}
+from app.config import API_VERSION
+from app.db import get_shop_token, init_db
 
-/* SIDEBAR */
-.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+logger = logging.getLogger(__name__)
+app = FastAPI(title="Shopify Image Manager")
+templates = Jinja2Templates(directory="app/templates")
 
-.csvzone{padding:12px 14px;border-bottom:1px solid var(--border);}
-.csvzone label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
-.drop{border:1.5px dashed var(--border);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg);}
-.drop:hover,.drop.drag{border-color:var(--accent);background:var(--al);}
-.drop input{display:none;}
-.drop p{color:var(--muted);font-size:11px;line-height:1.5;}
-.drop strong{color:var(--text);}
 
-.filters{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:7px;}
-.sbox{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:0 9px;}
-.sbox span{color:var(--muted);}
-.sbox input{flex:1;background:transparent;border:none;padding:7px 0;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;}
-.frow{display:flex;gap:5px;}
-.fsel{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:6px 7px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;min-width:0;}
-.fstats{font-size:10px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;}
-.clr{font-size:10px;color:var(--accent);cursor:pointer;background:none;border:none;font-family:var(--mono);padding:0;}
-.clr:hover{text-decoration:underline;}
+@app.on_event("startup")
+def startup():
+    init_db()
 
-/* LIST */
-.plist{flex:1;overflow-y:auto;}
-.pitem{padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
-.pitem:hover{background:var(--s2);}
-.pitem.active{background:var(--al);border-left:3px solid var(--accent);padding-left:11px;}
-.ptop{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:2px;}
-.phandle{font-size:10px;color:var(--muted);}
-.ptitle{font-family:var(--serif);font-size:13px;font-weight:300;line-height:1.3;margin-bottom:4px;}
-.pmeta{display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
-.tag{font-size:10px;padding:2px 6px;border-radius:3px;border:1px solid var(--border);display:inline-flex;align-items:center;gap:3px;}
-.tbrand{background:var(--text);color:var(--bg);border-color:var(--text);font-size:9px;}
-.tcolor{background:var(--s2);color:var(--muted);}
-.tcode{background:var(--bl);color:var(--blue);border-color:#C0CCEE;font-size:9px;}
-.timg{background:var(--gl);color:var(--green);border-color:#B8D8C8;}
-.dot{width:8px;height:8px;border-radius:50%;border:1px solid rgba(0,0,0,.1);flex-shrink:0;display:inline-block;}
-.nores{padding:20px 14px;text-align:center;color:var(--muted);font-size:12px;line-height:1.6;}
 
-/* MAIN */
-.main{overflow-y:auto;padding:22px 26px;}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;text-align:center;gap:12px;}
-.empty .big{font-size:48px;opacity:.2;}
-.empty h2{font-family:var(--serif);font-size:22px;font-weight:300;color:var(--muted);}
-.empty p{color:var(--muted);font-size:12px;max-width:280px;line-height:1.6;}
+@app.get("/", response_class=HTMLResponse)
+def ui(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-/* DETAIL */
-.detail{display:none;}
-.detail.on{display:block;}
-.dhead{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.dhead h2{font-family:var(--serif);font-size:23px;font-weight:300;letter-spacing:-.02em;margin-bottom:8px;}
-.dbadges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-.badge{font-size:11px;padding:4px 10px;border-radius:4px;font-family:var(--mono);border:1px solid transparent;display:inline-flex;align-items:center;gap:5px;}
-.bh{background:var(--s2);color:var(--muted);border-color:var(--border);}
-.bb{background:var(--text);color:var(--bg);}
-.bc{background:var(--s2);color:var(--text);border-color:var(--border);}
-.bk{background:var(--bl);color:var(--blue);border-color:#C0CCEE;font-size:10px;}
-.swatch{width:16px;height:16px;border-radius:3px;border:1px solid rgba(0,0,0,.12);flex-shrink:0;}
 
-/* SECTION */
-.sec{margin-bottom:28px;}
-.sectitle{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.secn{font-size:11px;color:var(--muted);}
+# ── CSV PARSE ────────────────────────────────────────────────────────────────
 
-/* IMAGE GRID */
-.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
-.icard{position:relative;border-radius:var(--r);overflow:hidden;border:2px solid transparent;background:var(--s2);aspect-ratio:3/4;cursor:pointer;transition:border-color .15s;}
-.icard img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s;}
-.icard:hover img{transform:scale(1.04);}
-.icard.assigned{border-color:var(--green);}
-.icard .ov{position:absolute;inset:0;background:rgba(26,23,20,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;opacity:0;transition:opacity .15s;}
-.icard:hover .ov{opacity:1;}
-.icard .badge-img{position:absolute;bottom:6px;left:6px;font-size:9px;padding:2px 6px;border-radius:3px;}
-.bi-assigned{background:var(--green);color:#fff;}
-.bi-shopify{background:rgba(0,0,0,.5);color:#fff;}
-.obtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:4px;color:#fff;padding:5px 10px;font-family:var(--mono);font-size:10px;cursor:pointer;width:120px;text-align:center;transition:background .1s;}
-.obtn:hover{background:rgba(255,255,255,.28);}
-.obtn.assign{background:rgba(42,107,74,.7);}
-.obtn.assign:hover{background:rgba(42,107,74,.95);}
-.obtn.del:hover{background:rgba(200,75,47,.8);}
+@app.post("/api/csv/parse")
+async def parse_csv(file: UploadFile = File(...)):
+    contents = await file.read()
+    try:
+        text = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        text = contents.decode("latin-1")
 
-/* UPLOAD */
-.upzone{border:1.5px dashed var(--border);border-radius:var(--r);padding:16px;text-align:center;background:var(--bg);transition:all .15s;cursor:pointer;margin-bottom:10px;}
-.upzone:hover{border-color:var(--accent);background:var(--al);}
-.upzone input{display:none;}
-.urlrow{display:flex;gap:7px;}
-.urlrow input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;}
-.urlrow input:focus{border-color:var(--accent);}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r);font-family:var(--mono);font-size:12px;cursor:pointer;border:1px solid;transition:all .15s;white-space:nowrap;}
-.bprim{background:var(--text);color:var(--bg);border-color:var(--text);}
-.bprim:hover{background:#3A3530;}
+    reader = csv.DictReader(io.StringIO(text))
+    products: dict[str, dict] = {}
 
-/* TOAST */
-#toast{position:fixed;bottom:18px;right:18px;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:var(--r);font-size:12px;transform:translateY(60px);opacity:0;transition:all .22s;z-index:999;max-width:320px;line-height:1.4;}
-#toast.show{transform:translateY(0);opacity:1;}
-#toast.ok{background:var(--green);}
-#toast.err{background:var(--accent);}
+    for row in reader:
+        handle = str(row.get("handle") or "").strip()
+        if not handle:
+            continue
+        colore = str(row.get("Colore") or row.get("colore") or "").strip()
+        color_code = str(row.get("color_code") or "").strip()
+        sku = str(row.get("SKU") or row.get("Variant SKU") or "").strip()
+        taglia = str(row.get("Taglia") or row.get("taglia") or "").strip()
+        key = f"{handle}__{colore}"
+        if key not in products:
+            products[key] = {
+                "handle": handle,
+                "brand": str(row.get("Brand") or "").strip(),
+                "title": str(row.get("Title") or "").strip(),
+                "colore": colore,
+                "color_code": color_code,
+                "variants": [],
+            }
+        if sku:
+            products[key]["variants"].append({"sku": sku, "taglia": taglia})
 
-.spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;}
-@keyframes sp{to{transform:rotate(360deg);}}
+    return list(products.values())
 
-/* ASSIGN INFO BOX */
-.ainfo{background:var(--bl);border:1px solid #C0CCEE;border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:12px;line-height:1.6;}
-.ainfo strong{font-weight:500;}
-</style>
-</head>
-<body>
 
-<header>
-  <h1>Image <em>Manager</em></h1>
-  <div class="hright">
-    <div class="shopwrap">
-      <label>Shop</label>
-      <input id="shopInput" type="text" placeholder="negozio.myshopify.com">
-    </div>
-    <span class="hstat" id="hstat">Nessun CSV</span>
-  </div>
-</header>
+# ── SHOPIFY: fetch product media + variants ──────────────────────────────────
 
-<div class="layout">
-  <aside class="sidebar">
-    <div class="csvzone">
-      <label>CSV Prodotti</label>
-      <div class="drop" id="drop" onclick="document.getElementById('csvfile').click()">
-        <input type="file" id="csvfile" accept=".csv">
-        <p><strong>Clicca o trascina</strong> il CSV</p>
-      </div>
-    </div>
+@app.get("/api/shopify/product")
+async def get_shopify_product(shop: str, handle: str, sku: str = ""):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Shop non autenticato"})
 
-    <div class="filters">
-      <div class="sbox">
-        <span>⌕</span>
-        <input id="search" type="text" placeholder="Cerca titolo, handle, colore…">
-      </div>
-      <div class="frow">
-        <select class="fsel" id="fbrand"><option value="">Tutti i brand</option></select>
-        <select class="fsel" id="fcolor"><option value="">Tutti i colori</option></select>
-      </div>
-      <div class="fstats">
-        <span id="fcount">0 prodotti</span>
-        <button class="clr" onclick="clearF()">✕ Reset</button>
-      </div>
-    </div>
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
 
-    <div class="plist" id="plist">
-      <div class="nores">Carica un CSV per iniziare</div>
-    </div>
-  </aside>
+    FIELDS = """
+        id title
+        images(first: 50) {
+          edges { node { id url altText } }
+        }
+        variants(first: 100) {
+          edges {
+            node {
+              id sku title
+              image { id url }
+              selectedOptions { name value }
+            }
+          }
+        }
+    """
 
-  <main class="main">
-    <div class="empty" id="empty">
-      <div class="big">🖼</div>
-      <h2>Seleziona un prodotto</h2>
-      <p>Carica il CSV, seleziona un prodotto e gestisci le immagini su Shopify</p>
-    </div>
+    async with httpx.AsyncClient(timeout=30) as client:
+        # 1. Try by handle slug
+        r = await client.post(gql, headers=h, json={
+            "query": f"query($h:String!){{productByHandle(handle:$h){{{FIELDS}}}}}",
+            "variables": {"h": handle},
+        })
+        product = (r.json().get("data") or {}).get("productByHandle")
 
-    <div class="detail" id="detail">
+        # 2. Fallback: search by SKU
+        if not product and sku:
+            r2 = await client.post(gql, headers=h, json={
+                "query": f"query($q:String!){{products(first:1,query:$q){{edges{{node{{{FIELDS}}}}}}}}}",
+                "variables": {"q": f"sku:{sku}"},
+            })
+            edges = (r2.json().get("data") or {}).get("products", {}).get("edges", [])
+            if edges:
+                product = edges[0]["node"]
 
-      <div class="dhead">
-        <h2 id="dtitle">—</h2>
-        <div class="dbadges" id="dbadges"></div>
-      </div>
+        # 3. Fallback: search by handle as SKU (numeric codes)
+        if not product:
+            r3 = await client.post(gql, headers=h, json={
+                "query": f"query($q:String!){{products(first:1,query:$q){{edges{{node{{{FIELDS}}}}}}}}}",
+                "variables": {"q": f"sku:{handle}"},
+            })
+            edges = (r3.json().get("data") or {}).get("products", {}).get("edges", [])
+            if edges:
+                product = edges[0]["node"]
 
-      <!-- Immagini Shopify -->
-      <div class="sec">
-        <div class="sectitle">
-          Immagini su Shopify
-          <span class="secn" id="imgcount"></span>
-        </div>
+        # 4. Fallback: search by title (use first meaningful words)
+        if not product:
+            # Try searching with the handle as a query term across all fields
+            r4 = await client.post(gql, headers=h, json={
+                "query": f"query($q:String!){{products(first:5,query:$q){{edges{{node{{{FIELDS}}}}}}}}}",
+                "variables": {"q": handle},
+            })
+            edges = (r4.json().get("data") or {}).get("products", {}).get("edges", [])
+            if edges:
+                product = edges[0]["node"]
 
-        <div class="ainfo">
-          Hover su un'immagine → <strong>Assegna a variante colore</strong> la associa a tutte le taglie
-          di <strong id="ainfo-color">—</strong> su Shopify.<br>
-          Le immagini con bordo verde sono già assegnate a questo colore.
-        </div>
+    if not product:
+        return JSONResponse(status_code=404, content={"error": f"Prodotto non trovato (handle={handle})"})
 
-        <div class="igrid" id="imgGrid">
-          <p style="color:var(--muted);font-size:12px;">Seleziona un prodotto…</p>
-        </div>
-      </div>
+    images = [
+        {"id": e["node"]["id"], "url": e["node"]["url"], "alt": e["node"].get("altText") or ""}
+        for e in product["images"]["edges"]
+    ]
 
-      <!-- Aggiungi immagini -->
-      <div class="sec">
-        <div class="sectitle">Aggiungi immagini al prodotto</div>
-        <div class="upzone" onclick="document.getElementById('fileinput').click()">
-          <input type="file" id="fileinput" accept="image/jpeg,image/png,image/webp" multiple>
-          <p style="font-size:13px;margin-bottom:4px;">⬆ Carica file dal computer</p>
-          <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP — selezione multipla</p>
-        </div>
-        <div class="urlrow">
-          <input id="urlinput" type="text" placeholder="Oppure incolla URL… https://…">
-          <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
-        </div>
-      </div>
+    variants = [
+        {
+            "id": e["node"]["id"],
+            "sku": e["node"]["sku"],
+            "title": e["node"]["title"],
+            "image_id": (e["node"].get("image") or {}).get("id"),
+            "image_url": (e["node"].get("image") or {}).get("url"),
+            "options": e["node"].get("selectedOptions", []),
+        }
+        for e in product["variants"]["edges"]
+    ]
 
-    </div>
-  </main>
-</div>
+    return {"id": product["id"], "title": product["title"], "images": images, "variants": variants}
 
-<div id="toast"></div>
 
-<script>
-// STATE
-let all=[], filt=[], cur=null, shopData=null;
-let fSearch='', fBrand='', fColor='';
+# ── SHOPIFY: upload image from URL ───────────────────────────────────────────
 
-const $=id=>document.getElementById(id);
-const shop=()=>$('shopInput').value.trim().replace(/^https?:\/\//,'').replace(/\/$/,'');
-function toast(msg,type=''){const el=$('toast');el.textContent=msg;el.className='show '+(type==='ok'?'ok':type==='err'?'err':'');clearTimeout(el._t);el._t=setTimeout(()=>el.className='',3500);}
-function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+@app.post("/api/shopify/image/upload-url")
+async def upload_image_from_url(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    image_url: str = Form(...),
+    alt: str = Form(""),
+):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
 
-const CMAP={
-  NERO:'#1A1A1A',NERO1:'#2A2A2A',BIANCO:'#F0EEE8',AVORIO:'#F5EFD8',BURRO:'#F5ECC0',
-  BEIGE:'#D4C5A9',NUDO:'#E8C9A0',TORTORA:'#C4B49A',FANGO:'#9E8B72',CAMMELLO:'#C19A6B',
-  TABACCO:'#8B6340',MARRONE:'#6B3D26',KAKI:'#8A8A4A',MILITARE:'#4A5A35',PRATO:'#3A6B3A',
-  VERDE:'#2A7A3A',DENIM:'#3A5A8A',BLU:'#1A3A7A',BLU1:'#2A4A9A',AZZURRO:'#5A9AC8',
-  CELESTE:'#8AC4E0',LILLA:'#9A7AC8',ROSA:'#E8A0B0',BORDEAUX:'#7A1A2A',GRIGIO:'#909090',GIALLO:'#E8D040',
-};
-const cdot=(c,s=8)=>`<span class="dot" style="width:${s}px;height:${s}px;background:${CMAP[c]||'#CCC'};"></span>`;
+    rest_id = product_id.split("/")[-1]
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/products/{rest_id}/images.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={"image": {"src": image_url, "alt": alt}},
+        )
 
-// ── CSV ───────────────────────────────────────────────────────────────────────
-$('csvfile').addEventListener('change',e=>e.target.files[0]&&loadCSV(e.target.files[0]));
-const dropEl=$('drop');
-dropEl.addEventListener('dragover',e=>{e.preventDefault();dropEl.classList.add('drag');});
-dropEl.addEventListener('dragleave',()=>dropEl.classList.remove('drag'));
-dropEl.addEventListener('drop',e=>{e.preventDefault();dropEl.classList.remove('drag');e.dataTransfer.files[0]&&loadCSV(e.dataTransfer.files[0]);});
+    data = resp.json()
+    if "image" not in data:
+        return JSONResponse(status_code=400, content={"error": data.get("errors", "Upload fallito")})
 
-async function loadCSV(file){
-  $('hstat').textContent='Parsing…';
-  const form=new FormData();form.append('file',file);
-  try{
-    const res=await fetch('/api/csv/parse',{method:'POST',body:form});
-    if(!res.ok)throw new Error(await res.text());
-    all=await res.json();
-    $('hstat').textContent=`${all.length} prodotti · ${file.name}`;
-    buildFilters();applyF();
-    toast(`CSV caricato: ${all.length} prodotti`,'ok');
-  }catch(e){toast('Errore CSV: '+e.message,'err');$('hstat').textContent='Errore';}
-}
+    img = data["image"]
+    return {"id": f"gid://shopify/ProductImage/{img['id']}", "url": img["src"], "alt": img.get("alt") or ""}
 
-// ── FILTERS ───────────────────────────────────────────────────────────────────
-function buildFilters(){
-  const brands=[...new Set(all.map(p=>p.brand).filter(Boolean))].sort();
-  $('fbrand').innerHTML='<option value="">Tutti i brand</option>'+brands.map(b=>`<option>${esc(b)}</option>`).join('');
-  const colors=[...new Set(all.map(p=>p.colore).filter(Boolean))].sort();
-  $('fcolor').innerHTML='<option value="">Tutti i colori</option>'+colors.map(c=>`<option>${esc(c)}</option>`).join('');
-}
 
-$('fbrand').addEventListener('change',e=>{fBrand=e.target.value;applyF();});
-$('fcolor').addEventListener('change',e=>{fColor=e.target.value;applyF();});
-$('search').addEventListener('input',e=>{fSearch=e.target.value.toLowerCase();applyF();});
-function clearF(){fSearch='';fBrand='';fColor='';$('search').value='';$('fbrand').value='';$('fcolor').value='';applyF();}
+# ── SHOPIFY: upload image file ────────────────────────────────────────────────
 
-function applyF(){
-  filt=all.filter(p=>{
-    if(fSearch){
-      const t=[p.title,String(p.handle),p.brand,p.colore,p.color_code].join(' ').toLowerCase();
-      if(!t.includes(fSearch))return false;
+@app.post("/api/shopify/image/upload-file")
+async def upload_image_file(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    file: UploadFile = File(...),
+):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+
+    mime = file.content_type or "image/jpeg"
+    if mime not in {"image/jpeg", "image/png", "image/webp", "image/gif"}:
+        return JSONResponse(status_code=400, content={"error": f"Tipo non supportato: {mime}"})
+
+    binary = await file.read()
+    filename = file.filename or "upload.jpg"
+    rest_id = product_id.split("/")[-1]
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            # Staged upload
+            stage = await client.post(gql, headers=h, json={
+                "query": """mutation($input:[StagedUploadInput!]!){stagedUploadsCreate(input:$input){
+                  stagedTargets{url resourceUrl parameters{name value}}userErrors{message}}}""",
+                "variables": {"input": [{"filename": filename, "mimeType": mime,
+                    "resource": "IMAGE", "fileSize": str(len(binary)), "httpMethod": "PUT"}]},
+            })
+            targets = stage.json()["data"]["stagedUploadsCreate"]["stagedTargets"]
+            if not targets:
+                return JSONResponse(status_code=500, content={"error": "Staged upload fallito"})
+            target = targets[0]
+            put_h = {p["name"]: p["value"] for p in target["parameters"]}
+            put = await client.put(target["url"], content=binary, headers=put_h)
+            if put.status_code not in (200, 201):
+                return JSONResponse(status_code=400, content={"error": f"Upload fallito: {put.text[:200]}"})
+
+            # Attach to product via REST (returns ProductImage with proper ID)
+            attach = await client.post(
+                f"https://{shop}/admin/api/{API_VERSION}/products/{rest_id}/images.json",
+                headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+                json={"image": {"src": target["resourceUrl"], "alt": filename}},
+            )
+            img_data = attach.json()
+            if "image" not in img_data:
+                return JSONResponse(status_code=400, content={"error": img_data.get("errors", "Attach fallito")})
+
+            img = img_data["image"]
+            return {"id": f"gid://shopify/ProductImage/{img['id']}", "url": img["src"], "alt": img.get("alt") or ""}
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# ── SHOPIFY: delete image ─────────────────────────────────────────────────────
+
+@app.delete("/api/shopify/image")
+async def delete_image(shop: str, product_id: str, image_id: str):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    rest_product = product_id.split("/")[-1]
+    rest_image = image_id.split("/")[-1]
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.delete(
+            f"https://{shop}/admin/api/{API_VERSION}/products/{rest_product}/images/{rest_image}.json",
+            headers={"X-Shopify-Access-Token": token},
+        )
+    if resp.status_code not in (200, 204):
+        return JSONResponse(status_code=400, content={"error": f"Errore eliminazione: {resp.text[:200]}"})
+    return {"deleted": image_id}
+
+
+# ── SHOPIFY: assign image to color variant ────────────────────────────────────
+
+@app.post("/api/shopify/variant/assign-color-image")
+async def assign_color_image(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    image_id: str = Form(...),    # ProductImage GID  gid://shopify/ProductImage/...
+    colore: str = Form(...),      # e.g. "NERO" — matches option value on Shopify
+):
+    """
+    Assigns a product image to ALL variants whose 'Colore'/'Color' option
+    matches the given colore value. Uses productVariantsBulkUpdate for efficiency.
+    """
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        # Fetch all variants for this product
+        r = await client.post(gql, headers=h, json={
+            "query": """query($id:ID!){product(id:$id){variants(first:100){edges{node{
+              id selectedOptions{name value}}}}}}""",
+            "variables": {"id": product_id},
+        })
+        edges = (r.json().get("data") or {}).get("product", {}).get("variants", {}).get("edges", [])
+
+        # Filter variants by color option
+        color_option_names = {"colore", "color", "colour"}
+        target_variants = []
+        for e in edges:
+            opts = e["node"].get("selectedOptions", [])
+            for opt in opts:
+                if opt["name"].lower() in color_option_names and opt["value"].upper() == colore.upper():
+                    target_variants.append(e["node"]["id"])
+                    break
+
+        if not target_variants:
+            return JSONResponse(status_code=404, content={
+                "error": f"Nessuna variante trovata con Colore='{colore}'. "
+                         f"Opzioni disponibili: {[o['value'] for e in edges for o in e['node'].get('selectedOptions',[]) if o['name'].lower() in color_option_names]}"
+            })
+
+        # Bulk update: assign same image to all color variants
+        resp = await client.post(gql, headers=h, json={
+            "query": """
+            mutation($productId:ID!, $variants:[ProductVariantsBulkInput!]!) {
+              productVariantsBulkUpdate(productId:$productId, variants:$variants) {
+                productVariants { id image { id url } }
+                userErrors { field message }
+              }
+            }""",
+            "variables": {
+                "productId": product_id,
+                "variants": [{"id": vid, "imageId": image_id} for vid in target_variants],
+            },
+        })
+
+    result = (resp.json().get("data") or {}).get("productVariantsBulkUpdate", {})
+    errors = result.get("userErrors", [])
+    if errors:
+        return JSONResponse(status_code=400, content={"errors": errors})
+
+    updated = result.get("productVariants", [])
+    return {
+        "ok": True,
+        "updated": len(updated),
+        "colore": colore,
+        "image_id": image_id,
+        "variants": [{"id": v["id"], "image_url": (v.get("image") or {}).get("url")} for v in updated],
     }
-    if(fBrand&&p.brand!==fBrand)return false;
-    if(fColor&&p.colore!==fColor)return false;
-    return true;
-  });
-  $('fcount').textContent=`${filt.length} / ${all.length}`;
-  renderList();
-}
 
-// ── LIST ──────────────────────────────────────────────────────────────────────
-function renderList(){
-  const list=$('plist');
-  if(!filt.length){list.innerHTML='<div class="nores">Nessun prodotto trovato</div>';return;}
-  list.innerHTML=filt.map(p=>{
-    const gi=all.indexOf(p);
-    const active=cur&&all.indexOf(cur)===gi;
-    return`<div class="pitem${active?' active':''}" data-i="${gi}" onclick="selProd(${gi})">
-      <div class="ptop"><span class="phandle">${p.handle}</span><span class="tag tbrand">${esc(p.brand)}</span></div>
-      <div class="ptitle">${esc(p.title)||'(senza titolo)'}</div>
-      <div class="pmeta">
-        <span class="tag tcolor">${cdot(p.colore)} ${esc(p.colore)}</span>
-        <span class="tag tcode">#${esc(p.color_code)}</span>
-        <span class="tag" style="font-size:9px;color:var(--muted)">${p.variants.length} taglie</span>
-      </div>
-    </div>`;
-  }).join('');
-}
 
-// ── SELECT PRODUCT ────────────────────────────────────────────────────────────
-async function selProd(idx){
-  cur=all[idx];shopData=null;
-  document.querySelectorAll('.pitem').forEach(el=>el.classList.remove('active'));
-  document.querySelector(`.pitem[data-i="${idx}"]`)?.classList.add('active');
-  $('empty').style.display='none';
-  $('detail').classList.add('on');
+# ── DEBUG: cerca prodotti per query libera ────────────────────────────────────
 
-  $('dtitle').textContent=cur.title||cur.handle;
-  const sw=CMAP[cur.colore]||'#CCC';
-  $('dbadges').innerHTML=`
-    <span class="badge bh">${esc(String(cur.handle))}</span>
-    <span class="badge bb">${esc(cur.brand)}</span>
-    <span class="badge bc"><span class="swatch" style="background:${sw}"></span>${esc(cur.colore)}</span>
-    <span class="badge bk">codice #${esc(cur.color_code)}</span>`;
-
-  $('ainfo-color').textContent=cur.colore;
-  await loadShopify();
-}
-
-// ── SHOPIFY ───────────────────────────────────────────────────────────────────
-async function loadShopify(){
-  $('imgcount').textContent='';
-  $('imgGrid').innerHTML=`<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Carico da Shopify…</p>`;
-  const s=shop();
-  if(!s){$('imgGrid').innerHTML='<p style="color:var(--muted);font-size:12px;">Inserisci il dominio shop nell\'header</p>';return;}
-
-  try{
-    const firstSku=(cur.variants[0]||{}).sku||'';
-    const res=await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(cur.handle)}&sku=${encodeURIComponent(firstSku)}`);
-    const data=await res.json();
-    if(!res.ok){
-      // Show search helper to find the real handle/SKU on Shopify
-      $('imgGrid').innerHTML=`
-        <div style="grid-column:1/-1;">
-          <p style="color:var(--accent);font-size:12px;margin-bottom:12px;">⚠ ${esc(data.error)}</p>
-          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">
-            Cerca il prodotto su Shopify per trovare handle o SKU reale:
-          </p>
-          <div style="display:flex;gap:7px;">
-            <input id="srch" type="text" placeholder="Cerca per titolo…" value="${esc(cur.title||cur.handle)}"
-              style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:7px 9px;font-family:var(--mono);font-size:12px;outline:none;">
-            <button class="btn bprim" onclick="searchShopify()">Cerca</button>
-          </div>
-          <div id="srchResults" style="margin-top:10px;font-size:12px;"></div>
-        </div>`;
-      return;
-    }
-    shopData=data;
-    $('imgcount').textContent=`${data.images.length} immagini`;
-    renderImages(data.images, data.variants);
-  }catch(e){$('imgGrid').innerHTML=`<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`;}
-}
-
-function renderImages(images, variants){
-  // Find which image IDs are assigned to any variant of current color
-  const colorOptionNames=new Set(['colore','color','colour']);
-  const colorVariants=variants.filter(v=>
-    v.options.some(o=>colorOptionNames.has(o.name.toLowerCase())&&o.value.toUpperCase()===cur.colore.toUpperCase())
-  );
-  const assignedIds=new Set(colorVariants.map(v=>v.image_id).filter(Boolean));
-
-  const grid=$('imgGrid');
-  if(!images.length){grid.innerHTML='<p style="color:var(--muted);font-size:12px;">Nessuna immagine su Shopify per questo prodotto</p>';return;}
-
-  grid.innerHTML=images.map(img=>{
-    const isAssigned=assignedIds.has(img.id);
-    return`<div class="icard${isAssigned?' assigned':''}" id="img-${img.id.replace(/\W/g,'_')}">
-      <img src="${esc(img.url)}" loading="lazy">
-      <span class="badge-img ${isAssigned?'bi-assigned':'bi-shopify'}">${isAssigned?`✓ ${esc(cur.colore)}`:'Shopify'}</span>
-      <div class="ov">
-        <button class="obtn assign" onclick="assignToColor('${esc(img.id)}');event.stopPropagation()">
-          📌 Assegna a ${esc(cur.colore)}
-        </button>
-        <a class="obtn" href="${esc(img.url)}" target="_blank" onclick="event.stopPropagation()">↗ Apri</a>
-        <button class="obtn del" onclick="deleteImage('${esc(img.id)}');event.stopPropagation()">🗑 Elimina</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ── SEARCH SHOPIFY (debug helper) ────────────────────────────────────────────
-async function searchShopify(){
-  const q=($('srch')||{}).value||'';
-  if(!q)return;
-  const s=shop();
-  const res=await fetch(`/api/shopify/search?shop=${encodeURIComponent(s)}&q=${encodeURIComponent(q)}`);
-  const data=await res.json();
-  const el=$('srchResults');
-  if(!el)return;
-  if(!data.length){el.innerHTML='<p style="color:var(--muted)">Nessun risultato</p>';return;}
-  el.innerHTML=data.map(p=>`
-    <div style="padding:8px;background:var(--s2);border-radius:var(--r);margin-bottom:6px;border:1px solid var(--border);">
-      <strong>${esc(p.title)}</strong><br>
-      <span style="color:var(--muted);font-size:10px;">handle: ${esc(p.handle)}</span><br>
-      ${p.sample_variants.map(v=>`
-        <span style="font-size:10px;color:var(--muted);">SKU: ${esc(v.sku)} · ${v.options.map(o=>o.name+': '+o.value).join(' · ')}</span><br>
-      `).join('')}
-      <button class="btn bprim" style="margin-top:6px;font-size:10px;padding:4px 8px;"
-        onclick="loadWithHandle('${esc(p.handle)}')">Carica questo prodotto</button>
-    </div>`).join('');
-}
-
-async function loadWithHandle(handle){
-  const s=shop();
-  $('imgGrid').innerHTML=`<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Carico…</p>`;
-  try{
-    const res=await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(handle)}`);
-    const data=await res.json();
-    if(!res.ok){toast('Errore: '+data.error,'err');return;}
-    shopData=data;
-    $('imgcount').textContent=`${data.images.length} immagini`;
-    renderImages(data.images,data.variants);
-  }catch(e){toast('Errore: '+e.message,'err');}
-}
-
-// ── ASSIGN TO COLOR VARIANT ───────────────────────────────────────────────────
-async function assignToColor(imageId){
-  if(!shopData){toast('Carica prima il prodotto','err');return;}
-  toast(`Assegno immagine a variante ${cur.colore}…`);
-  const form=new FormData();
-  form.append('shop',shop());
-  form.append('product_id',shopData.id);
-  form.append('image_id',imageId);
-  form.append('colore',cur.colore);
-  try{
-    const res=await fetch('/api/shopify/variant/assign-color-image',{method:'POST',body:form});
-    const data=await res.json();
-    if(!res.ok){
-      toast('Errore: '+JSON.stringify(data.errors||data.error),'err');return;
-    }
-    toast(`✓ Immagine assegnata a ${data.updated} varianti ${cur.colore}!`,'ok');
-    // Update local variant data with new image
-    shopData.variants.forEach(v=>{
-      const opts=v.options||[];
-      const isColor=opts.some(o=>['colore','color','colour'].includes(o.name.toLowerCase())&&o.value.toUpperCase()===cur.colore.toUpperCase());
-      if(isColor) v.image_id=imageId;
-    });
-    renderImages(shopData.images, shopData.variants);
-  }catch(e){toast('Errore: '+e.message,'err');}
-}
-
-// ── DELETE IMAGE ──────────────────────────────────────────────────────────────
-async function deleteImage(imageId){
-  if(!confirm('Eliminare questa immagine dal prodotto Shopify?'))return;
-  const params=new URLSearchParams({shop:shop(),product_id:shopData.id,image_id:imageId});
-  try{
-    const res=await fetch('/api/shopify/image?'+params,{method:'DELETE'});
-    const data=await res.json();
-    if(!res.ok){toast('Errore: '+JSON.stringify(data.errors||data.error),'err');return;}
-    toast('Immagine eliminata','ok');
-    shopData.images=shopData.images.filter(i=>i.id!==imageId);
-    shopData.variants.forEach(v=>{if(v.image_id===imageId)v.image_id=null;});
-    $('imgcount').textContent=`${shopData.images.length} immagini`;
-    renderImages(shopData.images, shopData.variants);
-  }catch(e){toast('Errore: '+e.message,'err');}
-}
-
-// ── UPLOAD URL ────────────────────────────────────────────────────────────────
-async function uploadUrl(){
-  const inp=$('urlinput');const url=inp.value.trim();
-  if(!url||!url.startsWith('http')){toast('URL non valido','err');return;}
-  if(!shopData){toast('Seleziona prima un prodotto','err');return;}
-  toast('Caricamento…');inp.disabled=true;
-  const form=new FormData();
-  form.append('shop',shop());form.append('product_id',shopData.id);
-  form.append('image_url',url);form.append('alt',cur.title);
-  try{
-    const res=await fetch('/api/shopify/image/upload-url',{method:'POST',body:form});
-    const data=await res.json();
-    if(!res.ok){toast('Errore: '+JSON.stringify(data.errors||data.error),'err');return;}
-    toast('Immagine caricata!','ok');inp.value='';
-    shopData.images.push({id:data.id,url:data.url,alt:data.alt});
-    $('imgcount').textContent=`${shopData.images.length} immagini`;
-    renderImages(shopData.images, shopData.variants);
-  }catch(e){toast('Errore: '+e.message,'err');}
-  finally{inp.disabled=false;}
-}
-
-// ── UPLOAD FILE ───────────────────────────────────────────────────────────────
-$('fileinput').addEventListener('change',async e=>{
-  if(!shopData){toast('Seleziona prima un prodotto','err');return;}
-  for(const file of Array.from(e.target.files)){
-    toast(`Caricamento ${file.name}…`);
-    const form=new FormData();
-    form.append('shop',shop());form.append('product_id',shopData.id);form.append('file',file);
-    try{
-      const res=await fetch('/api/shopify/image/upload-file',{method:'POST',body:form});
-      const data=await res.json();
-      if(!res.ok){toast('Errore: '+JSON.stringify(data.errors||data.error),'err');continue;}
-      toast(`${file.name} caricato!`,'ok');
-      shopData.images.push({id:data.id,url:data.url,alt:data.alt});
-    }catch(err){toast('Errore: '+err.message,'err');}
-  }
-  $('imgcount').textContent=`${shopData.images.length} immagini`;
-  renderImages(shopData.images,shopData.variants);
-  e.target.value='';
-});
-</script>
-</body>
-</html>
+@app.get("/api/shopify/search")
+async def search_products(shop: str, q: str):
+    """Cerca prodotti su Shopify per query libera. Utile per capire handle/SKU reali."""
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={
+                "query": """query($q:String!){products(first:5,query:$q){edges{node{
+                  id title handle
+                  variants(first:3){edges{node{id sku title selectedOptions{name value}}}}
+                }}}}""",
+                "variables": {"q": q},
+            },
+        )
+    edges = (resp.json().get("data") or {}).get("products", {}).get("edges", [])
+    return [
+        {
+            "id": e["node"]["id"],
+            "title": e["node"]["title"],
+            "handle": e["node"]["handle"],
+            "sample_variants": [
+                {"sku": v["node"]["sku"], "title": v["node"]["title"],
+                 "options": v["node"]["selectedOptions"]}
+                for v in e["node"]["variants"]["edges"][:3]
+            ]
+        }
+        for e in edges
+    ]
