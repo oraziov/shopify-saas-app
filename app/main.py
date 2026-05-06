@@ -366,18 +366,14 @@ async def sync_gallery_to_color(
 @app.post("/api/shopify/variant/assign-images")
 async def assign_images_to_variants(
     shop: str = Form(...),
+    product_id: str = Form(...),
     variant_ids: str = Form(...),   # JSON array, ordinato per taglia
-    media_ids: str = Form(...),     # JSON array di image GID da distribuire
+    media_ids: str = Form(...),     # JSON array di MediaImage GID
 ):
     """
     Distribuisce le immagini sulle varianti dello stesso colore.
-    Shopify limita a 1 immagine per variante, ma assegnando immagini diverse
-    a varianti diverse dello stesso colore, il tema le mostra tutte insieme.
-
-    Strategia:
-    - Se immagini >= varianti: ogni variante prende 1 immagine diversa
-    - Se immagini < varianti: le immagini vengono distribuite ciclicamente
-    - Tutte le immagini vengono anche aggiunte al prodotto se non già presenti
+    Converte MediaImage GID → ProductImage GID (richiesto da productVariantUpdate).
+    Distribuzione ciclica se immagini < varianti.
     """
     token = get_shop_token(shop)
     if not token:
@@ -394,41 +390,99 @@ async def assign_images_to_variants(
     gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
     h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
 
-    # Shopify REST per assegnare image_id alla variante
-    # GraphQL productVariantUpdate accetta imageId
-    results = []
-    errors_list = []
-
     async with httpx.AsyncClient(timeout=60) as client:
-        for i, vid in enumerate(vids):
-            image_gid = mids[i % len(mids)]   # distribuzione ciclica
 
-            resp = await client.post(gql, headers=h, json={
+        # 1. Recupera la lista immagini del prodotto per mappare
+        #    MediaImage GID → ProductImage GID
+        resp = await client.post(gql, headers=h, json={
+            "query": """
+            query($id: ID!) {
+              product(id: $id) {
+                images(first: 50) {
+                  edges {
+                    node {
+                      id
+                      url
+                    }
+                  }
+                }
+                media(first: 50) {
+                  nodes {
+                    id
+                    ... on MediaImage {
+                      image { url }
+                    }
+                  }
+                }
+              }
+            }""",
+            "variables": {"id": product_id},
+        })
+        pdata = (resp.json().get("data") or {}).get("product", {})
+
+        # Build map: URL → ProductImage GID
+        url_to_product_image = {}
+        for edge in pdata.get("images", {}).get("edges", []):
+            node = edge["node"]
+            url_to_product_image[node["url"].split("?")[0]] = node["id"]
+
+        # Build map: MediaImage GID → URL
+        media_gid_to_url = {}
+        for m in pdata.get("media", {}).get("nodes", []):
+            img_url = (m.get("image") or {}).get("url", "")
+            if img_url:
+                media_gid_to_url[m["id"]] = img_url.split("?")[0]
+
+        # Convert requested MediaImage GIDs → ProductImage GIDs
+        product_image_ids = []
+        for mid in mids:
+            url = media_gid_to_url.get(mid, "")
+            prod_img_id = url_to_product_image.get(url)
+            if prod_img_id:
+                product_image_ids.append(prod_img_id)
+            else:
+                # Try partial URL match (CDN sometimes strips params differently)
+                matched = next(
+                    (pid for u, pid in url_to_product_image.items() if url and url in u),
+                    None
+                )
+                if matched:
+                    product_image_ids.append(matched)
+
+        if not product_image_ids:
+            return JSONResponse(status_code=400, content={
+                "error": "Impossibile convertire le immagini selezionate in ProductImage. "
+                         "Verifica che le immagini siano effettivamente associate al prodotto."
+            })
+
+        # 2. Assegna 1 immagine per variante (distribuzione ciclica)
+        results = []
+        errors_list = []
+
+        for i, vid in enumerate(vids):
+            prod_image_id = product_image_ids[i % len(product_image_ids)]
+
+            r = await client.post(gql, headers=h, json={
                 "query": """
                 mutation($input: ProductVariantInput!) {
                   productVariantUpdate(input: $input) {
-                    productVariant { id image { url } }
+                    productVariant { id image { id url } }
                     userErrors { field message }
                   }
                 }""",
-                "variables": {
-                    "input": {
-                        "id": vid,
-                        "imageId": image_gid,
-                    }
-                },
+                "variables": {"input": {"id": vid, "imageId": prod_image_id}},
             })
 
-            result = (resp.json().get("data") or {}).get("productVariantUpdate", {})
+            result = (r.json().get("data") or {}).get("productVariantUpdate", {})
             errs = result.get("userErrors", [])
             if errs:
                 errors_list.append({"variant": vid, "errors": errs})
             else:
-                variant_data = result.get("productVariant", {})
+                pv = result.get("productVariant", {})
                 results.append({
                     "variant_id": vid,
-                    "image_url": (variant_data.get("image") or {}).get("url"),
-                    "image_gid": image_gid,
+                    "image_url": (pv.get("image") or {}).get("url"),
+                    "image_id": (pv.get("image") or {}).get("id"),
                 })
 
     if errors_list and not results:

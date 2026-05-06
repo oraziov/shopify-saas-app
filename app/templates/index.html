@@ -1220,6 +1220,7 @@
 
       const form = new FormData();
       form.append('shop', shop());
+      form.append('product_id', shopData.id);
       form.append('variant_ids', JSON.stringify(vids));
       form.append('media_ids', JSON.stringify(mids));
 
