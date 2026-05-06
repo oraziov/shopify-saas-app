@@ -957,6 +957,7 @@
   <script>
     // ── STATE ─────────────────────────────────────────────────────────────────────
     let all = [], filt = [], cur = null, shopData = null, activeVariantId = null;
+    let currentGallery = []; // gallery items for the current color (source of truth for UI)
     let fSearch = '', fBrand = '', fColor = '', fStatus = '';
 
     const $ = id => document.getElementById(id);
@@ -1142,7 +1143,7 @@
         // Update color info in ginfo box
         $('ginfoColor').textContent = `${cur.colore} #${cur.color_code}`;
 
-        const currentGallery = refVariant ? refVariant.gallery || [] : [];
+        currentGallery = refVariant ? (refVariant.gallery || []) : [];
         renderMedia(data.media, currentGallery);
 
       } catch (e) { $('mediaGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`; }
@@ -1171,7 +1172,7 @@
 
     // ── GALLERY ACTIONS ───────────────────────────────────────────────────────────
     async function addToGallery(mediaId) {
-      if (!activeVariantId) { toast('Seleziona prima una variante', 'err'); return; }
+      if (!activeVariantId) { toast('Prodotto non caricato correttamente', 'err'); return; }
       const form = new FormData();
       form.append('shop', shop()); form.append('variant_id', activeVariantId); form.append('media_id', mediaId);
       try {
@@ -1179,47 +1180,43 @@
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
         toast('Aggiunto alla gallery!', 'ok');
-        const v = shopData.variants.find(x => x.id === activeVariantId);
+        // Update currentGallery (source of truth)
         const m = shopData.media.find(x => x.id === mediaId);
-        if (v && m && !v.gallery.find(g => g.id === mediaId)) v.gallery.push(m);
-        // Update gallery status for filter
+        if (m && !currentGallery.find(g => g.id === mediaId)) currentGallery.push(m);
+        // Update gallery status for sidebar filter
         const key = `${cur.handle}__${cur.color_code}`;
         galleryStatus[key] = true;
-        renderMedia(shopData.media, v ? v.gallery : []);
+        renderMedia(shopData.media, currentGallery);
         renderList();
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
     async function removeFromGallery(mediaId) {
-      if (!activeVariantId) { toast('Seleziona prima una variante', 'err'); return; }
+      if (!activeVariantId) { toast('Prodotto non caricato correttamente', 'err'); return; }
       const params = new URLSearchParams({ shop: shop(), variant_id: activeVariantId, media_id: mediaId });
       try {
         const res = await fetch('/api/shopify/variant/gallery/item?' + params, { method: 'DELETE' });
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
         toast('Rimosso dalla gallery', 'ok');
-        const v = shopData.variants.find(x => x.id === activeVariantId);
-        if (v) v.gallery = v.gallery.filter(g => g.id !== mediaId);
-        // Update gallery status — check if any variant still has gallery
-        const csvSkus = new Set(cur.variants.map(x => x.sku));
-        const colorVars = shopData.variants.filter(x => csvSkus.has(x.sku));
-        const stillHas = (colorVars.length ? colorVars : shopData.variants).some(x => x.gallery && x.gallery.length > 0);
+        // Update currentGallery
+        currentGallery = currentGallery.filter(g => g.id !== mediaId);
+        // Update sidebar filter status
         const key = `${cur.handle}__${cur.color_code}`;
-        galleryStatus[key] = stillHas;
-        renderMedia(shopData.media, v ? v.gallery : []);
+        galleryStatus[key] = currentGallery.length > 0;
+        renderMedia(shopData.media, currentGallery);
         renderList();
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
     async function syncAllVariants() {
-      if (!shopData || !activeVariantId) { toast('Carica prima un prodotto e seleziona una variante', 'err'); return; }
-      const v = shopData.variants.find(x => x.id === activeVariantId);
-      if (!v || !v.gallery.length) { toast('La variante selezionata non ha immagini in gallery', 'err'); return; }
+      if (!shopData || !activeVariantId) { toast('Carica prima un prodotto', 'err'); return; }
+      if (!currentGallery.length) { toast('Nessuna immagine in gallery — aggiungine almeno una prima', 'err'); return; }
 
       const csvSkus = new Set(cur.variants.map(x => x.sku));
       const colorVariants = shopData.variants.filter(x => csvSkus.has(x.sku));
       const vids = colorVariants.length ? colorVariants.map(x => x.id) : shopData.variants.map(x => x.id);
-      const mids = v.gallery.map(g => g.id);
+      const mids = currentGallery.map(g => g.id);
 
       const form = new FormData();
       form.append('shop', shop()); form.append('variant_ids', JSON.stringify(vids)); form.append('media_ids', JSON.stringify(mids));
@@ -1228,9 +1225,10 @@
         const res = await fetch('/api/shopify/variant/gallery/sync', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
-        toast(`Gallery applicata a ${data.updated_variants} varianti!`, 'ok');
-        // Update all color variants locally
-        colorVariants.forEach(cv => { cv.gallery = [...v.gallery]; });
+        toast(`✓ Gallery (${mids.length} foto) applicata a ${data.updated_variants} varianti!`, 'ok');
+        const key = `${cur.handle}__${cur.color_code}`;
+        galleryStatus[key] = true;
+        renderList();
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
