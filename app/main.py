@@ -1,9 +1,7 @@
-import asyncio
 import csv
 import io
 import json
 import logging
-import time
 
 import httpx
 from fastapi import FastAPI, File, Form, Request, UploadFile
@@ -14,7 +12,6 @@ from app.config import API_VERSION
 from app.db import get_shop_token, init_db
 
 logger = logging.getLogger(__name__)
-
 app = FastAPI(title="Shopify Image Manager")
 templates = Jinja2Templates(directory="app/templates")
 
@@ -46,11 +43,11 @@ async def parse_csv(file: UploadFile = File(...)):
         handle = str(row.get("handle") or "").strip()
         if not handle:
             continue
-        color_code = str(row.get("color_code") or "").strip()
         colore = str(row.get("Colore") or row.get("colore") or "").strip()
+        color_code = str(row.get("color_code") or "").strip()
         sku = str(row.get("SKU") or row.get("Variant SKU") or "").strip()
         taglia = str(row.get("Taglia") or row.get("taglia") or "").strip()
-        key = f"{handle}__{color_code}"
+        key = f"{handle}__{colore}"
         if key not in products:
             products[key] = {
                 "handle": handle,
@@ -66,151 +63,133 @@ async def parse_csv(file: UploadFile = File(...)):
     return list(products.values())
 
 
-# ── SHOPIFY: fetch product + variants + gallery ──────────────────────────────
-
-PRODUCT_FIELDS = """
-    id title
-    media(first:50){
-      nodes{
-        id mediaContentType
-        ... on MediaImage{ fileStatus image{url} alt }
-      }
-    }
-    variants(first:100){
-      edges{
-        node{
-          id sku title
-          image{ id url }
-          selectedOptions{name value}
-          metafield(namespace:"custom",key:"gallery"){
-            id value
-            references(first:20){
-              nodes{
-                ... on MediaImage{ id image{url} alt fileStatus }
-              }
-            }
-          }
-        }
-      }
-    }
-"""
-
+# ── SHOPIFY: fetch product media + variants ──────────────────────────────────
 
 @app.get("/api/shopify/product")
 async def get_shopify_product(shop: str, handle: str, sku: str = ""):
     token = get_shop_token(shop)
     if not token:
-        return JSONResponse(status_code=401, content={"error": "Shop not authenticated"})
+        return JSONResponse(status_code=401, content={"error": "Shop non autenticato"})
 
     gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
     h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
 
+    FIELDS = """
+        id title
+        images(first: 50) {
+          edges { node { id url altText } }
+        }
+        variants(first: 100) {
+          edges {
+            node {
+              id sku title
+              image { id url }
+              selectedOptions { name value }
+            }
+          }
+        }
+    """
+
     async with httpx.AsyncClient(timeout=30) as client:
+        # 1. Try by handle slug
         r = await client.post(gql, headers=h, json={
-            "query": f"query($h:String!){{productByHandle(handle:$h){{{PRODUCT_FIELDS}}}}}",
+            "query": f"query($h:String!){{productByHandle(handle:$h){{{FIELDS}}}}}",
             "variables": {"h": handle},
         })
         product = (r.json().get("data") or {}).get("productByHandle")
 
+        # 2. Fallback: search by SKU
         if not product and sku:
             r2 = await client.post(gql, headers=h, json={
-                "query": f"query($q:String!){{products(first:1,query:$q){{edges{{node{{{PRODUCT_FIELDS}}}}}}}}}",
+                "query": f"query($q:String!){{products(first:1,query:$q){{edges{{node{{{FIELDS}}}}}}}}}",
                 "variables": {"q": f"sku:{sku}"},
             })
             edges = (r2.json().get("data") or {}).get("products", {}).get("edges", [])
             if edges:
                 product = edges[0]["node"]
 
-        if not product:
-            r3 = await client.post(gql, headers=h, json={
-                "query": f"query($q:String!){{products(first:1,query:$q){{edges{{node{{{PRODUCT_FIELDS}}}}}}}}}",
-                "variables": {"q": f"sku:{handle}"},
-            })
-            edges = (r3.json().get("data") or {}).get("products", {}).get("edges", [])
-            if edges:
-                product = edges[0]["node"]
-
     if not product:
-        return JSONResponse(status_code=404, content={"error": f"Prodotto non trovato (handle={handle}, sku={sku})"})
+        return JSONResponse(status_code=404, content={"error": f"Prodotto non trovato (handle={handle})"})
 
-    media = [
-        {"id": m["id"], "url": (m.get("image") or {}).get("url"), "alt": m.get("alt") or "", "status": m.get("fileStatus")}
-        for m in product["media"]["nodes"]
-        if m.get("mediaContentType") == "IMAGE" and (m.get("image") or {}).get("url")
+    images = [
+        {"id": e["node"]["id"], "url": e["node"]["url"], "alt": e["node"].get("altText") or ""}
+        for e in product["images"]["edges"]
     ]
 
-    variants = []
-    for edge in product["variants"]["edges"]:
-        v = edge["node"]
-        mf = v.get("metafield") or {}
-        gallery = [
-            {"id": n["id"], "url": (n.get("image") or {}).get("url"), "alt": n.get("alt") or ""}
-            for n in (mf.get("references") or {}).get("nodes", [])
-            if (n.get("image") or {}).get("url")
-        ]
-        variants.append({
-            "id": v["id"], "sku": v["sku"], "title": v["title"],
-            "options": v.get("selectedOptions", []),
-            "image": v.get("image"),
-            "metafield_id": mf.get("id"),
-            "gallery": gallery,
-        })
+    variants = [
+        {
+            "id": e["node"]["id"],
+            "sku": e["node"]["sku"],
+            "title": e["node"]["title"],
+            "image_id": (e["node"].get("image") or {}).get("id"),
+            "image_url": (e["node"].get("image") or {}).get("url"),
+            "options": e["node"].get("selectedOptions", []),
+        }
+        for e in product["variants"]["edges"]
+    ]
 
-    return {"id": product["id"], "title": product["title"], "media": media, "variants": variants}
+    return {"id": product["id"], "title": product["title"], "images": images, "variants": variants}
 
 
-# ── SHOPIFY: upload from URL ─────────────────────────────────────────────────
+# ── SHOPIFY: upload image from URL ───────────────────────────────────────────
 
-@app.post("/api/shopify/media/upload-url")
-async def upload_image_from_url(shop: str = Form(...), product_id: str = Form(...), image_url: str = Form(...), alt: str = Form("")):
+@app.post("/api/shopify/image/upload-url")
+async def upload_image_from_url(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    image_url: str = Form(...),
+    alt: str = Form(""),
+):
     token = get_shop_token(shop)
     if not token:
         return JSONResponse(status_code=401, content={"error": "Not authenticated"})
 
+    rest_id = product_id.split("/")[-1]
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
-            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
+            f"https://{shop}/admin/api/{API_VERSION}/products/{rest_id}/images.json",
             headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
-            json={
-                "query": """mutation($productId:ID!,$media:[CreateMediaInput!]!){
-                  productCreateMedia(productId:$productId,media:$media){
-                    media{id mediaContentType ... on MediaImage{fileStatus image{url}}}
-                    mediaUserErrors{field message}
-                  }}""",
-                "variables": {"productId": product_id, "media": [{"originalSource": image_url, "alt": alt, "mediaContentType": "IMAGE"}]},
-            },
+            json={"image": {"src": image_url, "alt": alt}},
         )
-    result = (resp.json().get("data") or {}).get("productCreateMedia", {})
-    errors = result.get("mediaUserErrors", [])
-    if errors:
-        return JSONResponse(status_code=400, content={"errors": errors})
-    media = result.get("media", [])
-    if not media:
-        return JSONResponse(status_code=500, content={"error": "Nessun media restituito"})
-    m = media[0]
-    return {"id": m["id"], "url": (m.get("image") or {}).get("url"), "status": m.get("fileStatus")}
+
+    data = resp.json()
+    if "image" not in data:
+        return JSONResponse(status_code=400, content={"error": data.get("errors", "Upload fallito")})
+
+    img = data["image"]
+    return {"id": f"gid://shopify/ProductImage/{img['id']}", "url": img["src"], "alt": img.get("alt") or ""}
 
 
-# ── SHOPIFY: upload file binary ──────────────────────────────────────────────
+# ── SHOPIFY: upload image file ────────────────────────────────────────────────
 
-@app.post("/api/shopify/media/upload-file")
-async def upload_image_file(shop: str = Form(...), product_id: str = Form(...), file: UploadFile = File(...)):
+@app.post("/api/shopify/image/upload-file")
+async def upload_image_file(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    file: UploadFile = File(...),
+):
     token = get_shop_token(shop)
     if not token:
         return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+
     mime = file.content_type or "image/jpeg"
     if mime not in {"image/jpeg", "image/png", "image/webp", "image/gif"}:
         return JSONResponse(status_code=400, content={"error": f"Tipo non supportato: {mime}"})
+
     binary = await file.read()
     filename = file.filename or "upload.jpg"
+    rest_id = product_id.split("/")[-1]
     gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
     h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+
     try:
         async with httpx.AsyncClient(timeout=120) as client:
+            # Staged upload
             stage = await client.post(gql, headers=h, json={
                 "query": """mutation($input:[StagedUploadInput!]!){stagedUploadsCreate(input:$input){
-                  stagedTargets{url resourceUrl parameters{name value}} userErrors{field message}}}""",
-                "variables": {"input": [{"filename": filename, "mimeType": mime, "resource": "IMAGE", "fileSize": str(len(binary)), "httpMethod": "PUT"}]},
+                  stagedTargets{url resourceUrl parameters{name value}}userErrors{message}}}""",
+                "variables": {"input": [{"filename": filename, "mimeType": mime,
+                    "resource": "IMAGE", "fileSize": str(len(binary)), "httpMethod": "PUT"}]},
             })
             targets = stage.json()["data"]["stagedUploadsCreate"]["stagedTargets"]
             if not targets:
@@ -220,298 +199,113 @@ async def upload_image_file(shop: str = Form(...), product_id: str = Form(...), 
             put = await client.put(target["url"], content=binary, headers=put_h)
             if put.status_code not in (200, 201):
                 return JSONResponse(status_code=400, content={"error": f"Upload fallito: {put.text[:200]}"})
-            resp = await client.post(gql, headers=h, json={
-                "query": """mutation($productId:ID!,$media:[CreateMediaInput!]!){
-                  productCreateMedia(productId:$productId,media:$media){
-                    media{id ... on MediaImage{fileStatus image{url}}}
-                    mediaUserErrors{field message}}}""",
-                "variables": {"productId": product_id, "media": [{"originalSource": target["resourceUrl"], "mediaContentType": "IMAGE", "alt": filename}]},
-            })
-            result = (resp.json().get("data") or {}).get("productCreateMedia", {})
-            errors = result.get("mediaUserErrors", [])
-            if errors:
-                return JSONResponse(status_code=400, content={"errors": errors})
-            media = result.get("media", [])
-            if not media:
-                return JSONResponse(status_code=500, content={"error": "Nessun media restituito"})
-            m = media[0]
-            return {"id": m["id"], "url": (m.get("image") or {}).get("url"), "status": m.get("fileStatus")}
+
+            # Attach to product via REST (returns ProductImage with proper ID)
+            attach = await client.post(
+                f"https://{shop}/admin/api/{API_VERSION}/products/{rest_id}/images.json",
+                headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+                json={"image": {"src": target["resourceUrl"], "alt": filename}},
+            )
+            img_data = attach.json()
+            if "image" not in img_data:
+                return JSONResponse(status_code=400, content={"error": img_data.get("errors", "Attach fallito")})
+
+            img = img_data["image"]
+            return {"id": f"gid://shopify/ProductImage/{img['id']}", "url": img["src"], "alt": img.get("alt") or ""}
+
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
-# ── SHOPIFY: delete product media ────────────────────────────────────────────
+# ── SHOPIFY: delete image ─────────────────────────────────────────────────────
 
-@app.delete("/api/shopify/media")
-async def delete_media(shop: str, product_id: str, media_id: str):
+@app.delete("/api/shopify/image")
+async def delete_image(shop: str, product_id: str, image_id: str):
     token = get_shop_token(shop)
     if not token:
         return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    rest_product = product_id.split("/")[-1]
+    rest_image = image_id.split("/")[-1]
     async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
-            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
-            json={
-                "query": """mutation($productId:ID!,$mediaIds:[ID!]!){
-                  productDeleteMedia(productId:$productId,mediaIds:$mediaIds){
-                    deletedMediaIds mediaUserErrors{field message}}}""",
-                "variables": {"productId": product_id, "mediaIds": [media_id]},
-            },
+        resp = await client.delete(
+            f"https://{shop}/admin/api/{API_VERSION}/products/{rest_product}/images/{rest_image}.json",
+            headers={"X-Shopify-Access-Token": token},
         )
-    result = (resp.json().get("data") or {}).get("productDeleteMedia", {})
-    errors = result.get("mediaUserErrors", [])
-    if errors:
-        return JSONResponse(status_code=400, content={"errors": errors})
-    return {"deleted": result.get("deletedMediaIds", [])}
+    if resp.status_code not in (200, 204):
+        return JSONResponse(status_code=400, content={"error": f"Errore eliminazione: {resp.text[:200]}"})
+    return {"deleted": image_id}
 
 
-# ── SHOPIFY: variant gallery metafield ───────────────────────────────────────
+# ── SHOPIFY: assign image to color variant ────────────────────────────────────
 
-async def _get_gallery_ids(client, gql, h, variant_id) -> list:
-    r = await client.post(gql, headers=h, json={
-        "query": """query($id:ID!){node(id:$id){... on ProductVariant{
-          metafield(namespace:"custom",key:"gallery"){value}}}}""",
-        "variables": {"id": variant_id},
-    })
-    mf = ((r.json().get("data") or {}).get("node") or {}).get("metafield") or {}
-    return json.loads(mf.get("value") or "[]")
-
-
-async def _set_gallery_ids(client, gql, h, variant_id, ids: list):
-    return await client.post(gql, headers=h, json={
-        "query": """mutation($mf:[MetafieldsSetInput!]!){metafieldsSet(metafields:$mf){
-          userErrors{field message}}}""",
-        "variables": {"mf": [{"ownerId": variant_id, "namespace": "custom", "key": "gallery",
-                               "type": "list.file_reference", "value": json.dumps(ids)}]},
-    })
-
-
-@app.post("/api/shopify/variant/gallery/add")
-async def add_to_gallery(shop: str = Form(...), variant_id: str = Form(...), media_id: str = Form(...)):
-    """Append a media GID to the variant gallery metafield."""
-    token = get_shop_token(shop)
-    if not token:
-        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
-    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
-    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(timeout=30) as client:
-        ids = await _get_gallery_ids(client, gql, h, variant_id)
-        if media_id not in ids:
-            ids.append(media_id)
-        resp = await _set_gallery_ids(client, gql, h, variant_id, ids)
-    errors = (resp.json().get("data") or {}).get("metafieldsSet", {}).get("userErrors", [])
-    if errors:
-        return JSONResponse(status_code=400, content={"errors": errors})
-    return {"ok": True, "gallery": ids}
-
-
-@app.delete("/api/shopify/variant/gallery/item")
-async def remove_from_gallery(shop: str, variant_id: str, media_id: str):
-    """Remove a media GID from the variant gallery metafield."""
-    token = get_shop_token(shop)
-    if not token:
-        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
-    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
-    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
-    async with httpx.AsyncClient(timeout=30) as client:
-        ids = await _get_gallery_ids(client, gql, h, variant_id)
-        ids = [i for i in ids if i != media_id]
-        resp = await _set_gallery_ids(client, gql, h, variant_id, ids)
-    errors = (resp.json().get("data") or {}).get("metafieldsSet", {}).get("userErrors", [])
-    if errors:
-        return JSONResponse(status_code=400, content={"errors": errors})
-    return {"ok": True, "gallery": ids}
-
-
-@app.post("/api/shopify/variant/gallery/sync")
-async def sync_gallery_to_color(
-    shop: str = Form(...),
-    variant_ids: str = Form(...),   # JSON array of all variant GIDs with same color
-    media_ids: str = Form(...),     # JSON array of media GIDs to set as gallery
-):
-    """Set the same gallery on all variants of the same color at once."""
-    token = get_shop_token(shop)
-    if not token:
-        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
-    try:
-        vids = json.loads(variant_ids)
-        mids = json.loads(media_ids)
-    except Exception:
-        return JSONResponse(status_code=400, content={"error": "JSON non valido"})
-
-    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
-    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
-
-    async with httpx.AsyncClient(timeout=60) as client:
-        # Shopify metafieldsSet supports up to 25 at once
-        metafields = [
-            {"ownerId": vid, "namespace": "custom", "key": "gallery",
-             "type": "list.file_reference", "value": json.dumps(mids)}
-            for vid in vids
-        ]
-        resp = await client.post(gql, headers=h, json={
-            "query": """mutation($mf:[MetafieldsSetInput!]!){metafieldsSet(metafields:$mf){
-              userErrors{field message}}}""",
-            "variables": {"mf": metafields},
-        })
-
-    errors = (resp.json().get("data") or {}).get("metafieldsSet", {}).get("userErrors", [])
-    if errors:
-        return JSONResponse(status_code=400, content={"errors": errors})
-    return {"ok": True, "updated_variants": len(vids), "gallery_count": len(mids)}
-
-
-# ── SHOPIFY: assegna immagini alle varianti colore (1 img/variante) ──────────
-
-@app.post("/api/shopify/variant/assign-images")
-async def assign_images_to_variants(
+@app.post("/api/shopify/variant/assign-color-image")
+async def assign_color_image(
     shop: str = Form(...),
     product_id: str = Form(...),
-    variant_ids: str = Form(...),   # JSON array, ordinato per taglia
-    media_ids: str = Form(...),     # JSON array di MediaImage GID
+    image_id: str = Form(...),    # ProductImage GID  gid://shopify/ProductImage/...
+    colore: str = Form(...),      # e.g. "NERO" — matches option value on Shopify
 ):
     """
-    Distribuisce le immagini sulle varianti dello stesso colore.
-    Converte MediaImage GID → ProductImage GID (richiesto da productVariantUpdate).
-    Distribuzione ciclica se immagini < varianti.
+    Assigns a product image to ALL variants whose 'Colore'/'Color' option
+    matches the given colore value. Uses productVariantsBulkUpdate for efficiency.
     """
     token = get_shop_token(shop)
     if not token:
         return JSONResponse(status_code=401, content={"error": "Not authenticated"})
-    try:
-        vids = json.loads(variant_ids)
-        mids = json.loads(media_ids)
-    except Exception:
-        return JSONResponse(status_code=400, content={"error": "JSON non valido"})
-
-    if not vids or not mids:
-        return JSONResponse(status_code=400, content={"error": "variant_ids e media_ids non possono essere vuoti"})
 
     gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
     h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
 
     async with httpx.AsyncClient(timeout=60) as client:
-
-        # 1. Recupera la lista immagini del prodotto per mappare
-        #    MediaImage GID → ProductImage GID
-        resp = await client.post(gql, headers=h, json={
-            "query": """
-            query($id: ID!) {
-              product(id: $id) {
-                images(first: 50) {
-                  edges {
-                    node {
-                      id
-                      url
-                    }
-                  }
-                }
-                media(first: 50) {
-                  nodes {
-                    id
-                    ... on MediaImage {
-                      image { url }
-                    }
-                  }
-                }
-              }
-            }""",
+        # Fetch all variants for this product
+        r = await client.post(gql, headers=h, json={
+            "query": """query($id:ID!){product(id:$id){variants(first:100){edges{node{
+              id selectedOptions{name value}}}}}}""",
             "variables": {"id": product_id},
         })
-        pdata = (resp.json().get("data") or {}).get("product", {})
+        edges = (r.json().get("data") or {}).get("product", {}).get("variants", {}).get("edges", [])
 
-        # Build map: URL → ProductImage GID
-        url_to_product_image = {}
-        for edge in pdata.get("images", {}).get("edges", []):
-            node = edge["node"]
-            url_to_product_image[node["url"].split("?")[0]] = node["id"]
+        # Filter variants by color option
+        color_option_names = {"colore", "color", "colour"}
+        target_variants = []
+        for e in edges:
+            opts = e["node"].get("selectedOptions", [])
+            for opt in opts:
+                if opt["name"].lower() in color_option_names and opt["value"].upper() == colore.upper():
+                    target_variants.append(e["node"]["id"])
+                    break
 
-        # Build map: MediaImage GID → URL
-        media_gid_to_url = {}
-        for m in pdata.get("media", {}).get("nodes", []):
-            img_url = (m.get("image") or {}).get("url", "")
-            if img_url:
-                media_gid_to_url[m["id"]] = img_url.split("?")[0]
-
-        # Convert requested MediaImage GIDs → ProductImage GIDs
-        product_image_ids = []
-        for mid in mids:
-            url = media_gid_to_url.get(mid, "")
-            prod_img_id = url_to_product_image.get(url)
-            if prod_img_id:
-                product_image_ids.append(prod_img_id)
-            else:
-                # Try partial URL match (CDN sometimes strips params differently)
-                matched = next(
-                    (pid for u, pid in url_to_product_image.items() if url and url in u),
-                    None
-                )
-                if matched:
-                    product_image_ids.append(matched)
-
-        if not product_image_ids:
-            return JSONResponse(status_code=400, content={
-                "error": "Impossibile convertire le immagini selezionate in ProductImage. "
-                         "Verifica che le immagini siano effettivamente associate al prodotto."
+        if not target_variants:
+            return JSONResponse(status_code=404, content={
+                "error": f"Nessuna variante trovata con Colore='{colore}'. "
+                         f"Opzioni disponibili: {[o['value'] for e in edges for o in e['node'].get('selectedOptions',[]) if o['name'].lower() in color_option_names]}"
             })
 
-        # 2. Assegna 1 immagine per variante (distribuzione ciclica)
-        results = []
-        errors_list = []
+        # Bulk update: assign same image to all color variants
+        resp = await client.post(gql, headers=h, json={
+            "query": """
+            mutation($productId:ID!, $variants:[ProductVariantsBulkInput!]!) {
+              productVariantsBulkUpdate(productId:$productId, variants:$variants) {
+                productVariants { id image { id url } }
+                userErrors { field message }
+              }
+            }""",
+            "variables": {
+                "productId": product_id,
+                "variants": [{"id": vid, "imageId": image_id} for vid in target_variants],
+            },
+        })
 
-        for i, vid in enumerate(vids):
-            prod_image_id = product_image_ids[i % len(product_image_ids)]
+    result = (resp.json().get("data") or {}).get("productVariantsBulkUpdate", {})
+    errors = result.get("userErrors", [])
+    if errors:
+        return JSONResponse(status_code=400, content={"errors": errors})
 
-            r = await client.post(gql, headers=h, json={
-                "query": """
-                mutation($input: ProductVariantInput!) {
-                  productVariantUpdate(input: $input) {
-                    productVariant { id image { id url } }
-                    userErrors { field message }
-                  }
-                }""",
-                "variables": {"input": {"id": vid, "imageId": prod_image_id}},
-            })
-
-            result = (r.json().get("data") or {}).get("productVariantUpdate", {})
-            errs = result.get("userErrors", [])
-            if errs:
-                errors_list.append({"variant": vid, "errors": errs})
-            else:
-                pv = result.get("productVariant", {})
-                results.append({
-                    "variant_id": vid,
-                    "image_url": (pv.get("image") or {}).get("url"),
-                    "image_id": (pv.get("image") or {}).get("id"),
-                })
-
-    if errors_list and not results:
-        return JSONResponse(status_code=400, content={"errors": errors_list})
-
+    updated = result.get("productVariants", [])
     return {
         "ok": True,
-        "assigned": len(results),
-        "errors": errors_list,
-        "results": results,
+        "updated": len(updated),
+        "colore": colore,
+        "image_id": image_id,
+        "variants": [{"id": v["id"], "image_url": (v.get("image") or {}).get("url")} for v in updated],
     }
-
-
-# ── DEBUG: mostra varianti Shopify con SKU reali ──────────────────────────────
-
-@app.get("/api/debug/variants")
-async def debug_variants(shop: str, product_id: str):
-    """Mostra tutte le varianti del prodotto con i loro SKU reali da Shopify."""
-    token = get_shop_token(shop)
-    if not token:
-        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
-            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
-            json={
-                "query": """query($id:ID!){product(id:$id){variants(first:100){edges{node{id sku title image{id url}}}}}}""",
-                "variables": {"id": product_id},
-            },
-        )
-    edges = (resp.json().get("data") or {}).get("product", {}).get("variants", {}).get("edges", [])
-    return [{"id": e["node"]["id"], "sku": e["node"]["sku"], "title": e["node"]["title"], "has_image": bool(e["node"].get("image"))} for e in edges]

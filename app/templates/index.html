@@ -77,19 +77,19 @@
       color: #9A9488;
     }
 
-    .shopfield {
+    .shopwrap {
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .shopfield label {
+    .shopwrap label {
       font-size: 10px;
       color: #9A9488;
       white-space: nowrap;
     }
 
-    .shopfield input {
+    .shopwrap input {
       background: rgba(255, 255, 255, .1);
       border: 1px solid rgba(255, 255, 255, .2);
       border-radius: 4px;
@@ -98,14 +98,14 @@
       font-size: 11px;
       color: var(--bg);
       outline: none;
-      width: 210px;
+      width: 220px;
     }
 
-    .shopfield input::placeholder {
+    .shopwrap input::placeholder {
       color: #6A6460;
     }
 
-    .shopfield input:focus {
+    .shopwrap input:focus {
       border-color: rgba(255, 255, 255, .4);
     }
 
@@ -169,7 +169,6 @@
       color: var(--text);
     }
 
-    /* FILTERS */
     .filters {
       padding: 10px 14px;
       border-bottom: 1px solid var(--border);
@@ -190,7 +189,6 @@
 
     .sbox span {
       color: var(--muted);
-      font-size: 14px;
     }
 
     .sbox input {
@@ -222,42 +220,6 @@
       min-width: 0;
     }
 
-    .fsel:focus {
-      border-color: var(--accent);
-    }
-
-    .pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-    }
-
-    .pill {
-      font-size: 10px;
-      padding: 3px 7px;
-      border-radius: 20px;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: var(--s2);
-      color: var(--muted);
-      transition: all .12s;
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-
-    .pill:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .pill.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
     .fstats {
       font-size: 10px;
       color: var(--muted);
@@ -280,7 +242,7 @@
       text-decoration: underline;
     }
 
-    /* PRODUCT LIST */
+    /* LIST */
     .plist {
       flex: 1;
       overflow-y: auto;
@@ -305,7 +267,7 @@
 
     .ptop {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
       gap: 4px;
       margin-bottom: 2px;
@@ -321,20 +283,19 @@
       font-size: 13px;
       font-weight: 300;
       line-height: 1.3;
-      flex: 1;
+      margin-bottom: 4px;
     }
 
     .pmeta {
       display: flex;
       gap: 4px;
       flex-wrap: wrap;
-      margin-top: 4px;
       align-items: center;
     }
 
     .tag {
       font-size: 10px;
-      padding: 2px 5px;
+      padding: 2px 6px;
       border-radius: 3px;
       border: 1px solid var(--border);
       display: inline-flex;
@@ -342,29 +303,29 @@
       gap: 3px;
     }
 
-    .tc {
-      background: var(--s2);
-      color: var(--muted);
-    }
-
-    .ti {
-      background: var(--gl);
-      color: var(--green);
-      border-color: #B8D8C8;
-    }
-
-    .tb {
+    .tbrand {
       background: var(--text);
       color: var(--bg);
       border-color: var(--text);
       font-size: 9px;
     }
 
-    .tk {
+    .tcolor {
+      background: var(--s2);
+      color: var(--muted);
+    }
+
+    .tcode {
       background: var(--bl);
       color: var(--blue);
       border-color: #C0CCEE;
       font-size: 9px;
+    }
+
+    .timg {
+      background: var(--gl);
+      color: var(--green);
+      border-color: #B8D8C8;
     }
 
     .dot {
@@ -373,6 +334,7 @@
       border-radius: 50%;
       border: 1px solid rgba(0, 0, 0, .1);
       flex-shrink: 0;
+      display: inline-block;
     }
 
     .nores {
@@ -428,7 +390,9 @@
     }
 
     .dhead {
-      margin-bottom: 18px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
     }
 
     .dhead h2 {
@@ -436,20 +400,20 @@
       font-size: 23px;
       font-weight: 300;
       letter-spacing: -.02em;
-      margin-bottom: 7px;
+      margin-bottom: 8px;
     }
 
     .dbadges {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
+      gap: 6px;
       align-items: center;
     }
 
     .badge {
-      font-size: 10px;
-      padding: 3px 8px;
-      border-radius: 3px;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
       font-family: var(--mono);
       border: 1px solid transparent;
       display: inline-flex;
@@ -478,6 +442,7 @@
       background: var(--bl);
       color: var(--blue);
       border-color: #C0CCEE;
+      font-size: 10px;
     }
 
     .swatch {
@@ -490,7 +455,7 @@
 
     /* SECTION */
     .sec {
-      margin-bottom: 26px;
+      margin-bottom: 28px;
     }
 
     .sectitle {
@@ -498,7 +463,7 @@
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       padding-bottom: 6px;
       border-bottom: 1px solid var(--border);
       display: flex;
@@ -511,62 +476,22 @@
       color: var(--muted);
     }
 
-    /* TAB BAR (variant selector) */
-    .tabbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin-bottom: 14px;
-    }
-
-    .vtab {
-      font-size: 11px;
-      padding: 5px 11px;
-      border-radius: 4px;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: var(--s2);
-      color: var(--muted);
-      transition: all .12s;
-    }
-
-    .vtab:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .vtab.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    /* GALLERY INFO BOX */
-    .ginfo {
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 10px;
-      padding: 8px 10px;
-      background: var(--bl);
-      border-radius: var(--r);
-      border: 1px solid #C0CCEE;
-      color: var(--blue);
-    }
-
     /* IMAGE GRID */
     .igrid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
     }
 
     .icard {
       position: relative;
       border-radius: var(--r);
       overflow: hidden;
-      border: 1px solid var(--border);
+      border: 2px solid transparent;
       background: var(--s2);
       aspect-ratio: 3/4;
+      cursor: pointer;
+      transition: border-color .15s;
     }
 
     .icard img {
@@ -581,6 +506,10 @@
       transform: scale(1.04);
     }
 
+    .icard.assigned {
+      border-color: var(--green);
+    }
+
     .icard .ov {
       position: absolute;
       inset: 0;
@@ -589,7 +518,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 7px;
       opacity: 0;
       transition: opacity .15s;
     }
@@ -598,45 +527,22 @@
       opacity: 1;
     }
 
-    .icard.ingallery {
-      outline: 2px solid var(--green);
-      outline-offset: -2px;
-    }
-
-    .icard.ingallery::after {
-      content: '✓';
+    .icard .badge-img {
       position: absolute;
-      top: 5px;
-      right: 5px;
-      background: var(--green);
-      color: #fff;
-      font-size: 10px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      display: grid;
-      place-items: center;
-    }
-
-    .sbadge {
-      position: absolute;
-      bottom: 5px;
-      left: 5px;
+      bottom: 6px;
+      left: 6px;
       font-size: 9px;
-      padding: 2px 4px;
+      padding: 2px 6px;
       border-radius: 3px;
     }
 
-    .ss {
-      background: #96BF48;
-      color: #2A4000;
+    .bi-assigned {
+      background: var(--green);
+      color: #fff;
     }
 
-    .sg {
-      background: var(--green);
+    .bi-shopify {
+      background: rgba(0, 0, 0, .5);
       color: #fff;
     }
 
@@ -645,11 +551,11 @@
       border: 1px solid rgba(255, 255, 255, .3);
       border-radius: 4px;
       color: #fff;
-      padding: 4px 9px;
+      padding: 5px 10px;
       font-family: var(--mono);
       font-size: 10px;
       cursor: pointer;
-      width: 106px;
+      width: 120px;
       text-align: center;
       transition: background .1s;
     }
@@ -658,24 +564,16 @@
       background: rgba(255, 255, 255, .28);
     }
 
+    .obtn.assign {
+      background: rgba(42, 107, 74, .7);
+    }
+
+    .obtn.assign:hover {
+      background: rgba(42, 107, 74, .95);
+    }
+
     .obtn.del:hover {
-      background: rgba(200, 75, 47, .7);
-    }
-
-    .obtn.add {
-      background: rgba(42, 107, 74, .6);
-    }
-
-    .obtn.add:hover {
-      background: rgba(42, 107, 74, .85);
-    }
-
-    .obtn.rem {
-      background: rgba(200, 75, 47, .4);
-    }
-
-    .obtn.rem:hover {
-      background: rgba(200, 75, 47, .7);
+      background: rgba(200, 75, 47, .8);
     }
 
     /* UPLOAD */
@@ -687,7 +585,7 @@
       background: var(--bg);
       transition: all .15s;
       cursor: pointer;
-      margin-bottom: 9px;
+      margin-bottom: 10px;
     }
 
     .upzone:hover {
@@ -709,7 +607,7 @@
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--r);
-      padding: 7px 9px;
+      padding: 8px 10px;
       font-family: var(--mono);
       font-size: 12px;
       color: var(--text);
@@ -718,13 +616,6 @@
 
     .urlrow input:focus {
       border-color: var(--accent);
-    }
-
-    /* ACTIONS */
-    .syncbar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 10px;
     }
 
     .btn {
@@ -751,46 +642,6 @@
       background: #3A3530;
     }
 
-    .bgrn {
-      background: var(--green);
-      color: #fff;
-      border-color: var(--green);
-    }
-
-    .bgrn:hover {
-      background: #1E5038;
-    }
-
-    .bout {
-      background: transparent;
-      color: var(--text);
-      border-color: var(--border);
-    }
-
-    .bout:hover {
-      background: var(--s2);
-    }
-
-    /* VARIANT CHIPS */
-    .vchips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .vchip {
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 4px;
-      background: var(--s2);
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-
-    .vchip strong {
-      color: var(--text);
-    }
-
     /* TOAST */
     #toast {
       position: fixed;
@@ -798,14 +649,15 @@
       right: 18px;
       background: var(--text);
       color: var(--bg);
-      padding: 9px 14px;
+      padding: 10px 16px;
       border-radius: var(--r);
       font-size: 12px;
       transform: translateY(60px);
       opacity: 0;
       transition: all .22s;
       z-index: 999;
-      max-width: 300px;
+      max-width: 320px;
+      line-height: 1.4;
     }
 
     #toast.show {
@@ -837,6 +689,22 @@
         transform: rotate(360deg);
       }
     }
+
+    /* ASSIGN INFO BOX */
+    .ainfo {
+      background: var(--bl);
+      border: 1px solid #C0CCEE;
+      border-radius: var(--r);
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--blue);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .ainfo strong {
+      font-weight: 500;
+    }
   </style>
 </head>
 
@@ -845,7 +713,7 @@
   <header>
     <h1>Image <em>Manager</em></h1>
     <div class="hright">
-      <div class="shopfield">
+      <div class="shopwrap">
         <label>Shop</label>
         <input id="shopInput" type="text" placeholder="negozio.myshopify.com">
       </div>
@@ -854,32 +722,28 @@
   </header>
 
   <div class="layout">
-    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="csvzone">
         <label>CSV Prodotti</label>
         <div class="drop" id="drop" onclick="document.getElementById('csvfile').click()">
           <input type="file" id="csvfile" accept=".csv">
-          <p><strong>Clicca o trascina</strong> il CSV<br>handle · SKU · Colore · color_code</p>
+          <p><strong>Clicca o trascina</strong> il CSV</p>
         </div>
       </div>
 
       <div class="filters">
         <div class="sbox">
           <span>⌕</span>
-          <input id="search" type="text" placeholder="Titolo, handle, SKU, colore, codice…">
+          <input id="search" type="text" placeholder="Cerca titolo, handle, colore…">
         </div>
         <div class="frow">
           <select class="fsel" id="fbrand">
             <option value="">Tutti i brand</option>
           </select>
-          <select class="fsel" id="fstatus">
-            <option value="">Tutti</option>
-            <option value="gallery">Con gallery impostata</option>
-            <option value="nogallery">Senza gallery</option>
+          <select class="fsel" id="fcolor">
+            <option value="">Tutti i colori</option>
           </select>
         </div>
-        <div class="pills" id="colorpills"></div>
         <div class="fstats">
           <span id="fcount">0 prodotti</span>
           <button class="clr" onclick="clearF()">✕ Reset</button>
@@ -891,45 +755,39 @@
       </div>
     </aside>
 
-    <!-- MAIN -->
     <main class="main">
       <div class="empty" id="empty">
         <div class="big">🖼</div>
         <h2>Seleziona un prodotto</h2>
-        <p>Carica il CSV, filtra per brand o colore e gestisci la gallery di ogni variante</p>
+        <p>Carica il CSV, seleziona un prodotto e gestisci le immagini su Shopify</p>
       </div>
 
       <div class="detail" id="detail">
 
-        <!-- Header prodotto -->
         <div class="dhead">
           <h2 id="dtitle">—</h2>
           <div class="dbadges" id="dbadges"></div>
         </div>
 
-        <!-- Immagini prodotto su Shopify -->
+        <!-- Immagini Shopify -->
         <div class="sec">
           <div class="sectitle">
-            Immagini prodotto su Shopify
-            <span class="secn" id="mediacount"></span>
+            Immagini su Shopify
+            <span class="secn" id="imgcount"></span>
           </div>
 
-          <div class="ginfo">
-            Le immagini selezionate (✓) verranno distribuite sulle varianti di questo colore.
-            Shopify le mostrerà tutte quando il cliente seleziona <strong id="ginfoColor">—</strong>.
-            Seleziona le foto nell'ordine in cui vuoi che appaiano.
+          <div class="ainfo">
+            Hover su un'immagine → <strong>Assegna a variante colore</strong> la associa a tutte le taglie
+            di <strong id="ainfo-color">—</strong> su Shopify.<br>
+            Le immagini con bordo verde sono già assegnate a questo colore.
           </div>
 
-          <div class="syncbar">
-            <button class="btn bgrn" onclick="assignImagesToVariants()">⟳ Assegna foto selezionate alle varianti <span
-                id="selcount"
-                style="background:rgba(255,255,255,.2);border-radius:10px;padding:1px 7px;margin-left:4px;">0</span></button>
+          <div class="igrid" id="imgGrid">
+            <p style="color:var(--muted);font-size:12px;">Seleziona un prodotto…</p>
           </div>
-
-          <div class="igrid" id="mediaGrid"></div>
         </div>
 
-        <!-- Upload -->
+        <!-- Aggiungi immagini -->
         <div class="sec">
           <div class="sectitle">Aggiungi immagini al prodotto</div>
           <div class="upzone" onclick="document.getElementById('fileinput').click()">
@@ -938,15 +796,9 @@
             <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP — selezione multipla</p>
           </div>
           <div class="urlrow">
-            <input id="urlinput" type="text" placeholder="Oppure incolla URL immagine… https://…">
+            <input id="urlinput" type="text" placeholder="Oppure incolla URL… https://…">
             <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
           </div>
-        </div>
-
-        <!-- Varianti -->
-        <div class="sec">
-          <div class="sectitle">Tutte le varianti</div>
-          <div class="vchips" id="vchips"></div>
         </div>
 
       </div>
@@ -956,29 +808,21 @@
   <div id="toast"></div>
 
   <script>
-    // ── STATE ─────────────────────────────────────────────────────────────────────
-    let all = [], filt = [], cur = null, shopData = null, activeVariantId = null;
-    let currentGallery = []; // gallery items for the current color (source of truth for UI)
-    let selectedMediaIds = new Set(); // images selected for assignment to variants
-    let fSearch = '', fBrand = '', fColor = '', fStatus = '';
+    // STATE
+    let all = [], filt = [], cur = null, shopData = null;
+    let fSearch = '', fBrand = '', fColor = '';
 
     const $ = id => document.getElementById(id);
     const shop = () => $('shopInput').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-
-    function toast(msg, type = '') {
-      const el = $('toast'); el.textContent = msg; el.className = 'show ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
-      clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3200);
-    }
+    function toast(msg, type = '') { const el = $('toast'); el.textContent = msg; el.className = 'show ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3500); }
     function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
     const CMAP = {
-      NERO: '#1A1A1A', NERO1: '#2A2A2A', BIANCO: '#F0EEE8', AVORIO: '#F5EFD8',
-      BURRO: '#F5ECC0', BEIGE: '#D4C5A9', NUDO: '#E8C9A0', TORTORA: '#C4B49A',
-      FANGO: '#9E8B72', CAMMELLO: '#C19A6B', TABACCO: '#8B6340', MARRONE: '#6B3D26',
-      KAKI: '#8A8A4A', MILITARE: '#4A5A35', PRATO: '#3A6B3A', VERDE: '#2A7A3A',
-      DENIM: '#3A5A8A', BLU: '#1A3A7A', BLU1: '#2A4A9A', AZZURRO: '#5A9AC8',
-      CELESTE: '#8AC4E0', LILLA: '#9A7AC8', ROSA: '#E8A0B0', BORDEAUX: '#7A1A2A',
-      GRIGIO: '#909090', GIALLO: '#E8D040',
+      NERO: '#1A1A1A', NERO1: '#2A2A2A', BIANCO: '#F0EEE8', AVORIO: '#F5EFD8', BURRO: '#F5ECC0',
+      BEIGE: '#D4C5A9', NUDO: '#E8C9A0', TORTORA: '#C4B49A', FANGO: '#9E8B72', CAMMELLO: '#C19A6B',
+      TABACCO: '#8B6340', MARRONE: '#6B3D26', KAKI: '#8A8A4A', MILITARE: '#4A5A35', PRATO: '#3A6B3A',
+      VERDE: '#2A7A3A', DENIM: '#3A5A8A', BLU: '#1A3A7A', BLU1: '#2A4A9A', AZZURRO: '#5A9AC8',
+      CELESTE: '#8AC4E0', LILLA: '#9A7AC8', ROSA: '#E8A0B0', BORDEAUX: '#7A1A2A', GRIGIO: '#909090', GIALLO: '#E8D040',
     };
     const cdot = (c, s = 8) => `<span class="dot" style="width:${s}px;height:${s}px;background:${CMAP[c] || '#CCC'};"></span>`;
 
@@ -999,76 +843,33 @@
         $('hstat').textContent = `${all.length} prodotti · ${file.name}`;
         buildFilters(); applyF();
         toast(`CSV caricato: ${all.length} prodotti`, 'ok');
-        // Load gallery status in background if shop is set
-        if (shop()) fetchGalleryStatus();
       } catch (e) { toast('Errore CSV: ' + e.message, 'err'); $('hstat').textContent = 'Errore'; }
-    }
-
-    // ── GALLERY STATUS (background fetch for filter) ──────────────────────────────
-    // Map of "handle__color_code" → true/false (has gallery on any variant)
-    let galleryStatus = {};
-
-    async function fetchGalleryStatus() {
-      const s = shop();
-      if (!s || !all.length) return;
-      $('hstat').textContent += ' · Carico stato gallery…';
-      let done = 0;
-      // Fetch in small batches to avoid hammering the API
-      for (const p of all) {
-        const firstSku = (p.variants[0] || {}).sku || '';
-        try {
-          const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(p.handle)}&sku=${encodeURIComponent(firstSku)}`);
-          if (res.ok) {
-            const data = await res.json();
-            const csvSkus = new Set(p.variants.map(v => v.sku));
-            const colorVars = data.variants.filter(v => csvSkus.has(v.sku));
-            const hasGallery = (colorVars.length ? colorVars : data.variants).some(v => v.gallery && v.gallery.length > 0);
-            const key = `${p.handle}__${p.color_code}`;
-            galleryStatus[key] = hasGallery;
-            // Update product item badge live
-            const idx = all.indexOf(p);
-            const el = document.querySelector(`.pitem[data-i="${idx}"]`);
-            if (el) {
-              const badge = el.querySelector('.gallery-badge');
-              if (badge) { badge.textContent = hasGallery ? '✓ Gallery' : ''; badge.style.display = hasGallery ? '' : 'none'; }
-            }
-          }
-        } catch (e) {/* skip */ }
-        done++;
-        if (done % 5 === 0) await new Promise(r => setTimeout(r, 200)); // small pause every 5
-      }
-      $('hstat').textContent = `${all.length} prodotti · gallery caricata`;
-      applyF(); // re-render with updated filter data
     }
 
     // ── FILTERS ───────────────────────────────────────────────────────────────────
     function buildFilters() {
       const brands = [...new Set(all.map(p => p.brand).filter(Boolean))].sort();
-      $('fbrand').innerHTML = '<option value="">Tutti i brand</option>' + brands.map(b => `<option value="${esc(b)}">${b}</option>`).join('');
+      $('fbrand').innerHTML = '<option value="">Tutti i brand</option>' + brands.map(b => `<option>${esc(b)}</option>`).join('');
       const colors = [...new Set(all.map(p => p.colore).filter(Boolean))].sort();
-      $('colorpills').innerHTML = colors.map(c => `<span class="pill" data-c="${esc(c)}" onclick="toggleC('${esc(c)}')">${cdot(c)} ${c}</span>`).join('');
+      $('fcolor').innerHTML = '<option value="">Tutti i colori</option>' + colors.map(c => `<option>${esc(c)}</option>`).join('');
     }
 
-    function toggleC(c) { fColor = fColor === c ? '' : c; document.querySelectorAll('.pill').forEach(p => p.classList.toggle('active', p.dataset.c === fColor)); applyF(); }
     $('fbrand').addEventListener('change', e => { fBrand = e.target.value; applyF(); });
-    $('fstatus').addEventListener('change', e => { fStatus = e.target.value; applyF(); });
+    $('fcolor').addEventListener('change', e => { fColor = e.target.value; applyF(); });
     $('search').addEventListener('input', e => { fSearch = e.target.value.toLowerCase(); applyF(); });
-    function clearF() { fSearch = ''; fBrand = ''; fColor = ''; fStatus = ''; $('search').value = ''; $('fbrand').value = ''; $('fstatus').value = ''; document.querySelectorAll('.pill').forEach(p => p.classList.remove('active')); applyF(); }
+    function clearF() { fSearch = ''; fBrand = ''; fColor = ''; $('search').value = ''; $('fbrand').value = ''; $('fcolor').value = ''; applyF(); }
 
     function applyF() {
       filt = all.filter(p => {
-        if (fSearch) { const t = [p.title, String(p.handle), p.brand, p.colore, String(p.color_code), p.variants.map(v => v.sku).join(' ')].join(' ').toLowerCase(); if (!t.includes(fSearch)) return false; }
+        if (fSearch) {
+          const t = [p.title, String(p.handle), p.brand, p.colore, p.color_code].join(' ').toLowerCase();
+          if (!t.includes(fSearch)) return false;
+        }
         if (fBrand && p.brand !== fBrand) return false;
         if (fColor && p.colore !== fColor) return false;
-        if (fStatus) {
-          const key = `${p.handle}__${p.color_code}`;
-          const has = galleryStatus[key];
-          if (fStatus === 'gallery' && !has) return false;
-          if (fStatus === 'nogallery' && has) return false;
-        }
         return true;
       });
-      $('fcount').textContent = `${filt.length} / ${all.length} prodotti`;
+      $('fcount').textContent = `${filt.length} / ${all.length}`;
       renderList();
     }
 
@@ -1079,19 +880,13 @@
       list.innerHTML = filt.map(p => {
         const gi = all.indexOf(p);
         const active = cur && all.indexOf(cur) === gi;
-        const key = `${p.handle}__${p.color_code}`;
-        const hasG = galleryStatus[key];
-        const gBadge = hasG !== undefined
-          ? `<span class="tag gallery-badge" style="${hasG ? 'background:var(--gl);color:var(--green);border-color:#B8D8C8' : 'background:var(--al);color:var(--accent);border-color:#E8B8A8'}">${hasG ? '✓ Gallery' : '✗ No gallery'}</span>`
-          : `<span class="tag gallery-badge" style="display:none"></span>`;
         return `<div class="pitem${active ? ' active' : ''}" data-i="${gi}" onclick="selProd(${gi})">
-      <div class="ptop"><span class="phandle">${p.handle}</span><span class="tag tb">${esc(p.brand)}</span></div>
+      <div class="ptop"><span class="phandle">${p.handle}</span><span class="tag tbrand">${esc(p.brand)}</span></div>
       <div class="ptitle">${esc(p.title) || '(senza titolo)'}</div>
       <div class="pmeta">
-        <span class="tag tc">${cdot(p.colore)} ${esc(p.colore)}</span>
-        <span class="tag tk">#${esc(String(p.color_code))}</span>
-        ${gBadge}
-        <span class="tag" style="font-size:9px;">${p.variants.length} taglie</span>
+        <span class="tag tcolor">${cdot(p.colore)} ${esc(p.colore)}</span>
+        <span class="tag tcode">#${esc(p.color_code)}</span>
+        <span class="tag" style="font-size:9px;color:var(--muted)">${p.variants.length} taglie</span>
       </div>
     </div>`;
       }).join('');
@@ -1099,7 +894,7 @@
 
     // ── SELECT PRODUCT ────────────────────────────────────────────────────────────
     async function selProd(idx) {
-      cur = all[idx]; shopData = null; activeVariantId = null; currentGallery = []; selectedMediaIds = new Set();
+      cur = all[idx]; shopData = null;
       document.querySelectorAll('.pitem').forEach(el => el.classList.remove('active'));
       document.querySelector(`.pitem[data-i="${idx}"]`)?.classList.add('active');
       $('empty').style.display = 'none';
@@ -1111,178 +906,96 @@
     <span class="badge bh">${esc(String(cur.handle))}</span>
     <span class="badge bb">${esc(cur.brand)}</span>
     <span class="badge bc"><span class="swatch" style="background:${sw}"></span>${esc(cur.colore)}</span>
-    <span class="badge bk">codice #${esc(String(cur.color_code))}</span>`;
+    <span class="badge bk">codice #${esc(cur.color_code)}</span>`;
 
-      $('vchips').innerHTML = cur.variants.map(v => `<span class="vchip"><strong>${esc(v.taglia)}</strong> — ${esc(v.sku)}</span>`).join('');
-
+      $('ainfo-color').textContent = cur.colore;
       await loadShopify();
     }
 
-    // ── LOAD SHOPIFY ──────────────────────────────────────────────────────────────
+    // ── SHOPIFY ───────────────────────────────────────────────────────────────────
     async function loadShopify() {
-      $('mediacount').textContent = '';
-      $('mediaGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Carico da Shopify…</p>`;
-
+      $('imgcount').textContent = '';
+      $('imgGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Carico da Shopify…</p>`;
       const s = shop();
-      if (!s) { $('mediaGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;">Inserisci il dominio shop nell\'header</p>'; return; }
+      if (!s) { $('imgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;">Inserisci il dominio shop nell\'header</p>'; return; }
 
       try {
         const firstSku = (cur.variants[0] || {}).sku || '';
         const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(cur.handle)}&sku=${encodeURIComponent(firstSku)}`);
         const data = await res.json();
-        if (!res.ok) { $('mediaGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">⚠ ${esc(data.error)}</p>`; return; }
+        if (!res.ok) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">⚠ ${esc(data.error)}</p>`; return; }
         shopData = data;
-        $('mediacount').textContent = `${data.media.length} immagini`;
-
-        // Flexible SKU matching: exact string OR numeric match (strips leading zeros / type differences)
-        const csvSkusArr = cur.variants.map(v => v.sku);
-        console.log('CSV SKUs:', csvSkusArr);
-        console.log('Shopify variants:', data.variants.map(v => ({ id: v.id, sku: v.sku, title: v.title })));
-        const csvSkus = new Set(csvSkusArr);
-        const csvSkusNumeric = new Set(csvSkusArr.map(s => String(Number(s))).filter(s => s !== 'NaN'));
-        const colorVariants = data.variants.filter(v => {
-          if (!v.sku) return false;
-          if (csvSkus.has(v.sku)) return true;
-          if (csvSkusNumeric.has(String(Number(v.sku)))) return true;
-          return false;
-        });
-        console.log('Matched color variants:', colorVariants.length, '/', data.variants.length);
-
-        // Use first color variant as the gallery reference (all sizes share same gallery)
-        const refVariant = colorVariants.length ? colorVariants[0] : data.variants[0];
-        activeVariantId = refVariant ? refVariant.id : null;
-
-        // Show warning if no color variants matched
-        if (!colorVariants.length) {
-          $('ginfoColor').innerHTML = `<span style="color:var(--accent)">⚠ SKU non trovati su Shopify — verranno usate TUTTE le ${data.variants.length} varianti</span>`;
-        } else {
-          $('ginfoColor').textContent = `${cur.colore} #${cur.color_code} — ${colorVariants.length} varianti`;
-        }
-
-        // Pre-select images already assigned to any variant of this color
-        selectedMediaIds = new Set();
-        colorVariants.forEach(v => {
-          if (v.image && v.image.id) selectedMediaIds.add(v.image.id);
-        });
-
-        currentGallery = refVariant ? (refVariant.gallery || []) : [];
-        renderMedia(data.media, currentGallery);
-
-      } catch (e) { $('mediaGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`; }
+        $('imgcount').textContent = `${data.images.length} immagini`;
+        renderImages(data.images, data.variants);
+      } catch (e) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`; }
     }
 
-    function renderMedia(media, gallery) {
-      const galleryIds = new Set((gallery || []).map(g => g.id));
-      const grid = $('mediaGrid');
-      if (!media.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessuna immagine su Shopify per questo prodotto</p>'; return; }
-      grid.innerHTML = media.map(m => {
-        const sel = galleryIds.has(m.id) || selectedMediaIds.has(m.id);
-        return `<div class="icard${sel ? ' ingallery' : ''}" id="mc-${m.id.replace(/\W/g, '_')}" onclick="toggleSelect('${esc(m.id)}',this)">
-      <img src="${esc(m.url)}" loading="lazy">
-      <span class="sbadge ${sel ? 'sg' : 'ss'}">${sel ? '✓ Selezionata' : 'Shopify'}</span>
+    function renderImages(images, variants) {
+      // Find which image IDs are assigned to any variant of current color
+      const colorOptionNames = new Set(['colore', 'color', 'colour']);
+      const colorVariants = variants.filter(v =>
+        v.options.some(o => colorOptionNames.has(o.name.toLowerCase()) && o.value.toUpperCase() === cur.colore.toUpperCase())
+      );
+      const assignedIds = new Set(colorVariants.map(v => v.image_id).filter(Boolean));
+
+      const grid = $('imgGrid');
+      if (!images.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessuna immagine su Shopify per questo prodotto</p>'; return; }
+
+      grid.innerHTML = images.map(img => {
+        const isAssigned = assignedIds.has(img.id);
+        return `<div class="icard${isAssigned ? ' assigned' : ''}" id="img-${img.id.replace(/\W/g, '_')}">
+      <img src="${esc(img.url)}" loading="lazy">
+      <span class="badge-img ${isAssigned ? 'bi-assigned' : 'bi-shopify'}">${isAssigned ? `✓ ${esc(cur.colore)}` : 'Shopify'}</span>
       <div class="ov">
-        <button class="obtn ${sel ? 'rem' : 'add'}" onclick="toggleSelect('${esc(m.id)}',document.getElementById('mc-${m.id.replace(/\W/g, '_')}'));event.stopPropagation()">
-          ${sel ? '✕ Deseleziona' : '+ Seleziona'}
+        <button class="obtn assign" onclick="assignToColor('${esc(img.id)}');event.stopPropagation()">
+          📌 Assegna a ${esc(cur.colore)}
         </button>
-        <button class="obtn del" onclick="deleteMedia('${esc(m.id)}');event.stopPropagation()">🗑 Elimina</button>
-        <a class="obtn" href="${esc(m.url)}" target="_blank" onclick="event.stopPropagation()">↗ Apri</a>
+        <a class="obtn" href="${esc(img.url)}" target="_blank" onclick="event.stopPropagation()">↗ Apri</a>
+        <button class="obtn del" onclick="deleteImage('${esc(img.id)}');event.stopPropagation()">🗑 Elimina</button>
       </div>
     </div>`;
       }).join('');
-      updateSelCount();
     }
 
-    // ── GALLERY ACTIONS ───────────────────────────────────────────────────────────
-    // ── SELECTION & ASSIGN ───────────────────────────────────────────────────────
-    function updateSelCount() {
-      const el = $('selcount');
-      if (el) el.textContent = selectedMediaIds.size;
-    }
-
-    function toggleSelect(mediaId, cardEl) {
-      if (selectedMediaIds.has(mediaId)) {
-        selectedMediaIds.delete(mediaId);
-        cardEl.classList.remove('ingallery');
-        const badge = cardEl.querySelector('.sbadge');
-        if (badge) { badge.textContent = 'Shopify'; badge.className = 'sbadge ss'; }
-        const btn = cardEl.querySelector('.obtn.rem,.obtn.add');
-        if (btn) { btn.textContent = '+ Seleziona'; btn.className = 'obtn add'; }
-      } else {
-        selectedMediaIds.add(mediaId);
-        cardEl.classList.add('ingallery');
-        const badge = cardEl.querySelector('.sbadge');
-        if (badge) { badge.textContent = '✓ Selezionata'; badge.className = 'sbadge sg'; }
-        const btn = cardEl.querySelector('.obtn.rem,.obtn.add');
-        if (btn) { btn.textContent = '✕ Deseleziona'; btn.className = 'obtn rem'; }
-      }
-      updateSelCount();
-    }
-
-    async function assignImagesToVariants() {
-      if (!shopData) { toast('Carica prima un prodotto', 'err'); return; }
-      if (!selectedMediaIds.size) { toast('Seleziona almeno una immagine cliccando sulle foto', 'err'); return; }
-
-      // Flexible SKU match (same as loadShopify)
-      const csvSkusArr = cur.variants.map(x => x.sku);
-      const csvSkus = new Set(csvSkusArr);
-      const csvSkusNumeric = new Set(csvSkusArr.map(s => String(Number(s))).filter(s => s !== 'NaN'));
-      const colorVariants = shopData.variants.filter(v => {
-        if (!v.sku) return false;
-        if (csvSkus.has(v.sku)) return true;
-        if (csvSkusNumeric.has(String(Number(v.sku)))) return true;
-        return false;
-      });
-      const vids = colorVariants.length ? colorVariants.map(x => x.id) : shopData.variants.map(x => x.id);
-      const mids = Array.from(selectedMediaIds);
-
-      if (!vids.length) { toast('Nessuna variante trovata per questo colore', 'err'); return; }
-
-      toast(`Assegno ${mids.length} foto a ${vids.length} varianti…`);
-
+    // ── ASSIGN TO COLOR VARIANT ───────────────────────────────────────────────────
+    async function assignToColor(imageId) {
+      if (!shopData) { toast('Carica prima il prodotto', 'err'); return; }
+      toast(`Assegno immagine a variante ${cur.colore}…`);
       const form = new FormData();
       form.append('shop', shop());
       form.append('product_id', shopData.id);
-      form.append('variant_ids', JSON.stringify(vids));
-      form.append('media_ids', JSON.stringify(mids));
-
+      form.append('image_id', imageId);
+      form.append('colore', cur.colore);
       try {
-        const res = await fetch('/api/shopify/variant/assign-images', { method: 'POST', body: form });
+        const res = await fetch('/api/shopify/variant/assign-color-image', { method: 'POST', body: form });
         const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
-
-        const errs = data.errors || [];
-        if (errs.length && !data.assigned) {
-          toast('Errore assegnazione: ' + JSON.stringify(errs[0].errors), 'err'); return;
+        if (!res.ok) {
+          toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return;
         }
-
-        toast(`✓ ${data.assigned} varianti aggiornate!${errs.length ? ' (' + errs.length + ' errori)' : ''}`, 'ok');
-
-        // Update sidebar gallery status
-        const key = `${cur.handle}__${cur.color_code}`;
-        galleryStatus[key] = true;
-        renderList();
+        toast(`✓ Immagine assegnata a ${data.updated} varianti ${cur.colore}!`, 'ok');
+        // Update local variant data with new image
+        shopData.variants.forEach(v => {
+          const opts = v.options || [];
+          const isColor = opts.some(o => ['colore', 'color', 'colour'].includes(o.name.toLowerCase()) && o.value.toUpperCase() === cur.colore.toUpperCase());
+          if (isColor) v.image_id = imageId;
+        });
+        renderImages(shopData.images, shopData.variants);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
-    // Keep old functions as no-ops to avoid JS errors (called nowhere now)
-    async function addToGallery() { }
-    async function removeFromGallery() { }
-    async function syncAllVariants() { }
-
-    // ── DELETE MEDIA ──────────────────────────────────────────────────────────────
-    async function deleteMedia(mediaId) {
+    // ── DELETE IMAGE ──────────────────────────────────────────────────────────────
+    async function deleteImage(imageId) {
       if (!confirm('Eliminare questa immagine dal prodotto Shopify?')) return;
-      const params = new URLSearchParams({ shop: shop(), product_id: shopData.id, media_id: mediaId });
+      const params = new URLSearchParams({ shop: shop(), product_id: shopData.id, image_id: imageId });
       try {
-        const res = await fetch('/api/shopify/media?' + params, { method: 'DELETE' });
+        const res = await fetch('/api/shopify/image?' + params, { method: 'DELETE' });
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
         toast('Immagine eliminata', 'ok');
-        shopData.media = shopData.media.filter(m => m.id !== mediaId);
-        shopData.variants.forEach(v => { v.gallery = v.gallery.filter(g => g.id !== mediaId); });
-        const av = shopData.variants.find(x => x.id === activeVariantId);
-        renderMedia(shopData.media, av ? av.gallery : []);
-        $('mediacount').textContent = `${shopData.media.length} immagini`;
+        shopData.images = shopData.images.filter(i => i.id !== imageId);
+        shopData.variants.forEach(v => { if (v.image_id === imageId) v.image_id = null; });
+        $('imgcount').textContent = `${shopData.images.length} immagini`;
+        renderImages(shopData.images, shopData.variants);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
@@ -1290,42 +1003,40 @@
     async function uploadUrl() {
       const inp = $('urlinput'); const url = inp.value.trim();
       if (!url || !url.startsWith('http')) { toast('URL non valido', 'err'); return; }
-      if (!shopData) { toast('Seleziona un prodotto', 'err'); return; }
+      if (!shopData) { toast('Seleziona prima un prodotto', 'err'); return; }
       toast('Caricamento…'); inp.disabled = true;
       const form = new FormData();
-      form.append('shop', shop()); form.append('product_id', shopData.id); form.append('image_url', url); form.append('alt', cur.title);
+      form.append('shop', shop()); form.append('product_id', shopData.id);
+      form.append('image_url', url); form.append('alt', cur.title);
       try {
-        const res = await fetch('/api/shopify/media/upload-url', { method: 'POST', body: form });
+        const res = await fetch('/api/shopify/image/upload-url', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
         toast('Immagine caricata!', 'ok'); inp.value = '';
-        shopData.media.push({ id: data.id, url: data.url, alt: '', status: data.status });
-        const av = shopData.variants.find(x => x.id === activeVariantId);
-        renderMedia(shopData.media, av ? av.gallery : []);
-        $('mediacount').textContent = `${shopData.media.length} immagini`;
+        shopData.images.push({ id: data.id, url: data.url, alt: data.alt });
+        $('imgcount').textContent = `${shopData.images.length} immagini`;
+        renderImages(shopData.images, shopData.variants);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
       finally { inp.disabled = false; }
     }
 
     // ── UPLOAD FILE ───────────────────────────────────────────────────────────────
     $('fileinput').addEventListener('change', async e => {
-      if (!shopData) { toast('Seleziona un prodotto', 'err'); return; }
-      const files = Array.from(e.target.files);
-      for (const file of files) {
+      if (!shopData) { toast('Seleziona prima un prodotto', 'err'); return; }
+      for (const file of Array.from(e.target.files)) {
         toast(`Caricamento ${file.name}…`);
         const form = new FormData();
         form.append('shop', shop()); form.append('product_id', shopData.id); form.append('file', file);
         try {
-          const res = await fetch('/api/shopify/media/upload-file', { method: 'POST', body: form });
+          const res = await fetch('/api/shopify/image/upload-file', { method: 'POST', body: form });
           const data = await res.json();
           if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); continue; }
           toast(`${file.name} caricato!`, 'ok');
-          if (data.id) shopData.media.push({ id: data.id, url: data.url, alt: '', status: data.status });
+          shopData.images.push({ id: data.id, url: data.url, alt: data.alt });
         } catch (err) { toast('Errore: ' + err.message, 'err'); }
       }
-      const av = shopData.variants.find(x => x.id === activeVariantId);
-      renderMedia(shopData.media, av ? av.gallery : []);
-      $('mediacount').textContent = `${shopData.media.length} immagini`;
+      $('imgcount').textContent = `${shopData.images.length} immagini`;
+      renderImages(shopData.images, shopData.variants);
       e.target.value = '';
     });
   </script>
