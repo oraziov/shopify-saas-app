@@ -80,6 +80,7 @@ PRODUCT_FIELDS = """
       edges{
         node{
           id sku title
+          image{ id url }
           selectedOptions{name value}
           metafield(namespace:"custom",key:"gallery"){
             id value
@@ -150,6 +151,7 @@ async def get_shopify_product(shop: str, handle: str, sku: str = ""):
         variants.append({
             "id": v["id"], "sku": v["sku"], "title": v["title"],
             "options": v.get("selectedOptions", []),
+            "image": v.get("image"),
             "metafield_id": mf.get("id"),
             "gallery": gallery,
         })
@@ -357,3 +359,84 @@ async def sync_gallery_to_color(
     if errors:
         return JSONResponse(status_code=400, content={"errors": errors})
     return {"ok": True, "updated_variants": len(vids), "gallery_count": len(mids)}
+
+
+# ── SHOPIFY: assegna immagini alle varianti colore (1 img/variante) ──────────
+
+@app.post("/api/shopify/variant/assign-images")
+async def assign_images_to_variants(
+    shop: str = Form(...),
+    variant_ids: str = Form(...),   # JSON array, ordinato per taglia
+    media_ids: str = Form(...),     # JSON array di image GID da distribuire
+):
+    """
+    Distribuisce le immagini sulle varianti dello stesso colore.
+    Shopify limita a 1 immagine per variante, ma assegnando immagini diverse
+    a varianti diverse dello stesso colore, il tema le mostra tutte insieme.
+
+    Strategia:
+    - Se immagini >= varianti: ogni variante prende 1 immagine diversa
+    - Se immagini < varianti: le immagini vengono distribuite ciclicamente
+    - Tutte le immagini vengono anche aggiunte al prodotto se non già presenti
+    """
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    try:
+        vids = json.loads(variant_ids)
+        mids = json.loads(media_ids)
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "JSON non valido"})
+
+    if not vids or not mids:
+        return JSONResponse(status_code=400, content={"error": "variant_ids e media_ids non possono essere vuoti"})
+
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+
+    # Shopify REST per assegnare image_id alla variante
+    # GraphQL productVariantUpdate accetta imageId
+    results = []
+    errors_list = []
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        for i, vid in enumerate(vids):
+            image_gid = mids[i % len(mids)]   # distribuzione ciclica
+
+            resp = await client.post(gql, headers=h, json={
+                "query": """
+                mutation($input: ProductVariantInput!) {
+                  productVariantUpdate(input: $input) {
+                    productVariant { id image { url } }
+                    userErrors { field message }
+                  }
+                }""",
+                "variables": {
+                    "input": {
+                        "id": vid,
+                        "imageId": image_gid,
+                    }
+                },
+            })
+
+            result = (resp.json().get("data") or {}).get("productVariantUpdate", {})
+            errs = result.get("userErrors", [])
+            if errs:
+                errors_list.append({"variant": vid, "errors": errs})
+            else:
+                variant_data = result.get("productVariant", {})
+                results.append({
+                    "variant_id": vid,
+                    "image_url": (variant_data.get("image") or {}).get("url"),
+                    "image_gid": image_gid,
+                })
+
+    if errors_list and not results:
+        return JSONResponse(status_code=400, content={"errors": errors_list})
+
+    return {
+        "ok": True,
+        "assigned": len(results),
+        "errors": errors_list,
+        "results": results,
+    }

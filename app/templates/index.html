@@ -915,14 +915,15 @@
           </div>
 
           <div class="ginfo">
-            Le immagini con <strong>✓ Gallery</strong> fanno parte della gallery di questo colore (<strong
-              id="ginfoColor">—</strong>).
-            Clicca <em>+ Aggiungi gallery</em> per associarne altre. Puoi aggiungerne quante vuoi.
+            Le immagini selezionate (✓) verranno distribuite sulle varianti di questo colore.
+            Shopify le mostrerà tutte quando il cliente seleziona <strong id="ginfoColor">—</strong>.
+            Seleziona le foto nell'ordine in cui vuoi che appaiano.
           </div>
 
           <div class="syncbar">
-            <button class="btn bgrn" onclick="syncAllVariants()">⟳ Salva gallery su tutte le taglie di questo
-              colore</button>
+            <button class="btn bgrn" onclick="assignImagesToVariants()">⟳ Assegna foto selezionate alle varianti <span
+                id="selcount"
+                style="background:rgba(255,255,255,.2);border-radius:10px;padding:1px 7px;margin-left:4px;">0</span></button>
           </div>
 
           <div class="igrid" id="mediaGrid"></div>
@@ -958,6 +959,7 @@
     // ── STATE ─────────────────────────────────────────────────────────────────────
     let all = [], filt = [], cur = null, shopData = null, activeVariantId = null;
     let currentGallery = []; // gallery items for the current color (source of truth for UI)
+    let selectedMediaIds = new Set(); // images selected for assignment to variants
     let fSearch = '', fBrand = '', fColor = '', fStatus = '';
 
     const $ = id => document.getElementById(id);
@@ -1097,7 +1099,7 @@
 
     // ── SELECT PRODUCT ────────────────────────────────────────────────────────────
     async function selProd(idx) {
-      cur = all[idx]; shopData = null; activeVariantId = null;
+      cur = all[idx]; shopData = null; activeVariantId = null; currentGallery = []; selectedMediaIds = new Set();
       document.querySelectorAll('.pitem').forEach(el => el.classList.remove('active'));
       document.querySelector(`.pitem[data-i="${idx}"]`)?.classList.add('active');
       $('empty').style.display = 'none';
@@ -1143,6 +1145,12 @@
         // Update color info in ginfo box
         $('ginfoColor').textContent = `${cur.colore} #${cur.color_code}`;
 
+        // Pre-select images already assigned to any variant of this color
+        selectedMediaIds = new Set();
+        colorVariants.forEach(v => {
+          if (v.image && v.image.id) selectedMediaIds.add(v.image.id);
+        });
+
         currentGallery = refVariant ? (refVariant.gallery || []) : [];
         renderMedia(data.media, currentGallery);
 
@@ -1150,87 +1158,94 @@
     }
 
     function renderMedia(media, gallery) {
-      const galleryIds = new Set(gallery.map(g => g.id));
+      const galleryIds = new Set((gallery || []).map(g => g.id));
       const grid = $('mediaGrid');
       if (!media.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessuna immagine su Shopify per questo prodotto</p>'; return; }
       grid.innerHTML = media.map(m => {
-        const inG = galleryIds.has(m.id);
-        return `<div class="icard${inG ? ' ingallery' : ''}" id="mc-${m.id.replace(/\W/g, '_')}">
+        const sel = galleryIds.has(m.id) || selectedMediaIds.has(m.id);
+        return `<div class="icard${sel ? ' ingallery' : ''}" id="mc-${m.id.replace(/\W/g, '_')}" onclick="toggleSelect('${esc(m.id)}',this)">
       <img src="${esc(m.url)}" loading="lazy">
-      <span class="sbadge ${inG ? 'sg' : 'ss'}">${inG ? 'Gallery' : 'Shopify'}</span>
+      <span class="sbadge ${sel ? 'sg' : 'ss'}">${sel ? '✓ Selezionata' : 'Shopify'}</span>
       <div class="ov">
-        ${inG
-            ? `<button class="obtn rem" onclick="removeFromGallery('${esc(m.id)}')">✕ Rimuovi gallery</button>`
-            : `<button class="obtn add" onclick="addToGallery('${esc(m.id)}')">+ Aggiungi gallery</button>`
-          }
-        <button class="obtn del" onclick="deleteMedia('${esc(m.id)}')">🗑 Elimina</button>
-        <a class="obtn" href="${esc(m.url)}" target="_blank">↗ Apri</a>
+        <button class="obtn ${sel ? 'rem' : 'add'}" onclick="toggleSelect('${esc(m.id)}',document.getElementById('mc-${m.id.replace(/\W/g, '_')}'));event.stopPropagation()">
+          ${sel ? '✕ Deseleziona' : '+ Seleziona'}
+        </button>
+        <button class="obtn del" onclick="deleteMedia('${esc(m.id)}');event.stopPropagation()">🗑 Elimina</button>
+        <a class="obtn" href="${esc(m.url)}" target="_blank" onclick="event.stopPropagation()">↗ Apri</a>
       </div>
     </div>`;
       }).join('');
+      updateSelCount();
     }
 
     // ── GALLERY ACTIONS ───────────────────────────────────────────────────────────
-    async function addToGallery(mediaId) {
-      if (!activeVariantId) { toast('Prodotto non caricato correttamente', 'err'); return; }
-      const form = new FormData();
-      form.append('shop', shop()); form.append('variant_id', activeVariantId); form.append('media_id', mediaId);
-      try {
-        const res = await fetch('/api/shopify/variant/gallery/add', { method: 'POST', body: form });
-        const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
-        toast('Aggiunto alla gallery!', 'ok');
-        // Update currentGallery (source of truth)
-        const m = shopData.media.find(x => x.id === mediaId);
-        if (m && !currentGallery.find(g => g.id === mediaId)) currentGallery.push(m);
-        // Update gallery status for sidebar filter
-        const key = `${cur.handle}__${cur.color_code}`;
-        galleryStatus[key] = true;
-        renderMedia(shopData.media, currentGallery);
-        renderList();
-      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    // ── SELECTION & ASSIGN ───────────────────────────────────────────────────────
+    function updateSelCount() {
+      const el = $('selcount');
+      if (el) el.textContent = selectedMediaIds.size;
     }
 
-    async function removeFromGallery(mediaId) {
-      if (!activeVariantId) { toast('Prodotto non caricato correttamente', 'err'); return; }
-      const params = new URLSearchParams({ shop: shop(), variant_id: activeVariantId, media_id: mediaId });
-      try {
-        const res = await fetch('/api/shopify/variant/gallery/item?' + params, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
-        toast('Rimosso dalla gallery', 'ok');
-        // Update currentGallery
-        currentGallery = currentGallery.filter(g => g.id !== mediaId);
-        // Update sidebar filter status
-        const key = `${cur.handle}__${cur.color_code}`;
-        galleryStatus[key] = currentGallery.length > 0;
-        renderMedia(shopData.media, currentGallery);
-        renderList();
-      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    function toggleSelect(mediaId, cardEl) {
+      if (selectedMediaIds.has(mediaId)) {
+        selectedMediaIds.delete(mediaId);
+        cardEl.classList.remove('ingallery');
+        const badge = cardEl.querySelector('.sbadge');
+        if (badge) { badge.textContent = 'Shopify'; badge.className = 'sbadge ss'; }
+        const btn = cardEl.querySelector('.obtn.rem,.obtn.add');
+        if (btn) { btn.textContent = '+ Seleziona'; btn.className = 'obtn add'; }
+      } else {
+        selectedMediaIds.add(mediaId);
+        cardEl.classList.add('ingallery');
+        const badge = cardEl.querySelector('.sbadge');
+        if (badge) { badge.textContent = '✓ Selezionata'; badge.className = 'sbadge sg'; }
+        const btn = cardEl.querySelector('.obtn.rem,.obtn.add');
+        if (btn) { btn.textContent = '✕ Deseleziona'; btn.className = 'obtn rem'; }
+      }
+      updateSelCount();
     }
 
-    async function syncAllVariants() {
-      if (!shopData || !activeVariantId) { toast('Carica prima un prodotto', 'err'); return; }
-      if (!currentGallery.length) { toast('Nessuna immagine in gallery — aggiungine almeno una prima', 'err'); return; }
+    async function assignImagesToVariants() {
+      if (!shopData) { toast('Carica prima un prodotto', 'err'); return; }
+      if (!selectedMediaIds.size) { toast('Seleziona almeno una immagine cliccando sulle foto', 'err'); return; }
 
+      // Get all variants of this color
       const csvSkus = new Set(cur.variants.map(x => x.sku));
       const colorVariants = shopData.variants.filter(x => csvSkus.has(x.sku));
       const vids = colorVariants.length ? colorVariants.map(x => x.id) : shopData.variants.map(x => x.id);
-      const mids = currentGallery.map(g => g.id);
+      const mids = Array.from(selectedMediaIds);
+
+      if (!vids.length) { toast('Nessuna variante trovata per questo colore', 'err'); return; }
+
+      toast(`Assegno ${mids.length} foto a ${vids.length} varianti…`);
 
       const form = new FormData();
-      form.append('shop', shop()); form.append('variant_ids', JSON.stringify(vids)); form.append('media_ids', JSON.stringify(mids));
+      form.append('shop', shop());
+      form.append('variant_ids', JSON.stringify(vids));
+      form.append('media_ids', JSON.stringify(mids));
+
       try {
-        toast('Sincronizzazione in corso…');
-        const res = await fetch('/api/shopify/variant/gallery/sync', { method: 'POST', body: form });
+        const res = await fetch('/api/shopify/variant/assign-images', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
-        toast(`✓ Gallery (${mids.length} foto) applicata a ${data.updated_variants} varianti!`, 'ok');
+
+        const errs = data.errors || [];
+        if (errs.length && !data.assigned) {
+          toast('Errore assegnazione: ' + JSON.stringify(errs[0].errors), 'err'); return;
+        }
+
+        toast(`✓ ${data.assigned} varianti aggiornate!${errs.length ? ' (' + errs.length + ' errori)' : ''}`, 'ok');
+
+        // Update sidebar gallery status
         const key = `${cur.handle}__${cur.color_code}`;
         galleryStatus[key] = true;
         renderList();
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
+
+    // Keep old functions as no-ops to avoid JS errors (called nowhere now)
+    async function addToGallery() { }
+    async function removeFromGallery() { }
+    async function syncAllVariants() { }
 
     // ── DELETE MEDIA ──────────────────────────────────────────────────────────────
     async function deleteMedia(mediaId) {
