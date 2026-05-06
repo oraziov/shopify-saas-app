@@ -875,8 +875,8 @@
           </select>
           <select class="fsel" id="fstatus">
             <option value="">Tutti</option>
-            <option value="ok">Con immagini Shopify</option>
-            <option value="no">Senza immagini</option>
+            <option value="gallery">Con gallery impostata</option>
+            <option value="nogallery">Senza gallery</option>
           </select>
         </div>
         <div class="pills" id="colorpills"></div>
@@ -1001,7 +1001,46 @@
         $('hstat').textContent = `${all.length} prodotti · ${file.name}`;
         buildFilters(); applyF();
         toast(`CSV caricato: ${all.length} prodotti`, 'ok');
+        // Load gallery status in background if shop is set
+        if (shop()) fetchGalleryStatus();
       } catch (e) { toast('Errore CSV: ' + e.message, 'err'); $('hstat').textContent = 'Errore'; }
+    }
+
+    // ── GALLERY STATUS (background fetch for filter) ──────────────────────────────
+    // Map of "handle__color_code" → true/false (has gallery on any variant)
+    let galleryStatus = {};
+
+    async function fetchGalleryStatus() {
+      const s = shop();
+      if (!s || !all.length) return;
+      $('hstat').textContent += ' · Carico stato gallery…';
+      let done = 0;
+      // Fetch in small batches to avoid hammering the API
+      for (const p of all) {
+        const firstSku = (p.variants[0] || {}).sku || '';
+        try {
+          const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(p.handle)}&sku=${encodeURIComponent(firstSku)}`);
+          if (res.ok) {
+            const data = await res.json();
+            const csvSkus = new Set(p.variants.map(v => v.sku));
+            const colorVars = data.variants.filter(v => csvSkus.has(v.sku));
+            const hasGallery = (colorVars.length ? colorVars : data.variants).some(v => v.gallery && v.gallery.length > 0);
+            const key = `${p.handle}__${p.color_code}`;
+            galleryStatus[key] = hasGallery;
+            // Update product item badge live
+            const idx = all.indexOf(p);
+            const el = document.querySelector(`.pitem[data-i="${idx}"]`);
+            if (el) {
+              const badge = el.querySelector('.gallery-badge');
+              if (badge) { badge.textContent = hasGallery ? '✓ Gallery' : ''; badge.style.display = hasGallery ? '' : 'none'; }
+            }
+          }
+        } catch (e) {/* skip */ }
+        done++;
+        if (done % 5 === 0) await new Promise(r => setTimeout(r, 200)); // small pause every 5
+      }
+      $('hstat').textContent = `${all.length} prodotti · gallery caricata`;
+      applyF(); // re-render with updated filter data
     }
 
     // ── FILTERS ───────────────────────────────────────────────────────────────────
@@ -1023,6 +1062,12 @@
         if (fSearch) { const t = [p.title, String(p.handle), p.brand, p.colore, String(p.color_code), p.variants.map(v => v.sku).join(' ')].join(' ').toLowerCase(); if (!t.includes(fSearch)) return false; }
         if (fBrand && p.brand !== fBrand) return false;
         if (fColor && p.colore !== fColor) return false;
+        if (fStatus) {
+          const key = `${p.handle}__${p.color_code}`;
+          const has = galleryStatus[key];
+          if (fStatus === 'gallery' && !has) return false;
+          if (fStatus === 'nogallery' && has) return false;
+        }
         return true;
       });
       $('fcount').textContent = `${filt.length} / ${all.length} prodotti`;
@@ -1036,12 +1081,18 @@
       list.innerHTML = filt.map(p => {
         const gi = all.indexOf(p);
         const active = cur && all.indexOf(cur) === gi;
+        const key = `${p.handle}__${p.color_code}`;
+        const hasG = galleryStatus[key];
+        const gBadge = hasG !== undefined
+          ? `<span class="tag gallery-badge" style="${hasG ? 'background:var(--gl);color:var(--green);border-color:#B8D8C8' : 'background:var(--al);color:var(--accent);border-color:#E8B8A8'}">${hasG ? '✓ Gallery' : '✗ No gallery'}</span>`
+          : `<span class="tag gallery-badge" style="display:none"></span>`;
         return `<div class="pitem${active ? ' active' : ''}" data-i="${gi}" onclick="selProd(${gi})">
       <div class="ptop"><span class="phandle">${p.handle}</span><span class="tag tb">${esc(p.brand)}</span></div>
       <div class="ptitle">${esc(p.title) || '(senza titolo)'}</div>
       <div class="pmeta">
         <span class="tag tc">${cdot(p.colore)} ${esc(p.colore)}</span>
         <span class="tag tk">#${esc(String(p.color_code))}</span>
+        ${gBadge}
         <span class="tag" style="font-size:9px;">${p.variants.length} taglie</span>
       </div>
     </div>`;
@@ -1145,11 +1196,14 @@
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
         toast('Aggiunto alla gallery!', 'ok');
-        // Update local state
         const v = shopData.variants.find(x => x.id === activeVariantId);
         const m = shopData.media.find(x => x.id === mediaId);
         if (v && m && !v.gallery.find(g => g.id === mediaId)) v.gallery.push(m);
+        // Update gallery status for filter
+        const key = `${cur.handle}__${cur.color_code}`;
+        galleryStatus[key] = true;
         renderMedia(shopData.media, v ? v.gallery : []);
+        renderList();
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
@@ -1163,7 +1217,14 @@
         toast('Rimosso dalla gallery', 'ok');
         const v = shopData.variants.find(x => x.id === activeVariantId);
         if (v) v.gallery = v.gallery.filter(g => g.id !== mediaId);
+        // Update gallery status — check if any variant still has gallery
+        const csvSkus = new Set(cur.variants.map(x => x.sku));
+        const colorVars = shopData.variants.filter(x => csvSkus.has(x.sku));
+        const stillHas = (colorVars.length ? colorVars : shopData.variants).some(x => x.gallery && x.gallery.length > 0);
+        const key = `${cur.handle}__${cur.color_code}`;
+        galleryStatus[key] = stillHas;
         renderMedia(shopData.media, v ? v.gallery : []);
+        renderList();
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
