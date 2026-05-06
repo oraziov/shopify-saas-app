@@ -914,20 +914,15 @@
             <span class="secn" id="mediacount"></span>
           </div>
 
-          <!-- Selezione variante per gallery -->
           <div class="ginfo">
-            Seleziona una variante per vedere e modificare la sua <strong>gallery</strong> (metafield custom.gallery).
-            Le immagini con ✓ sono già nella gallery della variante selezionata.
-          </div>
-
-          <div style="margin-bottom:10px;">
-            <span style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);">Variante
-              attiva →</span>
-            <div class="tabbar" id="vtabs" style="margin-top:6px;"></div>
+            Le immagini con <strong>✓ Gallery</strong> fanno parte della gallery di questo colore (<strong
+              id="ginfoColor">—</strong>).
+            Clicca <em>+ Aggiungi gallery</em> per associarne altre. Puoi aggiungerne quante vuoi.
           </div>
 
           <div class="syncbar">
-            <button class="btn bgrn" onclick="syncAllVariants()">⟳ Applica gallery a tutte le varianti colore</button>
+            <button class="btn bgrn" onclick="syncAllVariants()">⟳ Salva gallery su tutte le taglie di questo
+              colore</button>
           </div>
 
           <div class="igrid" id="mediaGrid"></div>
@@ -1124,7 +1119,6 @@
     async function loadShopify() {
       $('mediacount').textContent = '';
       $('mediaGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Carico da Shopify…</p>`;
-      $('vtabs').innerHTML = '';
 
       const s = shop();
       if (!s) { $('mediaGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;">Inserisci il dominio shop nell\'header</p>'; return; }
@@ -1137,32 +1131,21 @@
         shopData = data;
         $('mediacount').textContent = `${data.media.length} immagini`;
 
-        // Filter variants to current color_code by matching SKU from CSV
+        // Find variants matching this color's SKUs
         const csvSkus = new Set(cur.variants.map(v => v.sku));
         const colorVariants = data.variants.filter(v => csvSkus.has(v.sku));
-        const displayVariants = colorVariants.length ? colorVariants : data.variants;
 
-        // Build variant tabs
-        $('vtabs').innerHTML = displayVariants.map((v, i) => {
-          const opt = v.options.find(o => o.name.toLowerCase() === 'taglia' || o.name.toLowerCase() === 'size') || v.options[1] || v.options[0] || {};
-          return `<span class="vtab${i === 0 ? ' active' : ''}" data-vid="${esc(v.id)}" onclick="selectVariant('${esc(v.id)}',this)">${esc(opt.value || v.title)}</span>`;
-        }).join('');
+        // Use first color variant as the gallery reference (all sizes share same gallery)
+        const refVariant = colorVariants.length ? colorVariants[0] : data.variants[0];
+        activeVariantId = refVariant ? refVariant.id : null;
 
-        if (displayVariants.length) {
-          activeVariantId = displayVariants[0].id;
-          renderMedia(data.media, displayVariants[0].gallery || []);
-        } else {
-          renderMedia(data.media, []);
-        }
+        // Update color info in ginfo box
+        $('ginfoColor').textContent = `${cur.colore} #${cur.color_code}`;
+
+        const currentGallery = refVariant ? refVariant.gallery || [] : [];
+        renderMedia(data.media, currentGallery);
+
       } catch (e) { $('mediaGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`; }
-    }
-
-    function selectVariant(vid, el) {
-      activeVariantId = vid;
-      document.querySelectorAll('.vtab').forEach(t => t.classList.remove('active'));
-      el.classList.add('active');
-      const v = shopData.variants.find(x => x.id === vid);
-      renderMedia(shopData.media, v ? v.gallery : []);
     }
 
     function renderMedia(media, gallery) {
