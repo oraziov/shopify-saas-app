@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Image Manager — Shopify</title>
+  <title>Image Manager</title>
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap"
     rel="stylesheet">
@@ -19,9 +19,6 @@
       --accent: #C84B2F;
       --al: #F5E8E4;
       --green: #2A6B4A;
-      --gl: #E4F0EB;
-      --blue: #2C4FA3;
-      --bl: #E8EDFA;
       --r: 6px;
       --mono: 'DM Mono', monospace;
       --serif: 'Fraunces', Georgia, serif;
@@ -41,7 +38,6 @@
       min-height: 100vh;
     }
 
-    /* HEADER */
     header {
       background: var(--text);
       color: var(--bg);
@@ -51,14 +47,13 @@
       justify-content: space-between;
       position: sticky;
       top: 0;
-      z-index: 200;
+      z-index: 100;
     }
 
     header h1 {
       font-family: var(--serif);
       font-size: 19px;
       font-weight: 300;
-      letter-spacing: -.02em;
     }
 
     header h1 em {
@@ -86,7 +81,6 @@
     .shopwrap label {
       font-size: 10px;
       color: #9A9488;
-      white-space: nowrap;
     }
 
     .shopwrap input {
@@ -109,10 +103,9 @@
       border-color: rgba(255, 255, 255, .4);
     }
 
-    /* LAYOUT */
     .layout {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: 280px 1fr;
       min-height: calc(100vh - 48px);
     }
 
@@ -122,7 +115,6 @@
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
 
     .csvzone {
@@ -165,16 +157,9 @@
       line-height: 1.5;
     }
 
-    .drop strong {
-      color: var(--text);
-    }
-
-    .filters {
+    .search-wrap {
       padding: 10px 14px;
       border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
     }
 
     .sbox {
@@ -185,10 +170,6 @@
       border: 1px solid var(--border);
       border-radius: var(--r);
       padding: 0 9px;
-    }
-
-    .sbox span {
-      color: var(--muted);
     }
 
     .sbox input {
@@ -202,54 +183,24 @@
       outline: none;
     }
 
-    .frow {
-      display: flex;
-      gap: 5px;
-    }
-
-    .fsel {
-      flex: 1;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--r);
-      padding: 6px 7px;
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text);
-      outline: none;
-      min-width: 0;
-    }
-
-    .fstats {
+    .plist-header {
+      padding: 8px 14px;
       font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
       color: var(--muted);
+      border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
-      align-items: center;
     }
 
-    .clr {
-      font-size: 10px;
-      color: var(--accent);
-      cursor: pointer;
-      background: none;
-      border: none;
-      font-family: var(--mono);
-      padding: 0;
-    }
-
-    .clr:hover {
-      text-decoration: underline;
-    }
-
-    /* LIST */
     .plist {
       flex: 1;
       overflow-y: auto;
     }
 
     .pitem {
-      padding: 9px 14px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       cursor: pointer;
       transition: background .1s;
@@ -265,17 +216,10 @@
       padding-left: 11px;
     }
 
-    .ptop {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 4px;
-      margin-bottom: 2px;
-    }
-
     .phandle {
       font-size: 10px;
       color: var(--muted);
+      margin-bottom: 2px;
     }
 
     .ptitle {
@@ -283,72 +227,29 @@
       font-size: 13px;
       font-weight: 300;
       line-height: 1.3;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
-    .pmeta {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .tag {
+    .pbrand {
       font-size: 10px;
-      padding: 2px 6px;
+      padding: 1px 6px;
       border-radius: 3px;
-      border: 1px solid var(--border);
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-
-    .tbrand {
       background: var(--text);
       color: var(--bg);
-      border-color: var(--text);
-      font-size: 9px;
-    }
-
-    .tcolor {
-      background: var(--s2);
-      color: var(--muted);
-    }
-
-    .tcode {
-      background: var(--bl);
-      color: var(--blue);
-      border-color: #C0CCEE;
-      font-size: 9px;
-    }
-
-    .timg {
-      background: var(--gl);
-      color: var(--green);
-      border-color: #B8D8C8;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      border: 1px solid rgba(0, 0, 0, .1);
-      flex-shrink: 0;
       display: inline-block;
     }
 
     .nores {
-      padding: 20px 14px;
+      padding: 20px;
       text-align: center;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.6;
     }
 
     /* MAIN */
     .main {
       overflow-y: auto;
-      padding: 22px 26px;
+      padding: 24px 28px;
     }
 
     .empty {
@@ -376,11 +277,9 @@
     .empty p {
       color: var(--muted);
       font-size: 12px;
-      max-width: 280px;
       line-height: 1.6;
     }
 
-    /* DETAIL */
     .detail {
       display: none;
     }
@@ -399,61 +298,14 @@
       font-family: var(--serif);
       font-size: 23px;
       font-weight: 300;
-      letter-spacing: -.02em;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
-    .dbadges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .badge {
+    .dhandle {
       font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-family: var(--mono);
-      border: 1px solid transparent;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .bh {
-      background: var(--s2);
       color: var(--muted);
-      border-color: var(--border);
     }
 
-    .bb {
-      background: var(--text);
-      color: var(--bg);
-    }
-
-    .bc {
-      background: var(--s2);
-      color: var(--text);
-      border-color: var(--border);
-    }
-
-    .bk {
-      background: var(--bl);
-      color: var(--blue);
-      border-color: #C0CCEE;
-      font-size: 10px;
-    }
-
-    .swatch {
-      width: 16px;
-      height: 16px;
-      border-radius: 3px;
-      border: 1px solid rgba(0, 0, 0, .12);
-      flex-shrink: 0;
-    }
-
-    /* SECTION */
     .sec {
       margin-bottom: 28px;
     }
@@ -467,8 +319,8 @@
       padding-bottom: 6px;
       border-bottom: 1px solid var(--border);
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
     }
 
     .secn {
@@ -487,11 +339,9 @@
       position: relative;
       border-radius: var(--r);
       overflow: hidden;
-      border: 2px solid transparent;
+      border: 1px solid var(--border);
       background: var(--s2);
       aspect-ratio: 3/4;
-      cursor: pointer;
-      transition: border-color .15s;
     }
 
     .icard img {
@@ -506,11 +356,7 @@
       transform: scale(1.04);
     }
 
-    .icard.assigned {
-      border-color: var(--green);
-    }
-
-    .icard .ov {
+    .ov {
       position: absolute;
       inset: 0;
       background: rgba(26, 23, 20, .55);
@@ -527,25 +373,6 @@
       opacity: 1;
     }
 
-    .icard .badge-img {
-      position: absolute;
-      bottom: 6px;
-      left: 6px;
-      font-size: 9px;
-      padding: 2px 6px;
-      border-radius: 3px;
-    }
-
-    .bi-assigned {
-      background: var(--green);
-      color: #fff;
-    }
-
-    .bi-shopify {
-      background: rgba(0, 0, 0, .5);
-      color: #fff;
-    }
-
     .obtn {
       background: rgba(255, 255, 255, .15);
       border: 1px solid rgba(255, 255, 255, .3);
@@ -555,21 +382,13 @@
       font-family: var(--mono);
       font-size: 10px;
       cursor: pointer;
-      width: 120px;
+      width: 110px;
       text-align: center;
       transition: background .1s;
     }
 
     .obtn:hover {
       background: rgba(255, 255, 255, .28);
-    }
-
-    .obtn.assign {
-      background: rgba(42, 107, 74, .7);
-    }
-
-    .obtn.assign:hover {
-      background: rgba(42, 107, 74, .95);
     }
 
     .obtn.del:hover {
@@ -583,9 +402,9 @@
       padding: 16px;
       text-align: center;
       background: var(--bg);
-      transition: all .15s;
       cursor: pointer;
       margin-bottom: 10px;
+      transition: all .15s;
     }
 
     .upzone:hover {
@@ -629,7 +448,6 @@
       cursor: pointer;
       border: 1px solid;
       transition: all .15s;
-      white-space: nowrap;
     }
 
     .bprim {
@@ -642,7 +460,6 @@
       background: #3A3530;
     }
 
-    /* TOAST */
     #toast {
       position: fixed;
       bottom: 18px;
@@ -657,7 +474,6 @@
       transition: all .22s;
       z-index: 999;
       max-width: 320px;
-      line-height: 1.4;
     }
 
     #toast.show {
@@ -689,22 +505,6 @@
         transform: rotate(360deg);
       }
     }
-
-    /* ASSIGN INFO BOX */
-    .ainfo {
-      background: var(--bl);
-      border: 1px solid #C0CCEE;
-      border-radius: var(--r);
-      padding: 10px 14px;
-      font-size: 12px;
-      color: var(--blue);
-      margin-bottom: 12px;
-      line-height: 1.6;
-    }
-
-    .ainfo strong {
-      font-weight: 500;
-    }
   </style>
 </head>
 
@@ -730,26 +530,15 @@
           <p><strong>Clicca o trascina</strong> il CSV</p>
         </div>
       </div>
-
-      <div class="filters">
+      <div class="search-wrap">
         <div class="sbox">
-          <span>⌕</span>
-          <input id="search" type="text" placeholder="Cerca titolo, handle, colore…">
-        </div>
-        <div class="frow">
-          <select class="fsel" id="fbrand">
-            <option value="">Tutti i brand</option>
-          </select>
-          <select class="fsel" id="fcolor">
-            <option value="">Tutti i colori</option>
-          </select>
-        </div>
-        <div class="fstats">
-          <span id="fcount">0 prodotti</span>
-          <button class="clr" onclick="clearF()">✕ Reset</button>
+          <input id="search" type="text" placeholder="⌕ Cerca prodotto…">
         </div>
       </div>
-
+      <div class="plist-header">
+        <span>Prodotti</span>
+        <span id="pcount">0</span>
+      </div>
       <div class="plist" id="plist">
         <div class="nores">Carica un CSV per iniziare</div>
       </div>
@@ -759,48 +548,35 @@
       <div class="empty" id="empty">
         <div class="big">🖼</div>
         <h2>Seleziona un prodotto</h2>
-        <p>Carica il CSV, seleziona un prodotto e gestisci le immagini su Shopify</p>
+        <p>Carica il CSV e clicca un prodotto per gestire le sue immagini su Shopify</p>
       </div>
 
       <div class="detail" id="detail">
-
         <div class="dhead">
           <h2 id="dtitle">—</h2>
-          <div class="dbadges" id="dbadges"></div>
+          <span class="dhandle" id="dhandle"></span>
         </div>
 
-        <!-- Immagini Shopify -->
         <div class="sec">
           <div class="sectitle">
             Immagini su Shopify
             <span class="secn" id="imgcount"></span>
           </div>
-
-          <div class="ainfo">
-            Hover su un'immagine → <strong>Assegna a variante colore</strong> la associa a tutte le taglie
-            di <strong id="ainfo-color">—</strong> su Shopify.<br>
-            Le immagini con bordo verde sono già assegnate a questo colore.
-          </div>
-
-          <div class="igrid" id="imgGrid">
-            <p style="color:var(--muted);font-size:12px;">Seleziona un prodotto…</p>
-          </div>
+          <div class="igrid" id="imgGrid"></div>
         </div>
 
-        <!-- Aggiungi immagini -->
         <div class="sec">
-          <div class="sectitle">Aggiungi immagini al prodotto</div>
+          <div class="sectitle">Aggiungi immagini</div>
           <div class="upzone" onclick="document.getElementById('fileinput').click()">
             <input type="file" id="fileinput" accept="image/jpeg,image/png,image/webp" multiple>
-            <p style="font-size:13px;margin-bottom:4px;">⬆ Carica file dal computer</p>
-            <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP — selezione multipla</p>
+            <p style="font-size:13px;margin-bottom:4px;">⬆ Carica dal computer</p>
+            <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP</p>
           </div>
           <div class="urlrow">
             <input id="urlinput" type="text" placeholder="Oppure incolla URL… https://…">
             <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
           </div>
         </div>
-
       </div>
     </main>
   </div>
@@ -808,25 +584,18 @@
   <div id="toast"></div>
 
   <script>
-    // STATE
-    let all = [], filt = [], cur = null, shopData = null;
-    let fSearch = '', fBrand = '', fColor = '';
-
+    let all = [], cur = null, shopData = null;
     const $ = id => document.getElementById(id);
     const shop = () => $('shopInput').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-    function toast(msg, type = '') { const el = $('toast'); el.textContent = msg; el.className = 'show ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3500); }
+
+    function toast(msg, type = '') {
+      const el = $('toast'); el.textContent = msg;
+      el.className = 'show ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
+      clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3500);
+    }
     function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-    const CMAP = {
-      NERO: '#1A1A1A', NERO1: '#2A2A2A', BIANCO: '#F0EEE8', AVORIO: '#F5EFD8', BURRO: '#F5ECC0',
-      BEIGE: '#D4C5A9', NUDO: '#E8C9A0', TORTORA: '#C4B49A', FANGO: '#9E8B72', CAMMELLO: '#C19A6B',
-      TABACCO: '#8B6340', MARRONE: '#6B3D26', KAKI: '#8A8A4A', MILITARE: '#4A5A35', PRATO: '#3A6B3A',
-      VERDE: '#2A7A3A', DENIM: '#3A5A8A', BLU: '#1A3A7A', BLU1: '#2A4A9A', AZZURRO: '#5A9AC8',
-      CELESTE: '#8AC4E0', LILLA: '#9A7AC8', ROSA: '#E8A0B0', BORDEAUX: '#7A1A2A', GRIGIO: '#909090', GIALLO: '#E8D040',
-    };
-    const cdot = (c, s = 8) => `<span class="dot" style="width:${s}px;height:${s}px;background:${CMAP[c] || '#CCC'};"></span>`;
-
-    // ── CSV ───────────────────────────────────────────────────────────────────────
+    // CSV
     $('csvfile').addEventListener('change', e => e.target.files[0] && loadCSV(e.target.files[0]));
     const dropEl = $('drop');
     dropEl.addEventListener('dragover', e => { e.preventDefault(); dropEl.classList.add('drag'); });
@@ -841,168 +610,89 @@
         if (!res.ok) throw new Error(await res.text());
         all = await res.json();
         $('hstat').textContent = `${all.length} prodotti · ${file.name}`;
-        buildFilters(); applyF();
-        toast(`CSV caricato: ${all.length} prodotti`, 'ok');
-      } catch (e) { toast('Errore CSV: ' + e.message, 'err'); $('hstat').textContent = 'Errore'; }
+        renderList(all);
+        toast(`${all.length} prodotti caricati`, 'ok');
+      } catch (e) { toast('Errore CSV: ' + e.message, 'err'); }
     }
 
-    // ── FILTERS ───────────────────────────────────────────────────────────────────
-    function buildFilters() {
-      const brands = [...new Set(all.map(p => p.brand).filter(Boolean))].sort();
-      $('fbrand').innerHTML = '<option value="">Tutti i brand</option>' + brands.map(b => `<option>${esc(b)}</option>`).join('');
-      const colors = [...new Set(all.map(p => p.colore).filter(Boolean))].sort();
-      $('fcolor').innerHTML = '<option value="">Tutti i colori</option>' + colors.map(c => `<option>${esc(c)}</option>`).join('');
-    }
+    // SEARCH
+    $('search').addEventListener('input', e => {
+      const q = e.target.value.toLowerCase();
+      const filtered = q ? all.filter(p => [p.title, String(p.handle), p.brand].join(' ').toLowerCase().includes(q)) : all;
+      renderList(filtered);
+    });
 
-    $('fbrand').addEventListener('change', e => { fBrand = e.target.value; applyF(); });
-    $('fcolor').addEventListener('change', e => { fColor = e.target.value; applyF(); });
-    $('search').addEventListener('input', e => { fSearch = e.target.value.toLowerCase(); applyF(); });
-    function clearF() { fSearch = ''; fBrand = ''; fColor = ''; $('search').value = ''; $('fbrand').value = ''; $('fcolor').value = ''; applyF(); }
-
-    function applyF() {
-      filt = all.filter(p => {
-        if (fSearch) {
-          const t = [p.title, String(p.handle), p.brand, p.colore, p.color_code].join(' ').toLowerCase();
-          if (!t.includes(fSearch)) return false;
-        }
-        if (fBrand && p.brand !== fBrand) return false;
-        if (fColor && p.colore !== fColor) return false;
-        return true;
-      });
-      $('fcount').textContent = `${filt.length} / ${all.length}`;
-      renderList();
-    }
-
-    // ── LIST ──────────────────────────────────────────────────────────────────────
-    function renderList() {
-      const list = $('plist');
-      if (!filt.length) { list.innerHTML = '<div class="nores">Nessun prodotto trovato</div>'; return; }
-      list.innerHTML = filt.map(p => {
+    function renderList(items) {
+      $('pcount').textContent = items.length;
+      if (!items.length) { $('plist').innerHTML = '<div class="nores">Nessun prodotto</div>'; return; }
+      $('plist').innerHTML = items.map(p => {
         const gi = all.indexOf(p);
         const active = cur && all.indexOf(cur) === gi;
         return `<div class="pitem${active ? ' active' : ''}" data-i="${gi}" onclick="selProd(${gi})">
-      <div class="ptop"><span class="phandle">${p.handle}</span><span class="tag tbrand">${esc(p.brand)}</span></div>
+      <div class="phandle">${p.handle}</div>
       <div class="ptitle">${esc(p.title) || '(senza titolo)'}</div>
-      <div class="pmeta">
-        <span class="tag tcolor">${cdot(p.colore)} ${esc(p.colore)}</span>
-        <span class="tag tcode">#${esc(p.color_code)}</span>
-        <span class="tag" style="font-size:9px;color:var(--muted)">${p.variants.length} taglie</span>
-      </div>
+      <span class="pbrand">${esc(p.brand)}</span>
     </div>`;
       }).join('');
     }
 
-    // ── SELECT PRODUCT ────────────────────────────────────────────────────────────
+    // SELECT
     async function selProd(idx) {
       cur = all[idx]; shopData = null;
       document.querySelectorAll('.pitem').forEach(el => el.classList.remove('active'));
       document.querySelector(`.pitem[data-i="${idx}"]`)?.classList.add('active');
       $('empty').style.display = 'none';
       $('detail').classList.add('on');
-
-      $('dtitle').textContent = cur.title || cur.handle;
-      const sw = CMAP[cur.colore] || '#CCC';
-      $('dbadges').innerHTML = `
-    <span class="badge bh">${esc(String(cur.handle))}</span>
-    <span class="badge bb">${esc(cur.brand)}</span>
-    <span class="badge bc"><span class="swatch" style="background:${sw}"></span>${esc(cur.colore)}</span>
-    <span class="badge bk">codice #${esc(cur.color_code)}</span>`;
-
-      $('ainfo-color').textContent = cur.colore;
+      $('dtitle').textContent = cur.title || String(cur.handle);
+      $('dhandle').textContent = `handle: ${cur.handle} · ${cur.brand}`;
       await loadShopify();
     }
 
-    // ── SHOPIFY ───────────────────────────────────────────────────────────────────
     async function loadShopify() {
       $('imgcount').textContent = '';
-      $('imgGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Carico da Shopify…</p>`;
+      $('imgGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico da Shopify…</p>`;
       const s = shop();
-      if (!s) { $('imgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;">Inserisci il dominio shop nell\'header</p>'; return; }
-
+      if (!s) { $('imgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop nell\'header</p>'; return; }
       try {
-        const firstSku = (cur.variants[0] || {}).sku || '';
-        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(cur.handle)}&sku=${encodeURIComponent(firstSku)}`);
+        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(cur.handle)}`);
         const data = await res.json();
-        if (!res.ok) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">⚠ ${esc(data.error)}</p>`; return; }
+        if (!res.ok) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">⚠ ${esc(data.error)}</p>`; return; }
         shopData = data;
         $('imgcount').textContent = `${data.images.length} immagini`;
-        renderImages(data.images, data.variants);
-      } catch (e) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`; }
+        renderImages(data.images);
+      } catch (e) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`; }
     }
 
-    function renderImages(images, variants) {
-      // Find which image IDs are assigned to any variant of current color
-      const colorOptionNames = new Set(['colore', 'color', 'colour']);
-      const colorVariants = variants.filter(v =>
-        v.options.some(o => colorOptionNames.has(o.name.toLowerCase()) && o.value.toUpperCase() === cur.colore.toUpperCase())
-      );
-      const assignedIds = new Set(colorVariants.map(v => v.image_id).filter(Boolean));
-
-      const grid = $('imgGrid');
-      if (!images.length) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessuna immagine su Shopify per questo prodotto</p>'; return; }
-
-      grid.innerHTML = images.map(img => {
-        const isAssigned = assignedIds.has(img.id);
-        return `<div class="icard${isAssigned ? ' assigned' : ''}" id="img-${img.id.replace(/\W/g, '_')}">
+    function renderImages(images) {
+      if (!images.length) { $('imgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine su Shopify</p>'; return; }
+      $('imgGrid').innerHTML = images.map(img => `
+    <div class="icard">
       <img src="${esc(img.url)}" loading="lazy">
-      <span class="badge-img ${isAssigned ? 'bi-assigned' : 'bi-shopify'}">${isAssigned ? `✓ ${esc(cur.colore)}` : 'Shopify'}</span>
       <div class="ov">
-        <button class="obtn assign" onclick="assignToColor('${esc(img.id)}');event.stopPropagation()">
-          📌 Assegna a ${esc(cur.colore)}
-        </button>
-        <a class="obtn" href="${esc(img.url)}" target="_blank" onclick="event.stopPropagation()">↗ Apri</a>
-        <button class="obtn del" onclick="deleteImage('${esc(img.id)}');event.stopPropagation()">🗑 Elimina</button>
+        <a class="obtn" href="${esc(img.url)}" target="_blank">↗ Apri</a>
+        <button class="obtn del" onclick="deleteImg('${esc(img.id)}')">🗑 Elimina</button>
       </div>
-    </div>`;
-      }).join('');
+    </div>`).join('');
     }
 
-    // ── ASSIGN TO COLOR VARIANT ───────────────────────────────────────────────────
-    async function assignToColor(imageId) {
-      if (!shopData) { toast('Carica prima il prodotto', 'err'); return; }
-      toast(`Assegno immagine a variante ${cur.colore}…`);
-      const form = new FormData();
-      form.append('shop', shop());
-      form.append('product_id', shopData.id);
-      form.append('image_id', imageId);
-      form.append('colore', cur.colore);
-      try {
-        const res = await fetch('/api/shopify/variant/assign-color-image', { method: 'POST', body: form });
-        const data = await res.json();
-        if (!res.ok) {
-          toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return;
-        }
-        toast(`✓ Immagine assegnata a ${data.updated} varianti ${cur.colore}!`, 'ok');
-        // Update local variant data with new image
-        shopData.variants.forEach(v => {
-          const opts = v.options || [];
-          const isColor = opts.some(o => ['colore', 'color', 'colour'].includes(o.name.toLowerCase()) && o.value.toUpperCase() === cur.colore.toUpperCase());
-          if (isColor) v.image_id = imageId;
-        });
-        renderImages(shopData.images, shopData.variants);
-      } catch (e) { toast('Errore: ' + e.message, 'err'); }
-    }
-
-    // ── DELETE IMAGE ──────────────────────────────────────────────────────────────
-    async function deleteImage(imageId) {
-      if (!confirm('Eliminare questa immagine dal prodotto Shopify?')) return;
-      const params = new URLSearchParams({ shop: shop(), product_id: shopData.id, image_id: imageId });
+    // DELETE
+    async function deleteImg(imgId) {
+      if (!confirm('Eliminare questa immagine da Shopify?')) return;
+      const params = new URLSearchParams({ shop: shop(), product_id: shopData.id, image_id: imgId });
       try {
         const res = await fetch('/api/shopify/image?' + params, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        if (!res.ok) { const d = await res.json(); toast('Errore: ' + (d.error || ''), 'err'); return; }
         toast('Immagine eliminata', 'ok');
-        shopData.images = shopData.images.filter(i => i.id !== imageId);
-        shopData.variants.forEach(v => { if (v.image_id === imageId) v.image_id = null; });
+        shopData.images = shopData.images.filter(i => i.id !== imgId);
         $('imgcount').textContent = `${shopData.images.length} immagini`;
-        renderImages(shopData.images, shopData.variants);
+        renderImages(shopData.images);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
-    // ── UPLOAD URL ────────────────────────────────────────────────────────────────
+    // UPLOAD URL
     async function uploadUrl() {
       const inp = $('urlinput'); const url = inp.value.trim();
-      if (!url || !url.startsWith('http')) { toast('URL non valido', 'err'); return; }
+      if (!url.startsWith('http')) { toast('URL non valido', 'err'); return; }
       if (!shopData) { toast('Seleziona prima un prodotto', 'err'); return; }
       toast('Caricamento…'); inp.disabled = true;
       const form = new FormData();
@@ -1011,16 +701,16 @@
       try {
         const res = await fetch('/api/shopify/image/upload-url', { method: 'POST', body: form });
         const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        if (!res.ok) { toast('Errore: ' + (data.error || ''), 'err'); return; }
         toast('Immagine caricata!', 'ok'); inp.value = '';
-        shopData.images.push({ id: data.id, url: data.url, alt: data.alt });
+        shopData.images.push(data);
         $('imgcount').textContent = `${shopData.images.length} immagini`;
-        renderImages(shopData.images, shopData.variants);
+        renderImages(shopData.images);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
       finally { inp.disabled = false; }
     }
 
-    // ── UPLOAD FILE ───────────────────────────────────────────────────────────────
+    // UPLOAD FILE
     $('fileinput').addEventListener('change', async e => {
       if (!shopData) { toast('Seleziona prima un prodotto', 'err'); return; }
       for (const file of Array.from(e.target.files)) {
@@ -1030,13 +720,13 @@
         try {
           const res = await fetch('/api/shopify/image/upload-file', { method: 'POST', body: form });
           const data = await res.json();
-          if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); continue; }
+          if (!res.ok) { toast('Errore: ' + (data.error || ''), 'err'); continue; }
           toast(`${file.name} caricato!`, 'ok');
-          shopData.images.push({ id: data.id, url: data.url, alt: data.alt });
+          shopData.images.push(data);
         } catch (err) { toast('Errore: ' + err.message, 'err'); }
       }
       $('imgcount').textContent = `${shopData.images.length} immagini`;
-      renderImages(shopData.images, shopData.variants);
+      renderImages(shopData.images);
       e.target.value = '';
     });
   </script>
