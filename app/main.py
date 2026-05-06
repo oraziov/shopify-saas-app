@@ -494,3 +494,24 @@ async def assign_images_to_variants(
         "errors": errors_list,
         "results": results,
     }
+
+
+# ── DEBUG: mostra varianti Shopify con SKU reali ──────────────────────────────
+
+@app.get("/api/debug/variants")
+async def debug_variants(shop: str, product_id: str):
+    """Mostra tutte le varianti del prodotto con i loro SKU reali da Shopify."""
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={
+                "query": """query($id:ID!){product(id:$id){variants(first:100){edges{node{id sku title image{id url}}}}}}""",
+                "variables": {"id": product_id},
+            },
+        )
+    edges = (resp.json().get("data") or {}).get("product", {}).get("variants", {}).get("edges", [])
+    return [{"id": e["node"]["id"], "sku": e["node"]["sku"], "title": e["node"]["title"], "has_image": bool(e["node"].get("image"))} for e in edges]

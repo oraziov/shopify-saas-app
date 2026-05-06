@@ -1134,16 +1134,30 @@
         shopData = data;
         $('mediacount').textContent = `${data.media.length} immagini`;
 
-        // Find variants matching this color's SKUs
-        const csvSkus = new Set(cur.variants.map(v => v.sku));
-        const colorVariants = data.variants.filter(v => csvSkus.has(v.sku));
+        // Flexible SKU matching: exact string OR numeric match (strips leading zeros / type differences)
+        const csvSkusArr = cur.variants.map(v => v.sku);
+        console.log('CSV SKUs:', csvSkusArr);
+        console.log('Shopify variants:', data.variants.map(v => ({ id: v.id, sku: v.sku, title: v.title })));
+        const csvSkus = new Set(csvSkusArr);
+        const csvSkusNumeric = new Set(csvSkusArr.map(s => String(Number(s))).filter(s => s !== 'NaN'));
+        const colorVariants = data.variants.filter(v => {
+          if (!v.sku) return false;
+          if (csvSkus.has(v.sku)) return true;
+          if (csvSkusNumeric.has(String(Number(v.sku)))) return true;
+          return false;
+        });
+        console.log('Matched color variants:', colorVariants.length, '/', data.variants.length);
 
         // Use first color variant as the gallery reference (all sizes share same gallery)
         const refVariant = colorVariants.length ? colorVariants[0] : data.variants[0];
         activeVariantId = refVariant ? refVariant.id : null;
 
-        // Update color info in ginfo box
-        $('ginfoColor').textContent = `${cur.colore} #${cur.color_code}`;
+        // Show warning if no color variants matched
+        if (!colorVariants.length) {
+          $('ginfoColor').innerHTML = `<span style="color:var(--accent)">⚠ SKU non trovati su Shopify — verranno usate TUTTE le ${data.variants.length} varianti</span>`;
+        } else {
+          $('ginfoColor').textContent = `${cur.colore} #${cur.color_code} — ${colorVariants.length} varianti`;
+        }
 
         // Pre-select images already assigned to any variant of this color
         selectedMediaIds = new Set();
@@ -1208,9 +1222,16 @@
       if (!shopData) { toast('Carica prima un prodotto', 'err'); return; }
       if (!selectedMediaIds.size) { toast('Seleziona almeno una immagine cliccando sulle foto', 'err'); return; }
 
-      // Get all variants of this color
-      const csvSkus = new Set(cur.variants.map(x => x.sku));
-      const colorVariants = shopData.variants.filter(x => csvSkus.has(x.sku));
+      // Flexible SKU match (same as loadShopify)
+      const csvSkusArr = cur.variants.map(x => x.sku);
+      const csvSkus = new Set(csvSkusArr);
+      const csvSkusNumeric = new Set(csvSkusArr.map(s => String(Number(s))).filter(s => s !== 'NaN'));
+      const colorVariants = shopData.variants.filter(v => {
+        if (!v.sku) return false;
+        if (csvSkus.has(v.sku)) return true;
+        if (csvSkusNumeric.has(String(Number(v.sku)))) return true;
+        return false;
+      });
       const vids = colorVariants.length ? colorVariants.map(x => x.id) : shopData.variants.map(x => x.id);
       const mids = Array.from(selectedMediaIds);
 
