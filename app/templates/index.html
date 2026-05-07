@@ -1013,10 +1013,16 @@
     // ── VARIANT COLOR ASSIGNMENT ──────────────────────────────────────────────────
     let activeColor = null;
 
+    function getColorCode(colorName) {
+      // Look up color_code from CSV data for the current product
+      if (!cur || !cur.colors) return '';
+      const found = cur.colors.find(c => c.colore.toUpperCase() === colorName.toUpperCase());
+      return found ? found.color_code : '';
+    }
+
     function renderVariantSection(variants, images) {
       if (!variants || !variants.length) { $('variantSection').style.display = 'none'; return; }
 
-      // Get unique colors from variants
       const colors = [...new Map(
         variants.filter(v => v.color).map(v => [v.color, v])
       ).values()];
@@ -1024,14 +1030,14 @@
       if (!colors.length) { $('variantSection').style.display = 'none'; return; }
       $('variantSection').style.display = 'block';
 
-      // Build color tabs
-      $('colorTabs').innerHTML = colors.map(v => `
-    <button class="ctab" data-color="${esc(v.color)}" onclick="selectColor('${esc(v.color)}')">
+      $('colorTabs').innerHTML = colors.map(v => {
+        const code = getColorCode(v.color);
+        return `<button class="ctab" data-color="${esc(v.color)}" onclick="selectColor('${esc(v.color)}')">
       <span class="cdot2" style="background:${CMAP[v.color.toUpperCase()] || '#CCC'}"></span>
-      ${esc(v.color)}
-    </button>`).join('');
+      ${esc(v.color)}${code ? ` <span style="font-size:9px;opacity:.7;">#${esc(code)}</span>` : ''}
+    </button>`;
+      }).join('');
 
-      // Select first color
       selectColor(colors[0].color);
     }
 
@@ -1039,11 +1045,10 @@
       activeColor = color;
       document.querySelectorAll('.ctab').forEach(b => b.classList.toggle('active', b.dataset.color === color));
 
-      // Find image currently assigned to this color
       const colorVariants = shopData.variants.filter(v => v.color && v.color.toUpperCase() === color.toUpperCase());
       const assignedImgId = colorVariants[0]?.image_id || null;
+      const code = getColorCode(color);
 
-      // Show images with assign action
       const images = shopData.images;
       if (!images.length) { $('assignGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Carica prima delle immagini</p>'; return; }
 
@@ -1051,8 +1056,7 @@
         const isAssigned = assignedImgId && assignedImgId === img.id;
         return `<div class="icard assign-pick${isAssigned ? ' cur-assigned' : ''}" onclick="assignToColor('${esc(img.id)}')">
       <img src="${esc(img.url)}" loading="lazy">
-      <span class="sbadge-assigned">✓ ${esc(color)}</span>
-      ${isAssigned ? '' : ''}
+      <span class="sbadge-assigned">✓ ${esc(color)}${code ? ' #' + esc(code) : ''}</span>
     </div>`;
       }).join('');
     }
