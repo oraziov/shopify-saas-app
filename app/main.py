@@ -71,7 +71,17 @@ async def get_shopify_product(shop: str, handle: str):
     gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
     h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
 
-    FIELDS = "id title images(first:50){edges{node{id url altText}}}"
+    FIELDS = """
+        id title
+        images(first:50){edges{node{id url altText}}}
+        variants(first:100){
+          edges{node{
+            id title sku
+            image{id url}
+            selectedOptions{name value}
+          }}
+        }
+    """
 
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(gql, headers=h, json={
@@ -90,13 +100,32 @@ async def get_shopify_product(shop: str, handle: str):
                 product = edges[0]["node"]
 
     if not product:
-        return JSONResponse(status_code=404, content={"error": f"Prodotto non trovato per handle={handle}"})
+        return JSONResponse(status_code=404, content={"error": f"Prodotto non trovato (handle={handle})"})
 
     images = [
         {"id": e["node"]["id"], "url": e["node"]["url"], "alt": e["node"].get("altText") or ""}
         for e in product["images"]["edges"]
     ]
-    return {"id": product["id"], "title": product["title"], "images": images}
+
+    # Group variants by color option value
+    color_names = {"colore", "color", "colour"}
+    variants = []
+    for e in product["variants"]["edges"]:
+        v = e["node"]
+        color_opt = next(
+            (o["value"] for o in v.get("selectedOptions", []) if o["name"].lower() in color_names),
+            None
+        )
+        variants.append({
+            "id": v["id"],
+            "sku": v["sku"],
+            "title": v["title"],
+            "color": color_opt,
+            "image_id": (v.get("image") or {}).get("id"),
+            "image_url": (v.get("image") or {}).get("url"),
+        })
+
+    return {"id": product["id"], "title": product["title"], "images": images, "variants": variants}
 
 
 @app.post("/api/shopify/image/upload-url")
@@ -172,6 +201,64 @@ async def delete_image(shop: str, product_id: str, image_id: str):
     return {"deleted": image_id}
 
 
+@app.post("/api/shopify/variant/assign-color")
+async def assign_color_image(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    image_id: str = Form(...),   # gid://shopify/ProductImage/...
+    color: str = Form(...),      # e.g. "NERO"
+):
+    """Assign a product image to all variants of a given color."""
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+    color_names = {"colore", "color", "colour"}
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        # Get all variants
+        r = await client.post(gql, headers=h, json={
+            "query": """query($id:ID!){product(id:$id){variants(first:100){edges{node{
+              id selectedOptions{name value}}}}}}""",
+            "variables": {"id": product_id},
+        })
+        edges = (r.json().get("data") or {}).get("product", {}).get("variants", {}).get("edges", [])
+
+        # Filter by color
+        target_ids = [
+            e["node"]["id"] for e in edges
+            if any(o["name"].lower() in color_names and o["value"].upper() == color.upper()
+                   for o in e["node"].get("selectedOptions", []))
+        ]
+
+        if not target_ids:
+            return JSONResponse(status_code=404, content={
+                "error": f"Nessuna variante trovata con colore '{color}'"
+            })
+
+        # Bulk assign
+        resp = await client.post(gql, headers=h, json={
+            "query": """mutation($productId:ID!,$variants:[ProductVariantsBulkInput!]!){
+              productVariantsBulkUpdate(productId:$productId,variants:$variants){
+                productVariants{id image{id url}}
+                userErrors{field message}
+              }}""",
+            "variables": {
+                "productId": product_id,
+                "variants": [{"id": vid, "imageId": image_id} for vid in target_ids],
+            },
+        })
+
+    result = (resp.json().get("data") or {}).get("productVariantsBulkUpdate", {})
+    errors = result.get("userErrors", [])
+    if errors:
+        return JSONResponse(status_code=400, content={"errors": errors})
+
+    return {"ok": True, "updated": len(result.get("productVariants", [])), "color": color}
+
+
 # ── SHOPIFY: list files (Content > Files) ────────────────────────────────────
 
 @app.get("/api/shopify/files")
@@ -183,45 +270,55 @@ async def list_files(shop: str, after: str = "", q: str = ""):
     gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
     h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
 
-    after_clause = f', after: "{after}"' if after else ""
-    query_clause = f', query: "filename:*{q}*"' if q else ""
+    variables: dict = {"first": 48}
+    if after:
+        variables["after"] = after
+    if q:
+        variables["query"] = f"filename:*{q}*"
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(gql, headers=h, json={
-            "query": f"""query {{
-              files(first: 48{after_clause}{query_clause}, sortKey: CREATED_AT, reverse: true) {{
-                pageInfo {{ hasNextPage endCursor }}
-                edges {{
-                  node {{
-                    ... on MediaImage {{
-                      id alt
-                      image {{ url }}
-                      originalFileSize
-                    }}
-                    ... on GenericFile {{
-                      id alt url
-                    }}
-                  }}
-                }}
-              }}
-            }}""",
+            "query": """
+            query($first:Int!, $after:String, $query:String) {
+              files(first:$first, after:$after, query:$query,
+                    sortKey:CREATED_AT, reverse:true) {
+                pageInfo { hasNextPage endCursor }
+                edges {
+                  node {
+                    __typename
+                    ... on MediaImage {
+                      id
+                      alt
+                      image { url }
+                    }
+                  }
+                }
+              }
+            }""",
+            "variables": variables,
         })
 
     data = resp.json()
+    if "errors" in data:
+        return JSONResponse(status_code=400, content={"error": str(data["errors"])})
+
     files_data = (data.get("data") or {}).get("files", {})
     page_info = files_data.get("pageInfo", {})
 
     files = []
     for edge in files_data.get("edges", []):
         node = edge["node"]
-        url = (node.get("image") or {}).get("url") or node.get("url")
-        if url and ("image" in (node.get("__typename", "")) or url.lower().split("?")[0].endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))):
-            files.append({
-                "id": node.get("id"),
-                "url": url,
-                "alt": node.get("alt") or "",
-                "filename": url.split("/")[-1].split("?")[0],
-            })
+        if node.get("__typename") != "MediaImage":
+            continue
+        url = (node.get("image") or {}).get("url")
+        if not url:
+            continue
+        files.append({
+            "id": node["id"],
+            "url": url,
+            "alt": node.get("alt") or "",
+            "filename": url.split("/")[-1].split("?")[0],
+        })
 
     return {
         "files": files,

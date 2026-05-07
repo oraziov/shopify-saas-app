@@ -652,6 +652,79 @@
     .obtn.addprod:hover {
       background: rgba(42, 107, 74, .95);
     }
+
+    .ctab {
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--s2);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .12s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .ctab:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .ctab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .cdot2 {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, .1);
+      flex-shrink: 0;
+    }
+
+    .icard.assign-pick:hover {
+      border-color: var(--green);
+      cursor: pointer;
+    }
+
+    .icard.assign-pick:hover::after {
+      content: 'Assegna';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--green);
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 4px;
+      text-align: center;
+    }
+
+    .icard.cur-assigned {
+      border: 2px solid var(--green);
+    }
+
+    .icard.cur-assigned .sbadge-assigned {
+      display: block;
+    }
+
+    .sbadge-assigned {
+      display: none;
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: var(--green);
+      color: #fff;
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
   </style>
 
 <body>
@@ -740,6 +813,16 @@
               <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
             </div>
           </div>
+
+          <!-- VARIANT COLOR ASSIGNMENT -->
+          <div class="sec" id="variantSection" style="display:none;">
+            <div class="sectitle">Associa immagine per colore variante</div>
+            <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">
+              Seleziona un colore → clicca un'immagine → l'immagine viene assegnata a tutte le varianti di quel colore
+            </p>
+            <div id="colorTabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+            <div id="assignGrid" class="igrid"></div>
+          </div>
         </div>
       </div>
 
@@ -758,16 +841,19 @@
         <!-- FILES tab -->
         <div id="libFiles">
           <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
-            <input id="libSearch" type="text" placeholder="Cerca nome file…"
+            <input id="libSearch" type="text" placeholder="Cerca per nome file…"
               style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;font-family:var(--mono);font-size:12px;outline:none;">
-            <button class="btn bprim" onclick="loadFiles()">↺ Aggiorna</button>
+            <button class="btn bprim" onclick="loadFiles()">↺ Carica</button>
           </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px;" id="filesCounter"></div>
           <div class="igrid" id="filesGrid">
-            <p style="color:var(--muted);font-size:12px;">Clicca "Aggiorna" per caricare i file</p>
+            <p style="color:var(--muted);font-size:12px;">Clicca "Carica" per vedere le immagini della libreria</p>
           </div>
           <div id="filesMore" style="margin-top:14px;text-align:center;display:none;">
-            <button class="btn" style="background:var(--s2);border-color:var(--border);"
-              onclick="loadMoreFiles()">Carica altri →</button>
+            <button class="btn" style="background:var(--s2);border-color:var(--border);width:100%;"
+              onclick="loadMoreFiles()">
+              <span class="spin"></span> Carica altre…
+            </button>
           </div>
         </div>
 
@@ -893,15 +979,22 @@
     async function loadShopify() {
       $('imgcount').textContent = '';
       $('imgGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico da Shopify…</p>`;
+      $('variantSection').style.display = 'none';
       const s = shop();
       if (!s) { $('imgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop nell\'header</p>'; return; }
       try {
         const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(cur.handle)}`);
         const data = await res.json();
-        if (!res.ok) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">⚠ ${esc(data.error)}</p>`; return; }
+        if (!res.ok) {
+          // Product not found but we still allow upload — create a placeholder shopData
+          shopData = { id: null, title: cur.title, images: [], variants: [] };
+          $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">⚠ ${esc(data.error)}<br><span style="color:var(--muted)">Puoi comunque caricare immagini se il prodotto esiste su Shopify con handle diverso.</span></p>`;
+          return;
+        }
         shopData = data;
         $('imgcount').textContent = `${data.images.length} immagini`;
         renderImages(data.images);
+        renderVariantSection(data.variants, data.images);
       } catch (e) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`; }
     }
 
@@ -915,6 +1008,74 @@
         <button class="obtn del" onclick="deleteImg('${esc(img.id)}')">🗑 Elimina</button>
       </div>
     </div>`).join('');
+    }
+
+    // ── VARIANT COLOR ASSIGNMENT ──────────────────────────────────────────────────
+    let activeColor = null;
+
+    function renderVariantSection(variants, images) {
+      if (!variants || !variants.length) { $('variantSection').style.display = 'none'; return; }
+
+      // Get unique colors from variants
+      const colors = [...new Map(
+        variants.filter(v => v.color).map(v => [v.color, v])
+      ).values()];
+
+      if (!colors.length) { $('variantSection').style.display = 'none'; return; }
+      $('variantSection').style.display = 'block';
+
+      // Build color tabs
+      $('colorTabs').innerHTML = colors.map(v => `
+    <button class="ctab" data-color="${esc(v.color)}" onclick="selectColor('${esc(v.color)}')">
+      <span class="cdot2" style="background:${CMAP[v.color.toUpperCase()] || '#CCC'}"></span>
+      ${esc(v.color)}
+    </button>`).join('');
+
+      // Select first color
+      selectColor(colors[0].color);
+    }
+
+    function selectColor(color) {
+      activeColor = color;
+      document.querySelectorAll('.ctab').forEach(b => b.classList.toggle('active', b.dataset.color === color));
+
+      // Find image currently assigned to this color
+      const colorVariants = shopData.variants.filter(v => v.color && v.color.toUpperCase() === color.toUpperCase());
+      const assignedImgId = colorVariants[0]?.image_id || null;
+
+      // Show images with assign action
+      const images = shopData.images;
+      if (!images.length) { $('assignGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Carica prima delle immagini</p>'; return; }
+
+      $('assignGrid').innerHTML = images.map(img => {
+        const isAssigned = assignedImgId && assignedImgId === img.id;
+        return `<div class="icard assign-pick${isAssigned ? ' cur-assigned' : ''}" onclick="assignToColor('${esc(img.id)}')">
+      <img src="${esc(img.url)}" loading="lazy">
+      <span class="sbadge-assigned">✓ ${esc(color)}</span>
+      ${isAssigned ? '' : ''}
+    </div>`;
+      }).join('');
+    }
+
+    async function assignToColor(imgId) {
+      if (!activeColor || !shopData?.id) { toast('Seleziona prima un colore', 'err'); return; }
+      toast(`Assegno a variante ${activeColor}…`);
+      const form = new FormData();
+      form.append('shop', shop());
+      form.append('product_id', shopData.id);
+      form.append('image_id', imgId);
+      form.append('color', activeColor);
+      try {
+        const res = await fetch('/api/shopify/variant/assign-color', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        toast(`✓ Immagine assegnata a ${data.updated} varianti ${activeColor}!`, 'ok');
+        // Update local state
+        shopData.variants.forEach(v => {
+          if (v.color && v.color.toUpperCase() === activeColor.toUpperCase()) v.image_id = imgId;
+        });
+        selectColor(activeColor);
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
     async function deleteImg(imgId) {
@@ -933,7 +1094,8 @@
     async function uploadUrl() {
       const inp = $('urlinput'); const url = inp.value.trim();
       if (!url.startsWith('http')) { toast('URL non valido', 'err'); return; }
-      if (!shopData) { toast('Seleziona prima un prodotto', 'err'); return; }
+      if (!cur) { toast('Seleziona prima un prodotto dalla lista', 'err'); return; }
+      if (!shopData || !shopData.id) { toast('Prodotto non trovato su Shopify — verifica il dominio shop', 'err'); return; }
       toast('Caricamento…'); inp.disabled = true;
       const form = new FormData();
       form.append('shop', shop()); form.append('product_id', shopData.id);
@@ -946,12 +1108,14 @@
         shopData.images.push(data);
         $('imgcount').textContent = `${shopData.images.length} immagini`;
         renderImages(shopData.images);
+        if (activeColor) selectColor(activeColor);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
       finally { inp.disabled = false; }
     }
 
     $('fileinput').addEventListener('change', async e => {
-      if (!shopData) { toast('Seleziona prima un prodotto', 'err'); return; }
+      if (!cur) { toast('Seleziona prima un prodotto dalla lista', 'err'); return; }
+      if (!shopData || !shopData.id) { toast('Prodotto non trovato su Shopify — verifica il dominio shop', 'err'); return; }
       for (const file of Array.from(e.target.files)) {
         toast(`Caricamento ${file.name}…`);
         const form = new FormData();
@@ -966,6 +1130,7 @@
       }
       $('imgcount').textContent = `${shopData.images.length} immagini`;
       renderImages(shopData.images);
+      if (activeColor) selectColor(activeColor);
       e.target.value = '';
     });
 
@@ -988,31 +1153,52 @@
     }
 
     // ── FILES SHOPIFY ─────────────────────────────────────────────────────────────
-    let filesCursor = null;
+    let filesCursor = null, filesTotal = 0, filesLoading = false;
+
     async function loadFiles(reset = true) {
-      if (reset) { filesCursor = null; $('filesGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico files…</p>`; }
+      if (filesLoading) return;
+      if (reset) {
+        filesCursor = null; filesTotal = 0;
+        $('filesGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico libreria…</p>`;
+        $('filesCounter').textContent = '';
+      }
       const s = shop();
       if (!s) { $('filesGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop</p>'; return; }
+      filesLoading = true;
       const q = $('libSearch').value.trim();
       try {
         const res = await fetch(`/api/shopify/files?shop=${encodeURIComponent(s)}&after=${encodeURIComponent(filesCursor || '')}&q=${encodeURIComponent(q)}`);
         const data = await res.json();
-        if (!res.ok) { $('filesGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">${esc(data.error)}</p>`; return; }
+        if (!res.ok) {
+          $('filesGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(data.error)}</p>`;
+          filesLoading = false; return;
+        }
         const grid = $('filesGrid');
         if (reset) grid.innerHTML = '';
-        if (!data.files.length && reset) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessun file trovato</p>'; return; }
+        if (!data.files.length && reset) {
+          grid.innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine nella libreria</p>';
+          filesLoading = false; return;
+        }
+        filesTotal += data.files.length;
         grid.innerHTML += data.files.map(f => `
-      <div class="icard" title="${esc(f.filename || '')}">
+      <div class="icard" title="${esc(f.filename)}">
         <img src="${esc(f.url)}" loading="lazy" onerror="this.parentElement.style.display='none'">
         <div class="ov">
-          <button class="obtn addprod" onclick="addToProduct('${esc(f.url)}','${esc(f.filename || '')}')">+ Aggiungi al prodotto</button>
+          <button class="obtn addprod" onclick="addToProduct('${esc(f.url)}','${esc(f.alt || f.filename)}')">+ Aggiungi al prodotto</button>
           <a class="obtn" href="${esc(f.url)}" target="_blank">↗ Apri</a>
         </div>
       </div>`).join('');
         filesCursor = data.next_cursor || null;
-        $('filesMore').style.display = filesCursor ? 'block' : 'none';
-      } catch (e) { $('filesGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`; }
+        $('filesCounter').textContent = filesCursor
+          ? `${filesTotal} immagini caricate — ce ne sono altre`
+          : `${filesTotal} immagini totali`;
+        $('filesMore').style.display = filesCursor ? 'flex' : 'none';
+      } catch (e) {
+        $('filesGrid').innerHTML += `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`;
+      }
+      filesLoading = false;
     }
+
     async function loadMoreFiles() { await loadFiles(false); }
     $('libSearch').addEventListener('keydown', e => { if (e.key === 'Enter') loadFiles(); });
 
