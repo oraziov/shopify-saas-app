@@ -113,7 +113,8 @@ async def get_shopify_product(shop: str, handle: str):
     for e in product["variants"]["edges"]:
         v = e["node"]
         color_opt = next(
-            (o["value"] for o in v.get("selectedOptions", []) if o["name"].lower() in color_names),
+            (o["value"] for o in v.get("selectedOptions", [])
+             if o["name"].lower() in color_names or "col" in o["name"].lower()),
             None
         )
         variants.append({
@@ -243,7 +244,7 @@ async def assign_color_image(
                 n = o["name"].lower()
                 is_color = (color_opt_name and o["name"] == color_opt_name) \
                            or n in color_names or "col" in n
-                if is_color and o["value"].upper() == color.upper():
+                if is_color and (o["value"] == color or o["value"].upper() == color.upper()):
                     target_ids.append(e["node"]["id"])
                     break
 
