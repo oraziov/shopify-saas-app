@@ -1072,14 +1072,49 @@
       try {
         const res = await fetch('/api/shopify/variant/assign-color', { method: 'POST', body: form });
         const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        if (!res.ok) {
+          // Show debug info with real option names
+          if (data.debug_options) {
+            const opts = data.debug_options.map(([n, v]) => `${n}: ${v}`).join(' | ');
+            toast(`0 varianti trovate. Option su Shopify: ${opts}`, 'err');
+          } else {
+            toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err');
+          }
+          // Auto-fetch real options and show them
+          fetchRealOptions();
+          return;
+        }
+        if (data.updated === 0) {
+          toast(`⚠ 0 varianti aggiornate — l'option colore su Shopify potrebbe avere nome diverso`, 'err');
+          fetchRealOptions();
+          return;
+        }
         toast(`✓ Immagine assegnata a ${data.updated} varianti ${activeColor}!`, 'ok');
-        // Update local state
         shopData.variants.forEach(v => {
           if (v.color && v.color.toUpperCase() === activeColor.toUpperCase()) v.image_id = imgId;
         });
         selectColor(activeColor);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    }
+
+    async function fetchRealOptions() {
+      if (!shopData?.id) return;
+      const res = await fetch(`/api/shopify/product/options?shop=${encodeURIComponent(shop())}&product_id=${encodeURIComponent(shopData.id)}`);
+      const data = await res.json();
+      if (!data.options) return;
+      const info = data.options.map(o => `"${o.name}": ${o.values.slice(0, 3).join(', ')}`).join(' | ');
+      // Show in variant section
+      const el = $('variantSection');
+      let dbg = $('optDebug');
+      if (!dbg) {
+        dbg = document.createElement('div');
+        dbg.id = 'optDebug';
+        dbg.style.cssText = 'font-size:11px;color:var(--accent);padding:8px 10px;background:var(--al);border-radius:var(--r);border:1px solid #E8B8A8;margin-bottom:12px;';
+        el.insertBefore(dbg, $('colorTabs'));
+      }
+      dbg.innerHTML = `⚠ Option reali su Shopify: <strong>${info}</strong><br>
+    Il filtro colore cerca option con nome "Colore", "Color" o "Colour".<br>
+    Controlla che il nome dell'option corrisponda.`;
     }
 
     async function deleteImg(imgId) {

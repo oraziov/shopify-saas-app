@@ -218,7 +218,6 @@ async def assign_color_image(
     color_names = {"colore", "color", "colour"}
 
     async with httpx.AsyncClient(timeout=60) as client:
-        # Get all variants
         r = await client.post(gql, headers=h, json={
             "query": """query($id:ID!){product(id:$id){variants(first:100){edges{node{
               id selectedOptions{name value}}}}}}""",
@@ -226,16 +225,34 @@ async def assign_color_image(
         })
         edges = (r.json().get("data") or {}).get("product", {}).get("variants", {}).get("edges", [])
 
-        # Filter by color
-        target_ids = [
-            e["node"]["id"] for e in edges
-            if any(o["name"].lower() in color_names and o["value"].upper() == color.upper()
-                   for o in e["node"].get("selectedOptions", []))
-        ]
+        # Auto-detect which option is the color one
+        color_opt_name = None
+        if edges:
+            for opt in edges[0]["node"].get("selectedOptions", []):
+                n = opt["name"].lower()
+                if n in color_names or "col" in n:
+                    color_opt_name = opt["name"]
+                    break
+
+        all_options = []
+        target_ids = []
+        for e in edges:
+            opts = e["node"].get("selectedOptions", [])
+            all_options.extend([(o["name"], o["value"]) for o in opts])
+            for o in opts:
+                n = o["name"].lower()
+                is_color = (color_opt_name and o["name"] == color_opt_name) \
+                           or n in color_names or "col" in n
+                if is_color and o["value"].upper() == color.upper():
+                    target_ids.append(e["node"]["id"])
+                    break
+
+        logger.info(f"assign_color: color={color}, detected_opt={color_opt_name}, found={len(target_ids)}")
 
         if not target_ids:
             return JSONResponse(status_code=404, content={
-                "error": f"Nessuna variante trovata con colore '{color}'"
+                "error": f"Nessuna variante trovata con colore '{color}'",
+                "debug_options": list(set(all_options))[:30],
             })
 
         # Bulk assign
@@ -359,3 +376,33 @@ async def search_products(shop: str, q: str):
         }
         for e in edges
     ]
+
+
+# ── DEBUG: mostra option names reali delle varianti ───────────────────────────
+
+@app.get("/api/shopify/product/options")
+async def get_product_options(shop: str, product_id: str):
+    """Restituisce i nomi delle option e i valori unici per ogni option."""
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={
+                "query": """query($id:ID!){product(id:$id){
+                  options{name values}
+                  variants(first:5){edges{node{selectedOptions{name value}}}}
+                }}""",
+                "variables": {"id": product_id},
+            },
+        )
+    data = (resp.json().get("data") or {}).get("product", {})
+    return {
+        "options": data.get("options", []),
+        "sample_variants": [
+            e["node"]["selectedOptions"]
+            for e in data.get("variants", {}).get("edges", [])
+        ],
+    }
