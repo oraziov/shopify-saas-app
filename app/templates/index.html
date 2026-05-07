@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Image Manager by Orazio</title>
+  <title>Image Manager</title>
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap"
     rel="stylesheet">
@@ -539,8 +539,120 @@
         transform: rotate(360deg);
       }
     }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .ntab {
+      padding: 9px 18px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      margin-bottom: -2px;
+      transition: all .15s;
+    }
+
+    .ntab:hover {
+      color: var(--text);
+    }
+
+    .ntab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .lib-header {
+      margin-bottom: 16px;
+    }
+
+    .lib-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .ltab {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      background: var(--s2);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .ltab:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .ltab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .lib-info {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 8px 10px;
+      background: var(--s2);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+    }
+
+    .prod-result {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      background: var(--surface);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background .1s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .prod-result:hover {
+      background: var(--s2);
+    }
+
+    .prod-result.active {
+      border-color: var(--accent);
+      background: var(--al);
+    }
+
+    .pr-info .pr-title {
+      font-family: var(--serif);
+      font-size: 13px;
+      font-weight: 300;
+    }
+
+    .pr-info .pr-handle {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .obtn.addprod {
+      background: rgba(42, 107, 74, .7);
+    }
+
+    .obtn.addprod:hover {
+      background: rgba(42, 107, 74, .95);
+    }
   </style>
-</head>
 
 <body>
 
@@ -587,39 +699,91 @@
     </aside>
 
     <main class="main">
-      <div class="empty" id="empty">
-        <div class="big">🖼</div>
-        <h2>Seleziona un prodotto</h2>
-        <p>Carica il CSV e clicca un prodotto per gestire le sue immagini su Shopify</p>
+
+      <!-- NAV TABS -->
+      <div class="nav-tabs" id="navTabs">
+        <button class="ntab active" onclick="switchTab('product')">📦 Prodotto</button>
+        <button class="ntab" onclick="switchTab('library')">🗂 Libreria Shopify</button>
       </div>
 
-      <div class="detail" id="detail">
-        <div class="dhead">
-          <h2 id="dtitle">—</h2>
-          <span class="dhandle" id="dhandle"></span>
+      <!-- PRODUCT TAB -->
+      <div id="tabProduct">
+        <div class="empty" id="empty">
+          <div class="big">🖼</div>
+          <h2>Seleziona un prodotto</h2>
+          <p>Carica il CSV e clicca un prodotto per gestire le sue immagini su Shopify</p>
         </div>
 
-        <div class="sec">
-          <div class="sectitle">
-            Immagini su Shopify
-            <span class="secn" id="imgcount"></span>
+        <div class="detail" id="detail">
+          <div class="dhead">
+            <h2 id="dtitle">—</h2>
+            <span class="dhandle" id="dhandle"></span>
           </div>
-          <div class="igrid" id="imgGrid"></div>
-        </div>
 
-        <div class="sec">
-          <div class="sectitle">Aggiungi immagini</div>
-          <div class="upzone" onclick="document.getElementById('fileinput').click()">
-            <input type="file" id="fileinput" accept="image/jpeg,image/png,image/webp" multiple>
-            <p style="font-size:13px;margin-bottom:4px;">⬆ Carica dal computer</p>
-            <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP</p>
+          <div class="sec">
+            <div class="sectitle">
+              Immagini su Shopify
+              <span class="secn" id="imgcount"></span>
+            </div>
+            <div class="igrid" id="imgGrid"></div>
           </div>
-          <div class="urlrow">
-            <input id="urlinput" type="text" placeholder="Oppure incolla URL… https://…">
-            <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
+
+          <div class="sec">
+            <div class="sectitle">Aggiungi immagini</div>
+            <div class="upzone" onclick="document.getElementById('fileinput').click()">
+              <input type="file" id="fileinput" accept="image/jpeg,image/png,image/webp" multiple>
+              <p style="font-size:13px;margin-bottom:4px;">⬆ Carica dal computer</p>
+              <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP</p>
+            </div>
+            <div class="urlrow">
+              <input id="urlinput" type="text" placeholder="Oppure incolla URL… https://…">
+              <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- LIBRARY TAB -->
+      <div id="tabLibrary" style="display:none;">
+        <div class="lib-header">
+          <div class="lib-tabs">
+            <button class="ltab active" onclick="switchLib('files')">Files Shopify</button>
+            <button class="ltab" onclick="switchLib('products')">Da prodotti esistenti</button>
+          </div>
+          <div class="lib-info" id="libInfo">
+            <span id="libTarget">Nessun prodotto selezionato — torna al tab Prodotto</span>
+          </div>
+        </div>
+
+        <!-- FILES tab -->
+        <div id="libFiles">
+          <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
+            <input id="libSearch" type="text" placeholder="Cerca nome file…"
+              style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;font-family:var(--mono);font-size:12px;outline:none;">
+            <button class="btn bprim" onclick="loadFiles()">↺ Aggiorna</button>
+          </div>
+          <div class="igrid" id="filesGrid">
+            <p style="color:var(--muted);font-size:12px;">Clicca "Aggiorna" per caricare i file</p>
+          </div>
+          <div id="filesMore" style="margin-top:14px;text-align:center;display:none;">
+            <button class="btn" style="background:var(--s2);border-color:var(--border);"
+              onclick="loadMoreFiles()">Carica altri →</button>
+          </div>
+        </div>
+
+        <!-- PRODUCTS tab -->
+        <div id="libProducts" style="display:none;">
+          <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
+            <input id="prodSearch" type="text" placeholder="Cerca prodotto su Shopify…"
+              style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;font-family:var(--mono);font-size:12px;outline:none;">
+            <button class="btn bprim" onclick="searchProducts()">🔍 Cerca</button>
+          </div>
+          <div id="prodResults"></div>
+          <div id="prodImgGrid" class="igrid" style="margin-top:14px;"></div>
+        </div>
+
+      </div>
+
     </main>
   </div>
 
@@ -804,6 +968,115 @@
       renderImages(shopData.images);
       e.target.value = '';
     });
+
+    // ── TABS ──────────────────────────────────────────────────────────────────────
+    function switchTab(tab) {
+      document.querySelectorAll('.ntab').forEach((b, i) => b.classList.toggle('active', ['product', 'library'][i] === tab));
+      $('tabProduct').style.display = tab === 'product' ? '' : 'none';
+      $('tabLibrary').style.display = tab === 'library' ? '' : 'none';
+      if (tab === 'library') updateLibTarget();
+    }
+    function updateLibTarget() {
+      $('libTarget').textContent = cur
+        ? `Prodotto attivo: "${cur.title || cur.handle}" — clicca una foto per aggiungerla`
+        : 'Nessun prodotto selezionato — torna al tab Prodotto e scegli un prodotto';
+    }
+    function switchLib(lib) {
+      document.querySelectorAll('.ltab').forEach((b, i) => b.classList.toggle('active', ['files', 'products'][i] === lib));
+      $('libFiles').style.display = lib === 'files' ? '' : 'none';
+      $('libProducts').style.display = lib === 'products' ? '' : 'none';
+    }
+
+    // ── FILES SHOPIFY ─────────────────────────────────────────────────────────────
+    let filesCursor = null;
+    async function loadFiles(reset = true) {
+      if (reset) { filesCursor = null; $('filesGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico files…</p>`; }
+      const s = shop();
+      if (!s) { $('filesGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop</p>'; return; }
+      const q = $('libSearch').value.trim();
+      try {
+        const res = await fetch(`/api/shopify/files?shop=${encodeURIComponent(s)}&after=${encodeURIComponent(filesCursor || '')}&q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if (!res.ok) { $('filesGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">${esc(data.error)}</p>`; return; }
+        const grid = $('filesGrid');
+        if (reset) grid.innerHTML = '';
+        if (!data.files.length && reset) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessun file trovato</p>'; return; }
+        grid.innerHTML += data.files.map(f => `
+      <div class="icard" title="${esc(f.filename || '')}">
+        <img src="${esc(f.url)}" loading="lazy" onerror="this.parentElement.style.display='none'">
+        <div class="ov">
+          <button class="obtn addprod" onclick="addToProduct('${esc(f.url)}','${esc(f.filename || '')}')">+ Aggiungi al prodotto</button>
+          <a class="obtn" href="${esc(f.url)}" target="_blank">↗ Apri</a>
+        </div>
+      </div>`).join('');
+        filesCursor = data.next_cursor || null;
+        $('filesMore').style.display = filesCursor ? 'block' : 'none';
+      } catch (e) { $('filesGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`; }
+    }
+    async function loadMoreFiles() { await loadFiles(false); }
+    $('libSearch').addEventListener('keydown', e => { if (e.key === 'Enter') loadFiles(); });
+
+    // ── PRODUCTS SEARCH ───────────────────────────────────────────────────────────
+    async function searchProducts() {
+      const q = $('prodSearch').value.trim();
+      if (!q) { toast('Inserisci un termine di ricerca', 'err'); return; }
+      const s = shop();
+      $('prodResults').innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Cerco…</p>`;
+      $('prodImgGrid').innerHTML = '';
+      try {
+        const res = await fetch(`/api/shopify/products/search?shop=${encodeURIComponent(s)}&q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if (!res.ok) { $('prodResults').innerHTML = `<p style="color:var(--accent);font-size:12px;">${esc(data.error)}</p>`; return; }
+        if (!data.length) { $('prodResults').innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessun prodotto trovato</p>'; return; }
+        $('prodResults').innerHTML = data.map(p => `
+      <div class="prod-result" id="pr-${p.id.replace(/\W/g, '_')}" onclick='loadProdImages(${JSON.stringify(p)})'>
+        <div class="pr-info">
+          <div class="pr-title">${esc(p.title)}</div>
+          <div class="pr-handle">${esc(p.handle)}</div>
+        </div>
+        <span style="font-size:10px;color:var(--muted);">${p.image_count} img →</span>
+      </div>`).join('');
+      } catch (e) { $('prodResults').innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`; }
+    }
+    $('prodSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchProducts(); });
+
+    async function loadProdImages(prod) {
+      document.querySelectorAll('.prod-result').forEach(el => el.classList.remove('active'));
+      const el = $('pr-' + prod.id.replace(/\W/g, '_'));
+      if (el) el.classList.add('active');
+      $('prodImgGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico immagini…</p>`;
+      const s = shop();
+      try {
+        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(prod.handle)}`);
+        const data = await res.json();
+        if (!res.ok) { $('prodImgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">${esc(data.error)}</p>`; return; }
+        if (!data.images.length) { $('prodImgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine</p>'; return; }
+        $('prodImgGrid').innerHTML = data.images.map(img => `
+      <div class="icard">
+        <img src="${esc(img.url)}" loading="lazy">
+        <div class="ov">
+          <button class="obtn addprod" onclick="addToProduct('${esc(img.url)}','')">+ Aggiungi al prodotto</button>
+          <a class="obtn" href="${esc(img.url)}" target="_blank">↗ Apri</a>
+        </div>
+      </div>`).join('');
+      } catch (e) { $('prodImgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`; }
+    }
+
+    // ── ADD TO CURRENT PRODUCT ────────────────────────────────────────────────────
+    async function addToProduct(url, alt) {
+      if (!cur || !shopData) { toast('Seleziona prima un prodotto nel tab Prodotto', 'err'); return; }
+      toast('Aggiungo immagine…');
+      const form = new FormData();
+      form.append('shop', shop()); form.append('product_id', shopData.id);
+      form.append('image_url', url); form.append('alt', alt || cur.title);
+      try {
+        const res = await fetch('/api/shopify/image/upload-url', { method: 'POST', body: form });
+        const data = await res.json();
+        if (!res.ok) { toast('Errore: ' + (data.error || ''), 'err'); return; }
+        shopData.images.push(data);
+        toast(`✓ Aggiunta a "${cur.title || cur.handle}"!`, 'ok');
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    }
   </script>
 </body>
 

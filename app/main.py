@@ -170,3 +170,95 @@ async def delete_image(shop: str, product_id: str, image_id: str):
     if resp.status_code not in (200, 204):
         return JSONResponse(status_code=400, content={"error": f"Errore: {resp.text[:200]}"})
     return {"deleted": image_id}
+
+
+# ── SHOPIFY: list files (Content > Files) ────────────────────────────────────
+
+@app.get("/api/shopify/files")
+async def list_files(shop: str, after: str = "", q: str = ""):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+
+    after_clause = f', after: "{after}"' if after else ""
+    query_clause = f', query: "filename:*{q}*"' if q else ""
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(gql, headers=h, json={
+            "query": f"""query {{
+              files(first: 48{after_clause}{query_clause}, sortKey: CREATED_AT, reverse: true) {{
+                pageInfo {{ hasNextPage endCursor }}
+                edges {{
+                  node {{
+                    ... on MediaImage {{
+                      id alt
+                      image {{ url }}
+                      originalFileSize
+                    }}
+                    ... on GenericFile {{
+                      id alt url
+                    }}
+                  }}
+                }}
+              }}
+            }}""",
+        })
+
+    data = resp.json()
+    files_data = (data.get("data") or {}).get("files", {})
+    page_info = files_data.get("pageInfo", {})
+
+    files = []
+    for edge in files_data.get("edges", []):
+        node = edge["node"]
+        url = (node.get("image") or {}).get("url") or node.get("url")
+        if url and ("image" in (node.get("__typename", "")) or url.lower().split("?")[0].endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))):
+            files.append({
+                "id": node.get("id"),
+                "url": url,
+                "alt": node.get("alt") or "",
+                "filename": url.split("/")[-1].split("?")[0],
+            })
+
+    return {
+        "files": files,
+        "next_cursor": page_info.get("endCursor") if page_info.get("hasNextPage") else None,
+    }
+
+
+# ── SHOPIFY: search products ──────────────────────────────────────────────────
+
+@app.get("/api/shopify/products/search")
+async def search_products(shop: str, q: str):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={
+                "query": """query($q:String!){products(first:20,query:$q){edges{node{
+                  id title handle
+                  images(first:1){edges{node{url}}}
+                  media(first:1){nodes{id}}
+                }}}}""",
+                "variables": {"q": q},
+            },
+        )
+
+    edges = (resp.json().get("data") or {}).get("products", {}).get("edges", [])
+    return [
+        {
+            "id": e["node"]["id"],
+            "title": e["node"]["title"],
+            "handle": e["node"]["handle"],
+            "image_count": len(e["node"]["images"]["edges"]),
+            "thumb": (e["node"]["images"]["edges"][0]["node"]["url"] if e["node"]["images"]["edges"] else None),
+        }
+        for e in edges
+    ]
