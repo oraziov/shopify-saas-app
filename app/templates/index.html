@@ -1020,10 +1020,13 @@
         const safeId = esc(img.id);
         const badgeLabel = '✓ ' + esc(color) + (code ? ' #' + esc(code) : '');
         if (isAssigned) {
-          return `<div class="icard cur-assigned" onclick="assignColor('${safeId}')">
+          return `<div class="icard cur-assigned">
         <img src="${esc(img.url)}" loading="lazy">
         <span class="sbadge-assigned">${badgeLabel}</span>
-        <div class="ov"><span class="obtn" style="background:rgba(42,107,74,.7);">✓ Assegnata</span></div>
+        <div class="ov">
+          <span class="obtn" style="background:rgba(42,107,74,.7);cursor:default;">✓ Assegnata</span>
+          <button class="obtn del" onclick="removeColor()">✕ Rimuovi</button>
+        </div>
       </div>`;
         }
         return `<div class="icard assign-pick" onclick="assignColor('${safeId}')">
@@ -1057,6 +1060,27 @@
         toast('✓ Assegnata a ' + data.updated + ' varianti ' + colorVal + '!', 'ok');
         const dbg = $('optDebug'); if (dbg) dbg.remove();
         shopData.variants.forEach(v => { if (v.color && v.color.toUpperCase() === activeColor.toUpperCase()) v.image_id = imgId; });
+        selectColor(activeColor);
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    }
+
+    async function removeColor() {
+      if (!activeColor || !shopData || !shopData.id) return;
+      if (!confirm('Rimuovere l\'assegnazione immagine per ' + activeColor + '?')) return;
+      var colorVariants = shopData.variants.filter(function (v) { return v.color && v.color.toUpperCase() === activeColor.toUpperCase(); });
+      var colorVal = colorVariants.length ? colorVariants[0].color : activeColor;
+      toast('Rimozione assegnazione…');
+      var form = new FormData();
+      form.append('shop', shop());
+      form.append('product_id', shopData.id);
+      form.append('image_id', '');
+      form.append('color', colorVal);
+      try {
+        var res = await fetch('/api/shopify/variant/assign-color', { method: 'POST', body: form });
+        var data = await res.json();
+        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
+        toast('✓ Assegnazione rimossa da ' + data.updated + ' varianti!', 'ok');
+        shopData.variants.forEach(function (v) { if (v.color && v.color.toUpperCase() === activeColor.toUpperCase()) v.image_id = null; });
         selectColor(activeColor);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
