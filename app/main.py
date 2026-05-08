@@ -1,734 +1,419 @@
-<!doctype html>
-<html lang="it">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Image Manager</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#F5F3EE;--surface:#FFF;--s2:#F0EDE6;--border:#D8D3C8;
-  --text:#1A1714;--muted:#7A7468;--accent:#C84B2F;--al:#F5E8E4;
-  --green:#2A6B4A;--r:6px;
-  --mono:'DM Mono',monospace;--serif:'Fraunces',Georgia,serif;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100vh;}
+import csv
+import io
+import logging
 
-header{background:var(--text);color:var(--bg);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-header h1{font-family:var(--serif);font-size:19px;font-weight:300;}
-header h1 em{color:#C84B2F;font-style:italic;}
-.hright{display:flex;align-items:center;gap:14px;}
-.hstat{font-size:11px;color:#9A9488;}
-.shopwrap{display:flex;align-items:center;gap:6px;}
-.shopwrap label{font-size:10px;color:#9A9488;}
-.shopwrap input{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:5px 8px;font-family:var(--mono);font-size:11px;color:var(--bg);outline:none;width:220px;}
-.shopwrap input::placeholder{color:#6A6460;}
-.shopwrap input:focus{border-color:rgba(255,255,255,.4);}
+import httpx
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 
-.layout{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 48px);}
+from app.config import API_VERSION
+from app.db import get_shop_token, init_db
 
-/* SIDEBAR */
-.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+logger = logging.getLogger(__name__)
+app = FastAPI(title="Shopify Image Manager")
+templates = Jinja2Templates(directory="app/templates")
 
-.csvzone{padding:12px 14px;border-bottom:1px solid var(--border);}
-.csvzone label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
-.drop{border:1.5px dashed var(--border);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg);}
-.drop:hover,.drop.drag{border-color:var(--accent);background:var(--al);}
-.drop input{display:none;}
-.drop p{color:var(--muted);font-size:11px;line-height:1.5;}
 
-.filter-wrap{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
-.fsel{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;}
-.fsel:focus{border-color:var(--accent);}
+@app.on_event("startup")
+def startup():
+    init_db()
 
-.colors-wrap{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
-.chip{font-size:10px;padding:2px 6px;border-radius:3px;background:var(--s2);border:1px solid var(--border);color:var(--muted);display:inline-flex;align-items:center;gap:3px;}
-.cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.1);}
-.ccount{font-size:9px;padding:1px 5px;border-radius:10px;background:var(--s2);color:var(--muted);border:1px solid var(--border);}
 
-.plist-header{padding:8px 14px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
-.plist{flex:1;overflow-y:auto;}
-.pitem{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
-.pitem:hover{background:var(--s2);}
-.pitem.active{background:var(--al);border-left:3px solid var(--accent);padding-left:11px;}
-.phandle{font-size:10px;color:var(--muted);margin-bottom:2px;}
-.ptitle{font-family:var(--serif);font-size:13px;font-weight:300;line-height:1.3;margin-bottom:3px;}
-.pbrand{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--text);color:var(--bg);display:inline-block;}
-.nores{padding:20px;text-align:center;color:var(--muted);font-size:12px;}
+@app.get("/", response_class=HTMLResponse)
+def ui(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-/* MAIN */
-.main{overflow-y:auto;padding:24px 28px;}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;text-align:center;gap:12px;}
-.empty .big{font-size:48px;opacity:.2;}
-.empty h2{font-family:var(--serif);font-size:22px;font-weight:300;color:var(--muted);}
-.empty p{color:var(--muted);font-size:12px;line-height:1.6;}
 
-.detail{display:none;}
-.detail.on{display:block;}
+@app.post("/api/csv/parse")
+async def parse_csv(file: UploadFile = File(...)):
+    contents = await file.read()
+    try:
+        text = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        text = contents.decode("latin-1")
 
-.dhead{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.dhead h2{font-family:var(--serif);font-size:23px;font-weight:300;margin-bottom:4px;}
-.dhandle{font-size:11px;color:var(--muted);}
+    reader = csv.DictReader(io.StringIO(text))
+    products: dict[str, dict] = {}
 
-.sec{margin-bottom:28px;}
-.sectitle{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-.secn{font-size:11px;color:var(--muted);}
+    for row in reader:
+        handle = str(row.get("handle") or "").strip()
+        if not handle:
+            continue
+        colore = str(row.get("Colore") or row.get("colore") or "").strip()
+        color_code = str(row.get("color_code") or "").strip()
 
-/* IMAGE GRID */
-.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
-.icard{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:var(--s2);aspect-ratio:3/4;}
-.icard img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s;}
-.icard:hover img{transform:scale(1.04);}
-.ov{position:absolute;inset:0;background:rgba(26,23,20,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;opacity:0;transition:opacity .15s;}
-.icard:hover .ov{opacity:1;}
-.obtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:4px;color:#fff;padding:5px 10px;font-family:var(--mono);font-size:10px;cursor:pointer;width:110px;text-align:center;transition:background .1s;}
-.obtn:hover{background:rgba(255,255,255,.28);}
-.obtn.del:hover{background:rgba(200,75,47,.8);}
+        if handle not in products:
+            products[handle] = {
+                "handle": handle,
+                "brand": str(row.get("Brand") or "").strip(),
+                "title": str(row.get("Title") or "").strip(),
+                "colors": [],
+            }
 
-/* UPLOAD */
-.upzone{border:1.5px dashed var(--border);border-radius:var(--r);padding:16px;text-align:center;background:var(--bg);cursor:pointer;margin-bottom:10px;transition:all .15s;}
-.upzone:hover{border-color:var(--accent);background:var(--al);}
-.upzone input{display:none;}
-.urlrow{display:flex;gap:7px;}
-.urlrow input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;}
-.urlrow input:focus{border-color:var(--accent);}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r);font-family:var(--mono);font-size:12px;cursor:pointer;border:1px solid;transition:all .15s;}
-.bprim{background:var(--text);color:var(--bg);border-color:var(--text);}
-.bprim:hover{background:#3A3530;}
+        # Add color if not already present
+        existing = [c["color_code"] for c in products[handle]["colors"]]
+        if color_code not in existing:
+            products[handle]["colors"].append({
+                "colore": colore,
+                "color_code": color_code,
+            })
 
-#toast{position:fixed;bottom:18px;right:18px;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:var(--r);font-size:12px;transform:translateY(60px);opacity:0;transition:all .22s;z-index:999;max-width:320px;}
-#toast.show{transform:translateY(0);opacity:1;}
-#toast.ok{background:var(--green);}
-#toast.err{background:var(--accent);}
-.spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;}
-@keyframes sp{to{transform:rotate(360deg);}}
-.nav-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--border);}
-.ntab{padding:9px 18px;border:none;border-bottom:2px solid transparent;background:none;font-family:var(--mono);font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:-2px;transition:all .15s;}
-.ntab:hover{color:var(--text);}
-.ntab.active{color:var(--accent);border-bottom-color:var(--accent);}
+    return list(products.values())
 
-.lib-header{margin-bottom:16px;}
-.lib-tabs{display:flex;gap:6px;margin-bottom:10px;}
-.ltab{padding:6px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--s2);font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;}
-.ltab:hover{border-color:var(--accent);color:var(--accent);}
-.ltab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-.lib-info{font-size:11px;color:var(--muted);padding:8px 10px;background:var(--s2);border-radius:var(--r);border:1px solid var(--border);}
 
-.prod-result{padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);margin-bottom:6px;cursor:pointer;transition:background .1s;display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.prod-result:hover{background:var(--s2);}
-.prod-result.active{border-color:var(--accent);background:var(--al);}
-.pr-info .pr-title{font-family:var(--serif);font-size:13px;font-weight:300;}
-.pr-info .pr-handle{font-size:10px;color:var(--muted);}
+@app.get("/api/shopify/product")
+async def get_shopify_product(shop: str, handle: str):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Shop non autenticato"})
 
-.obtn.assign-btn{background:rgba(42,107,74,.7);}
-.obtn.assign-btn:hover{background:rgba(42,107,74,.95);}
-.ctab{padding:5px 10px;border:1px solid var(--border);border-radius:20px;background:var(--s2);font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;gap:5px;}
-.ctab:hover{border-color:var(--accent);color:var(--accent);}
-.ctab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-.cdot2{width:10px;height:10px;border-radius:50%;border:1px solid rgba(0,0,0,.1);flex-shrink:0;}
-.icard.assign-pick:hover{border-color:var(--green);cursor:pointer;}
-.icard.assign-pick:hover::after{content:'Assegna';position:absolute;bottom:0;left:0;right:0;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;padding:4px;text-align:center;}
-.icard.cur-assigned{border:2px solid var(--green);}
-.icard.cur-assigned .sbadge-assigned{display:block;}
-.sbadge-assigned{display:none;position:absolute;top:5px;right:5px;background:var(--green);color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;}
-</style>
-<body>
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
 
-<header>
-  <h1>Image <em>Manager</em></h1>
-  <div class="hright">
-    <div class="shopwrap">
-      <label>Shop</label>
-      <input id="shopInput" type="text" placeholder="negozio.myshopify.com">
-    </div>
-    <span class="hstat" id="hstat">Nessun CSV</span>
-  </div>
-</header>
+    FIELDS = """
+        id title
+        images(first:50){edges{node{id url altText}}}
+        variants(first:100){
+          edges{node{
+            id title sku
+            image{id url}
+            selectedOptions{name value}
+          }}
+        }
+    """
 
-<div class="layout">
-  <aside class="sidebar">
-    <div class="csvzone">
-      <label>CSV Prodotti</label>
-      <div class="drop" id="drop" onclick="document.getElementById('csvfile').click()">
-        <input type="file" id="csvfile" accept=".csv">
-        <p><strong>Clicca o trascina</strong> il CSV</p>
-      </div>
-    </div>
-    <div class="search-wrap">
-      <div class="sbox">
-        <input id="search" type="text" placeholder="⌕ Cerca titolo, handle…">
-      </div>
-    </div>
-    <div class="filter-wrap">
-      <select class="fsel" id="fbrand"><option value="">Tutti i brand</option></select>
-      <select class="fsel" id="ftitle"><option value="">Tutti i modelli</option></select>
-    </div>
-    <div class="plist-header">
-      <span>Prodotti</span>
-      <span id="pcount">0</span>
-    </div>
-    <div class="plist" id="plist">
-      <div class="nores">Carica un CSV per iniziare</div>
-    </div>
-  </aside>
+    async with httpx.AsyncClient(timeout=30) as client:
+        r = await client.post(gql, headers=h, json={
+            "query": f"query($h:String!){{productByHandle(handle:$h){{{FIELDS}}}}}",
+            "variables": {"h": handle},
+        })
+        product = (r.json().get("data") or {}).get("productByHandle")
 
-  <main class="main">
+        if not product:
+            r2 = await client.post(gql, headers=h, json={
+                "query": f"query($q:String!){{products(first:5,query:$q){{edges{{node{{{FIELDS}}}}}}}}}",
+                "variables": {"q": handle},
+            })
+            edges = (r2.json().get("data") or {}).get("products", {}).get("edges", [])
+            if edges:
+                product = edges[0]["node"]
 
-    <!-- NAV TABS -->
-    <div class="nav-tabs" id="navTabs">
-      <button class="ntab active" onclick="switchTab('product')">📦 Prodotto</button>
-      <button class="ntab" onclick="switchTab('library')">🗂 Libreria Shopify</button>
-    </div>
+    if not product:
+        return JSONResponse(status_code=404, content={"error": f"Prodotto non trovato (handle={handle})"})
 
-    <!-- PRODUCT TAB -->
-    <div id="tabProduct">
-      <div class="empty" id="empty">
-        <div class="big">🖼</div>
-        <h2>Seleziona un prodotto</h2>
-        <p>Carica il CSV e clicca un prodotto per gestire le sue immagini su Shopify</p>
-      </div>
+    images = [
+        {"id": e["node"]["id"], "url": e["node"]["url"], "alt": e["node"].get("altText") or ""}
+        for e in product["images"]["edges"]
+    ]
 
-      <div class="detail" id="detail">
-        <div class="dhead">
-          <h2 id="dtitle">—</h2>
-          <span class="dhandle" id="dhandle"></span>
-        </div>
+    # Group variants by color option value
+    color_names = {"colore", "color", "colour"}
+    variants = []
+    for e in product["variants"]["edges"]:
+        v = e["node"]
+        color_opt = next(
+            (o["value"] for o in v.get("selectedOptions", [])
+             if o["name"].lower() in color_names or "col" in o["name"].lower()),
+            None
+        )
+        variants.append({
+            "id": v["id"],
+            "sku": v["sku"],
+            "title": v["title"],
+            "color": color_opt,
+            "image_id": (v.get("image") or {}).get("id"),
+            "image_url": (v.get("image") or {}).get("url"),
+        })
 
-        <div class="sec">
-          <div class="sectitle">
-            Immagini su Shopify
-            <span class="secn" id="imgcount"></span>
-          </div>
-          <div class="igrid" id="imgGrid"></div>
-        </div>
+    return {"id": product["id"], "title": product["title"], "images": images, "variants": variants}
 
-        <div class="sec">
-          <div class="sectitle">Aggiungi immagini</div>
-          <div class="upzone" onclick="document.getElementById('fileinput').click()">
-            <input type="file" id="fileinput" accept="image/jpeg,image/png,image/webp" multiple>
-            <p style="font-size:13px;margin-bottom:4px;">⬆ Carica dal computer</p>
-            <p style="color:var(--muted);font-size:11px;">JPG · PNG · WebP</p>
-          </div>
-          <div class="urlrow">
-            <input id="urlinput" type="text" placeholder="Oppure incolla URL… https://…">
-            <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
-          </div>
-        </div>
 
-        <!-- VARIANT COLOR ASSIGNMENT -->
-        <div class="sec" id="variantSection" style="display:none;">
-          <div class="sectitle">Associa immagine per colore variante</div>
-          <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">
-            Seleziona un colore → clicca un'immagine → l'immagine viene assegnata a tutte le varianti di quel colore
-          </p>
-          <div id="colorTabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
-          <div id="assignGrid" class="igrid"></div>
-        </div>
-      </div>
-    </div>
+@app.post("/api/shopify/image/upload-url")
+async def upload_from_url(shop: str = Form(...), product_id: str = Form(...), image_url: str = Form(...), alt: str = Form("")):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    rest_id = product_id.split("/")[-1]
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/products/{rest_id}/images.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={"image": {"src": image_url, "alt": alt}},
+        )
+    data = resp.json()
+    if "image" not in data:
+        return JSONResponse(status_code=400, content={"error": str(data.get("errors", "Upload fallito"))})
+    img = data["image"]
+    return {"id": f"gid://shopify/ProductImage/{img['id']}", "url": img["src"], "alt": img.get("alt") or ""}
 
-    <!-- LIBRARY TAB -->
-    <div id="tabLibrary" style="display:none;">
-      <div class="lib-header">
-        <div class="lib-tabs">
-          <button class="ltab active" onclick="switchLib('files')">Files Shopify</button>
-          <button class="ltab" onclick="switchLib('products')">Da prodotti esistenti</button>
-        </div>
-        <div class="lib-info" id="libInfo">
-          <span id="libTarget">Nessun prodotto selezionato — torna al tab Prodotto</span>
-        </div>
-      </div>
 
-      <!-- FILES tab -->
-      <div id="libFiles">
-        <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
-          <input id="libSearch" type="text" placeholder="Cerca per nome file…"
-            style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;font-family:var(--mono);font-size:12px;outline:none;">
-          <button class="btn bprim" onclick="loadFiles()">↺ Carica</button>
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;" id="filesCounter"></div>
-        <div class="igrid" id="filesGrid"><p style="color:var(--muted);font-size:12px;">Clicca "Carica" per vedere le immagini della libreria</p></div>
-        <div id="filesMore" style="margin-top:14px;text-align:center;display:none;">
-          <button class="btn" style="background:var(--s2);border-color:var(--border);width:100%;" onclick="loadMoreFiles()">
-            <span class="spin"></span> Carica altre…
-          </button>
-        </div>
-      </div>
+@app.post("/api/shopify/image/upload-file")
+async def upload_file(shop: str = Form(...), product_id: str = Form(...), file: UploadFile = File(...)):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    mime = file.content_type or "image/jpeg"
+    if mime not in {"image/jpeg", "image/png", "image/webp", "image/gif"}:
+        return JSONResponse(status_code=400, content={"error": f"Tipo non supportato: {mime}"})
+    binary = await file.read()
+    filename = file.filename or "upload.jpg"
+    rest_id = product_id.split("/")[-1]
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+    async with httpx.AsyncClient(timeout=120) as client:
+        stage = await client.post(gql, headers=h, json={
+            "query": """mutation($input:[StagedUploadInput!]!){stagedUploadsCreate(input:$input){
+              stagedTargets{url resourceUrl parameters{name value}}userErrors{message}}}""",
+            "variables": {"input": [{"filename": filename, "mimeType": mime,
+                "resource": "IMAGE", "fileSize": str(len(binary)), "httpMethod": "PUT"}]},
+        })
+        targets = stage.json()["data"]["stagedUploadsCreate"]["stagedTargets"]
+        if not targets:
+            return JSONResponse(status_code=500, content={"error": "Staged upload fallito"})
+        target = targets[0]
+        put = await client.put(target["url"], content=binary, headers={p["name"]: p["value"] for p in target["parameters"]})
+        if put.status_code not in (200, 201):
+            return JSONResponse(status_code=400, content={"error": f"Upload fallito: {put.text[:200]}"})
+        attach = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/products/{rest_id}/images.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={"image": {"src": target["resourceUrl"], "alt": filename}},
+        )
+    data = attach.json()
+    if "image" not in data:
+        return JSONResponse(status_code=400, content={"error": str(data.get("errors", "Attach fallito"))})
+    img = data["image"]
+    return {"id": f"gid://shopify/ProductImage/{img['id']}", "url": img["src"], "alt": img.get("alt") or ""}
 
-      <!-- PRODUCTS tab -->
-      <div id="libProducts" style="display:none;">
-        <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
-          <input id="prodSearch" type="text" placeholder="Cerca prodotto su Shopify…"
-            style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:7px 10px;font-family:var(--mono);font-size:12px;outline:none;">
-          <button class="btn bprim" onclick="searchProducts()">🔍 Cerca</button>
-        </div>
-        <div id="prodResults"></div>
-        <div id="prodImgGrid" class="igrid" style="margin-top:14px;"></div>
-      </div>
 
-    </div>
+@app.delete("/api/shopify/image")
+async def delete_image(shop: str, product_id: str, image_id: str):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.delete(
+            f"https://{shop}/admin/api/{API_VERSION}/products/{product_id.split('/')[-1]}/images/{image_id.split('/')[-1]}.json",
+            headers={"X-Shopify-Access-Token": token},
+        )
+    if resp.status_code not in (200, 204):
+        return JSONResponse(status_code=400, content={"error": f"Errore: {resp.text[:200]}"})
+    return {"deleted": image_id}
 
-  </main>
-</div>
 
-<div id="toast"></div>
+@app.post("/api/shopify/variant/assign-color")
+async def assign_color_image(
+    shop: str = Form(...),
+    product_id: str = Form(...),
+    image_id: str = Form(...),   # gid://shopify/ProductImage/...
+    color: str = Form(...),      # e.g. "NERO"
+):
+    """Assign a product image to all variants of a given color."""
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
 
-<script>
-let all=[], cur=null, shopData=null;
-let fSearch='', fBrand='', fTitle='';
-const $=id=>document.getElementById(id);
-const shop=()=>$('shopInput').value.trim().replace(/^https?:\/\//,'').replace(/\/$/,'');
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+    color_names = {"colore", "color", "colour"}
 
-function toast(msg,type=''){
-  const el=$('toast');el.textContent=msg;
-  el.className='show '+(type==='ok'?'ok':type==='err'?'err':'');
-  clearTimeout(el._t);el._t=setTimeout(()=>el.className='',3500);
-}
-function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    async with httpx.AsyncClient(timeout=60) as client:
+        r = await client.post(gql, headers=h, json={
+            "query": """query($id:ID!){product(id:$id){variants(first:100){edges{node{
+              id selectedOptions{name value}}}}}}""",
+            "variables": {"id": product_id},
+        })
+        edges = (r.json().get("data") or {}).get("product", {}).get("variants", {}).get("edges", [])
 
-const CMAP={
-  NERO:'#1A1A1A',NERO1:'#2A2A2A',BIANCO:'#F0EEE8',AVORIO:'#F5EFD8',BURRO:'#F5ECC0',
-  BEIGE:'#D4C5A9',NUDO:'#E8C9A0',TORTORA:'#C4B49A',FANGO:'#9E8B72',CAMMELLO:'#C19A6B',
-  TABACCO:'#8B6340',MARRONE:'#6B3D26',KAKI:'#8A8A4A',MILITARE:'#4A5A35',PRATO:'#3A6B3A',
-  VERDE:'#2A7A3A',DENIM:'#3A5A8A',BLU:'#1A3A7A',BLU1:'#2A4A9A',AZZURRO:'#5A9AC8',
-  CELESTE:'#8AC4E0',LILLA:'#9A7AC8',ROSA:'#E8A0B0',BORDEAUX:'#7A1A2A',GRIGIO:'#909090',GIALLO:'#E8D040',
-};
-const cdot=c=>`<span class="cdot" style="background:${CMAP[c]||'#CCC'}"></span>`;
+        # Auto-detect which option is the color one
+        color_opt_name = None
+        if edges:
+            for opt in edges[0]["node"].get("selectedOptions", []):
+                n = opt["name"].lower()
+                if n in color_names or "col" in n:
+                    color_opt_name = opt["name"]
+                    break
 
-// CSV
-$('csvfile').addEventListener('change',e=>e.target.files[0]&&loadCSV(e.target.files[0]));
-const dropEl=$('drop');
-dropEl.addEventListener('dragover',e=>{e.preventDefault();dropEl.classList.add('drag');});
-dropEl.addEventListener('dragleave',()=>dropEl.classList.remove('drag'));
-dropEl.addEventListener('drop',e=>{e.preventDefault();dropEl.classList.remove('drag');e.dataTransfer.files[0]&&loadCSV(e.dataTransfer.files[0]);});
+        all_options = []
+        target_ids = []
+        for e in edges:
+            opts = e["node"].get("selectedOptions", [])
+            all_options.extend([(o["name"], o["value"]) for o in opts])
+            for o in opts:
+                n = o["name"].lower()
+                is_color = (color_opt_name and o["name"] == color_opt_name) \
+                           or n in color_names or "col" in n
+                if is_color and (o["value"] == color or o["value"].upper() == color.upper()):
+                    target_ids.append(e["node"]["id"])
+                    break
 
-async function loadCSV(file){
-  $('hstat').textContent='Parsing…';
-  const form=new FormData();form.append('file',file);
-  try{
-    const res=await fetch('/api/csv/parse',{method:'POST',body:form});
-    if(!res.ok)throw new Error(await res.text());
-    all=await res.json();
-    $('hstat').textContent=`${all.length} prodotti · ${file.name}`;
-    buildFilters();applyF();
-    toast(`${all.length} prodotti caricati`,'ok');
-  }catch(e){toast('Errore CSV: '+e.message,'err');}
-}
+        logger.info(f"assign_color: color={color}, detected_opt={color_opt_name}, found={len(target_ids)}")
 
-function buildFilters(){
-  const brands=[...new Set(all.map(p=>p.brand).filter(Boolean))].sort();
-  $('fbrand').innerHTML='<option value="">Tutti i brand</option>'+brands.map(b=>`<option>${esc(b)}</option>`).join('');
-  const titles=[...new Set(all.map(p=>p.title).filter(Boolean))].sort();
-  $('ftitle').innerHTML='<option value="">Tutti i modelli</option>'+titles.map(t=>`<option>${esc(t)}</option>`).join('');
-}
+        if not target_ids:
+            return JSONResponse(status_code=404, content={
+                "error": f"Nessuna variante trovata con colore '{color}'",
+                "debug_options": list(set(all_options))[:30],
+            })
 
-$('fbrand').addEventListener('change',e=>{
-  fBrand=e.target.value;
-  // Rebuild title filter based on selected brand
-  const titles=[...new Set(all.filter(p=>!fBrand||p.brand===fBrand).map(p=>p.title).filter(Boolean))].sort();
-  $('ftitle').innerHTML='<option value="">Tutti i modelli</option>'+titles.map(t=>`<option>${esc(t)}</option>`).join('');
-  fTitle='';
-  applyF();
-});
-$('ftitle').addEventListener('change',e=>{fTitle=e.target.value;applyF();});
-$('search').addEventListener('input',e=>{fSearch=e.target.value.toLowerCase();applyF();});
+        # Use REST API — empty image_id means remove assignment
+        rest_image_id = image_id.split("/")[-1] if image_id else None
+        updated = []
+        rest_errors = []
 
-function applyF(){
-  const filtered=all.filter(p=>{
-    if(fSearch&&![p.title,String(p.handle),p.brand].join(' ').toLowerCase().includes(fSearch))return false;
-    if(fBrand&&p.brand!==fBrand)return false;
-    if(fTitle&&p.title!==fTitle)return false;
-    return true;
-  });
-  renderList(filtered);
-}
+        for vid in target_ids:
+            rest_variant_id = vid.split("/")[-1]
+            body = {"variant": {"id": int(rest_variant_id)}}
+            if rest_image_id:
+                body["variant"]["image_id"] = int(rest_image_id)
+            else:
+                body["variant"]["image_id"] = None  # removes assignment
+            r = await client.put(
+                f"https://{shop}/admin/api/{API_VERSION}/variants/{rest_variant_id}.json",
+                headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+                json=body,
+            )
+            if r.status_code == 200:
+                updated.append(vid)
+            else:
+                rest_errors.append({"variant": vid, "error": r.text[:200]})
+                logger.error(f"variant update failed: {vid} → {r.status_code} {r.text[:200]}")
 
-function renderList(items){
-  $('pcount').textContent=items.length;
-  if(!items.length){$('plist').innerHTML='<div class="nores">Nessun prodotto</div>';return;}
-  $('plist').innerHTML=items.map(p=>{
-    const gi=all.indexOf(p);
-    const active=cur&&all.indexOf(cur)===gi;
-    const colorChips=p.colors.map(c=>`
-      <span class="chip">${cdot(c.colore)} ${esc(c.colore)} <span style="color:var(--blue);font-size:9px;">#${esc(c.color_code)}</span></span>
-    `).join('');
-    return`<div class="pitem${active?' active':''}" data-i="${gi}" onclick="selProd(${gi})">
-      <div class="phandle">${p.handle}</div>
-      <div class="ptitle">${esc(p.title)||'(senza titolo)'}</div>
-      <span class="pbrand">${esc(p.brand)}</span>
-      <span class="ccount" style="margin-left:4px;">${p.colors.length} colori</span>
-      <div class="colors-wrap">${colorChips}</div>
-    </div>`;
-  }).join('');
-}
+    logger.info(f"assign_color REST: updated={len(updated)}, errors={len(rest_errors)}")
 
-// SELECT
-async function selProd(idx){
-  cur=all[idx];shopData=null;
-  document.querySelectorAll('.pitem').forEach(el=>el.classList.remove('active'));
-  document.querySelector(`.pitem[data-i="${idx}"]`)?.classList.add('active');
-  $('empty').style.display='none';
-  $('detail').classList.add('on');
-  $('dtitle').textContent=cur.title||String(cur.handle);
-  $('dhandle').textContent=`handle: ${cur.handle} · ${cur.brand}`;
-  await loadShopify();
-}
+    if rest_errors and not updated:
+        return JSONResponse(status_code=400, content={"errors": rest_errors})
 
-async function loadShopify(){
-  $('imgcount').textContent='';
-  $('imgGrid').innerHTML=`<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico da Shopify…</p>`;
-  $('variantSection').style.display='none';
-  const s=shop();
-  if(!s){$('imgGrid').innerHTML='<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop nell\'header</p>';return;}
-  try{
-    const res=await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(cur.handle)}`);
-    const data=await res.json();
-    if(!res.ok){
-      // Product not found but we still allow upload — create a placeholder shopData
-      shopData={id:null,title:cur.title,images:[],variants:[]};
-      $('imgGrid').innerHTML=`<p style="color:var(--accent);font-size:12px;grid-column:1/-1">⚠ ${esc(data.error)}<br><span style="color:var(--muted)">Puoi comunque caricare immagini se il prodotto esiste su Shopify con handle diverso.</span></p>`;
-      return;
+    return {"ok": True, "updated": len(updated), "color": color, "errors": rest_errors}
+
+
+# ── SHOPIFY: list files (Content > Files) ────────────────────────────────────
+
+@app.get("/api/shopify/files")
+async def list_files(shop: str, after: str = "", q: str = ""):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+
+    gql = f"https://{shop}/admin/api/{API_VERSION}/graphql.json"
+    h = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+
+    variables: dict = {"first": 48}
+    if after:
+        variables["after"] = after
+    if q:
+        variables["query"] = f"filename:*{q}*"
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(gql, headers=h, json={
+            "query": """
+            query($first:Int!, $after:String, $query:String) {
+              files(first:$first, after:$after, query:$query,
+                    sortKey:CREATED_AT, reverse:true) {
+                pageInfo { hasNextPage endCursor }
+                edges {
+                  node {
+                    __typename
+                    ... on MediaImage {
+                      id
+                      alt
+                      image { url }
+                    }
+                  }
+                }
+              }
+            }""",
+            "variables": variables,
+        })
+
+    data = resp.json()
+    if "errors" in data:
+        return JSONResponse(status_code=400, content={"error": str(data["errors"])})
+
+    files_data = (data.get("data") or {}).get("files", {})
+    page_info = files_data.get("pageInfo", {})
+
+    files = []
+    for edge in files_data.get("edges", []):
+        node = edge["node"]
+        if node.get("__typename") != "MediaImage":
+            continue
+        url = (node.get("image") or {}).get("url")
+        if not url:
+            continue
+        files.append({
+            "id": node["id"],
+            "url": url,
+            "alt": node.get("alt") or "",
+            "filename": url.split("/")[-1].split("?")[0],
+        })
+
+    return {
+        "files": files,
+        "next_cursor": page_info.get("endCursor") if page_info.get("hasNextPage") else None,
     }
-    shopData=data;
-    $('imgcount').textContent=`${data.images.length} immagini`;
-    renderImages(data.images);
-    renderVariantSection(data.variants, data.images);
-  }catch(e){$('imgGrid').innerHTML=`<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`;}
-}
 
-function renderImages(images){
-  if(!images.length){$('imgGrid').innerHTML='<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine su Shopify</p>';return;}
-  $('imgGrid').innerHTML=images.map(img=>`
-    <div class="icard">
-      <img src="${esc(img.url)}" loading="lazy">
-      <div class="ov">
-        <a class="obtn" href="${esc(img.url)}" target="_blank">↗ Apri</a>
-        <button class="obtn del" onclick="deleteImg('${esc(img.id)}')">🗑 Elimina</button>
-      </div>
-    </div>`).join('');
-}
 
-// ── VARIANT COLOR ASSIGNMENT ──────────────────────────────────────────────────
-let activeColor = null;
+# ── SHOPIFY: search products ──────────────────────────────────────────────────
 
-function getColorCode(colorName){
-  // Look up color_code from CSV data for the current product
-  if(!cur||!cur.colors) return '';
-  const found=cur.colors.find(c=>c.colore.toUpperCase()===colorName.toUpperCase());
-  return found?found.color_code:'';
-}
+@app.get("/api/shopify/products/search")
+async def search_products(shop: str, q: str):
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
 
-function renderVariantSection(variants, images){
-  if(!variants||!variants.length){$('variantSection').style.display='none';return;}
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={
+                "query": """query($q:String!){products(first:20,query:$q){edges{node{
+                  id title handle
+                  images(first:1){edges{node{url}}}
+                  media(first:1){nodes{id}}
+                }}}}""",
+                "variables": {"q": q},
+            },
+        )
 
-  const colors=[...new Map(
-    variants.filter(v=>v.color).map(v=>[v.color, v])
-  ).values()];
+    edges = (resp.json().get("data") or {}).get("products", {}).get("edges", [])
+    return [
+        {
+            "id": e["node"]["id"],
+            "title": e["node"]["title"],
+            "handle": e["node"]["handle"],
+            "image_count": len(e["node"]["images"]["edges"]),
+            "thumb": (e["node"]["images"]["edges"][0]["node"]["url"] if e["node"]["images"]["edges"] else None),
+        }
+        for e in edges
+    ]
 
-  if(!colors.length){$('variantSection').style.display='none';return;}
-  $('variantSection').style.display='block';
 
-  $('colorTabs').innerHTML=colors.map(v=>{
-    const code=getColorCode(v.color);
-    return`<button class="ctab" data-color="${esc(v.color)}" onclick="selectColor('${esc(v.color)}')">
-      <span class="cdot2" style="background:${CMAP[v.color.toUpperCase()]||'#CCC'}"></span>
-      ${esc(v.color)}${code?` <span style="font-size:9px;opacity:.7;">#${esc(code)}</span>`:''}
-    </button>`;
-  }).join('');
+# ── DEBUG: mostra option names reali delle varianti ───────────────────────────
 
-  selectColor(colors[0].color);
-}
-
-function selectColor(color){
-  activeColor=color;
-  document.querySelectorAll('.ctab').forEach(b=>b.classList.toggle('active',b.dataset.color===color));
-
-  const colorVariants=shopData.variants.filter(v=>v.color&&v.color.toUpperCase()===color.toUpperCase());
-  const assignedImgId=colorVariants[0]?.image_id||null;
-  const code=getColorCode(color);
-
-  const images=shopData.images;
-  if(!images.length){$('assignGrid').innerHTML='<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Carica prima delle immagini</p>';return;}
-
-  $('assignGrid').innerHTML=images.map(img=>{
-    const isAssigned=assignedImgId&&assignedImgId===img.id;
-    return`<div class="icard assign-pick${isAssigned?' cur-assigned':''}" onclick="${isAssigned?'':'assignToColor(\''+esc(img.id)+'\')'}">
-      <img src="${esc(img.url)}" loading="lazy">
-      <span class="sbadge-assigned">✓ ${esc(color)}${code?' #'+esc(code):''}</span>
-      ${isAssigned
-        ?`<div class="ov"><button class="obtn del" onclick="removeColorAssign(event)">✕ Rimuovi assegnazione</button></div>`
-        :`<div class="ov"><button class="obtn assign-btn" onclick="assignToColor('${esc(img.id)}');event.stopPropagation()">📌 Assegna a ${esc(color)}</button></div>`
-      }
-    </div>`;
-  }).join('');
-}
-
-async function assignToColor(imgId){
-  if(!activeColor||!shopData?.id){toast('Seleziona prima un colore','err');return;}
-  // Use the exact color value from Shopify variant data (e.g. "Nero" not "NERO")
-  const exactColor=shopData.variants.find(v=>v.color&&v.color.toUpperCase()===activeColor.toUpperCase())?.color||activeColor;
-  toast(`Assegno a variante ${exactColor}…`);
-  const form=new FormData();
-  form.append('shop',shop());
-  form.append('product_id',shopData.id);
-  form.append('image_id',imgId);
-  form.append('color',exactColor);
-  try{
-    const res=await fetch('/api/shopify/variant/assign-color',{method:'POST',body:form});
-    const data=await res.json();
-    if(!res.ok){
-      if(data.debug_options){
-        const opts=[...new Set(data.debug_options.map(([n,v])=>`${n}: ${v}`))].join(' | ');
-        toast(`0 varianti trovate. Option su Shopify: ${opts}`,'err');
-      } else {
-        toast('Errore: '+JSON.stringify(data.errors||data.error),'err');
-      }
-      fetchRealOptions();
-      return;
+@app.get("/api/shopify/product/options")
+async def get_product_options(shop: str, product_id: str):
+    """Restituisce i nomi delle option e i valori unici per ogni option."""
+    token = get_shop_token(shop)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Not authenticated"})
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"https://{shop}/admin/api/{API_VERSION}/graphql.json",
+            headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+            json={
+                "query": """query($id:ID!){product(id:$id){
+                  options{name values}
+                  variants(first:5){edges{node{selectedOptions{name value}}}}
+                }}""",
+                "variables": {"id": product_id},
+            },
+        )
+    data = (resp.json().get("data") or {}).get("product", {})
+    return {
+        "options": data.get("options", []),
+        "sample_variants": [
+            e["node"]["selectedOptions"]
+            for e in data.get("variants", {}).get("edges", [])
+        ],
     }
-    if(data.updated===0){
-      toast(`⚠ 0 varianti aggiornate`,'err');
-      fetchRealOptions();
-      return;
-    }
-    toast(`✓ Immagine assegnata a ${data.updated} varianti ${exactColor}!`,'ok');
-    // Remove debug box if present
-    const dbg=$('optDebug');if(dbg)dbg.remove();
-    shopData.variants.forEach(v=>{
-      if(v.color&&v.color.toUpperCase()===activeColor.toUpperCase()) v.image_id=imgId;
-    });
-    selectColor(activeColor);
-  }catch(e){toast('Errore: '+e.message,'err');}
-}
-
-async function removeColorAssign(event){
-  event.stopPropagation();
-  if(!activeColor||!shopData?.id){return;}
-  if(!confirm(`Rimuovere l'immagine assegnata a ${activeColor}?`))return;
-  toast(`Rimozione assegnazione ${activeColor}…`);
-
-  const colorVariants=shopData.variants.filter(v=>v.color&&v.color.toUpperCase()===activeColor.toUpperCase());
-  const form=new FormData();
-  form.append('shop',shop());
-  form.append('product_id',shopData.id);
-  form.append('image_id','');  // empty = remove
-  form.append('color',colorVariants[0]?.color||activeColor);
-  try{
-    const res=await fetch('/api/shopify/variant/assign-color',{method:'POST',body:form});
-    const data=await res.json();
-    if(!res.ok){toast('Errore: '+JSON.stringify(data.errors||data.error),'err');return;}
-    toast(`✓ Assegnazione rimossa da ${data.updated} varianti ${activeColor}!`,'ok');
-    shopData.variants.forEach(v=>{
-      if(v.color&&v.color.toUpperCase()===activeColor.toUpperCase()) v.image_id=null;
-    });
-    selectColor(activeColor);
-  }catch(e){toast('Errore: '+e.message,'err');}
-}
-  if(!shopData?.id) return;
-  const res=await fetch(`/api/shopify/product/options?shop=${encodeURIComponent(shop())}&product_id=${encodeURIComponent(shopData.id)}`);
-  const data=await res.json();
-  if(!data.options) return;
-  const info=data.options.map(o=>`"${o.name}": ${o.values.slice(0,3).join(', ')}`).join(' | ');
-  // Show in variant section
-  const el=$('variantSection');
-  let dbg=$('optDebug');
-  if(!dbg){
-    dbg=document.createElement('div');
-    dbg.id='optDebug';
-    dbg.style.cssText='font-size:11px;color:var(--accent);padding:8px 10px;background:var(--al);border-radius:var(--r);border:1px solid #E8B8A8;margin-bottom:12px;';
-    el.insertBefore(dbg, $('colorTabs'));
-  }
-  dbg.innerHTML=`⚠ Option reali su Shopify: <strong>${info}</strong><br>
-    Il filtro colore cerca option con nome "Colore", "Color" o "Colour".<br>
-    Controlla che il nome dell'option corrisponda.`;
-}
-
-async function deleteImg(imgId){
-  if(!confirm('Eliminare questa immagine da Shopify?'))return;
-  const params=new URLSearchParams({shop:shop(),product_id:shopData.id,image_id:imgId});
-  try{
-    const res=await fetch('/api/shopify/image?'+params,{method:'DELETE'});
-    if(!res.ok){const d=await res.json();toast('Errore: '+(d.error||''),'err');return;}
-    toast('Immagine eliminata','ok');
-    shopData.images=shopData.images.filter(i=>i.id!==imgId);
-    $('imgcount').textContent=`${shopData.images.length} immagini`;
-    renderImages(shopData.images);
-  }catch(e){toast('Errore: '+e.message,'err');}
-}
-
-async function uploadUrl(){
-  const inp=$('urlinput');const url=inp.value.trim();
-  if(!url.startsWith('http')){toast('URL non valido','err');return;}
-  if(!cur){toast('Seleziona prima un prodotto dalla lista','err');return;}
-  if(!shopData||!shopData.id){toast('Prodotto non trovato su Shopify — verifica il dominio shop','err');return;}
-  toast('Caricamento…');inp.disabled=true;
-  const form=new FormData();
-  form.append('shop',shop());form.append('product_id',shopData.id);
-  form.append('image_url',url);form.append('alt',cur.title);
-  try{
-    const res=await fetch('/api/shopify/image/upload-url',{method:'POST',body:form});
-    const data=await res.json();
-    if(!res.ok){toast('Errore: '+(data.error||''),'err');return;}
-    toast('Immagine caricata!','ok');inp.value='';
-    shopData.images.push(data);
-    $('imgcount').textContent=`${shopData.images.length} immagini`;
-    renderImages(shopData.images);
-    if(activeColor) selectColor(activeColor);
-  }catch(e){toast('Errore: '+e.message,'err');}
-  finally{inp.disabled=false;}
-}
-
-$('fileinput').addEventListener('change',async e=>{
-  if(!cur){toast('Seleziona prima un prodotto dalla lista','err');return;}
-  if(!shopData||!shopData.id){toast('Prodotto non trovato su Shopify — verifica il dominio shop','err');return;}
-  for(const file of Array.from(e.target.files)){
-    toast(`Caricamento ${file.name}…`);
-    const form=new FormData();
-    form.append('shop',shop());form.append('product_id',shopData.id);form.append('file',file);
-    try{
-      const res=await fetch('/api/shopify/image/upload-file',{method:'POST',body:form});
-      const data=await res.json();
-      if(!res.ok){toast('Errore: '+(data.error||''),'err');continue;}
-      toast(`${file.name} caricato!`,'ok');
-      shopData.images.push(data);
-    }catch(err){toast('Errore: '+err.message,'err');}
-  }
-  $('imgcount').textContent=`${shopData.images.length} immagini`;
-  renderImages(shopData.images);
-  if(activeColor) selectColor(activeColor);
-  e.target.value='';
-});
-
-// ── TABS ──────────────────────────────────────────────────────────────────────
-function switchTab(tab){
-  document.querySelectorAll('.ntab').forEach((b,i)=>b.classList.toggle('active',['product','library'][i]===tab));
-  $('tabProduct').style.display=tab==='product'?'':'none';
-  $('tabLibrary').style.display=tab==='library'?'':'none';
-  if(tab==='library') updateLibTarget();
-}
-function updateLibTarget(){
-  $('libTarget').textContent=cur
-    ?`Prodotto attivo: "${cur.title||cur.handle}" — clicca una foto per aggiungerla`
-    :'Nessun prodotto selezionato — torna al tab Prodotto e scegli un prodotto';
-}
-function switchLib(lib){
-  document.querySelectorAll('.ltab').forEach((b,i)=>b.classList.toggle('active',['files','products'][i]===lib));
-  $('libFiles').style.display=lib==='files'?'':'none';
-  $('libProducts').style.display=lib==='products'?'':'none';
-}
-
-// ── FILES SHOPIFY ─────────────────────────────────────────────────────────────
-let filesCursor=null, filesTotal=0, filesLoading=false;
-
-async function loadFiles(reset=true){
-  if(filesLoading)return;
-  if(reset){
-    filesCursor=null;filesTotal=0;
-    $('filesGrid').innerHTML=`<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico libreria…</p>`;
-    $('filesCounter').textContent='';
-  }
-  const s=shop();
-  if(!s){$('filesGrid').innerHTML='<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop</p>';return;}
-  filesLoading=true;
-  const q=$('libSearch').value.trim();
-  try{
-    const res=await fetch(`/api/shopify/files?shop=${encodeURIComponent(s)}&after=${encodeURIComponent(filesCursor||'')}&q=${encodeURIComponent(q)}`);
-    const data=await res.json();
-    if(!res.ok){
-      $('filesGrid').innerHTML=`<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(data.error)}</p>`;
-      filesLoading=false;return;
-    }
-    const grid=$('filesGrid');
-    if(reset) grid.innerHTML='';
-    if(!data.files.length&&reset){
-      grid.innerHTML='<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine nella libreria</p>';
-      filesLoading=false;return;
-    }
-    filesTotal+=data.files.length;
-    grid.innerHTML+=data.files.map(f=>`
-      <div class="icard" title="${esc(f.filename)}">
-        <img src="${esc(f.url)}" loading="lazy" onerror="this.parentElement.style.display='none'">
-        <div class="ov">
-          <button class="obtn addprod" onclick="addToProduct('${esc(f.url)}','${esc(f.alt||f.filename)}')">+ Aggiungi al prodotto</button>
-          <a class="obtn" href="${esc(f.url)}" target="_blank">↗ Apri</a>
-        </div>
-      </div>`).join('');
-    filesCursor=data.next_cursor||null;
-    $('filesCounter').textContent=filesCursor
-      ?`${filesTotal} immagini caricate — ce ne sono altre`
-      :`${filesTotal} immagini totali`;
-    $('filesMore').style.display=filesCursor?'flex':'none';
-  }catch(e){
-    $('filesGrid').innerHTML+=`<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`;
-  }
-  filesLoading=false;
-}
-
-async function loadMoreFiles(){await loadFiles(false);}
-$('libSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadFiles();});
-
-// ── PRODUCTS SEARCH ───────────────────────────────────────────────────────────
-async function searchProducts(){
-  const q=$('prodSearch').value.trim();
-  if(!q){toast('Inserisci un termine di ricerca','err');return;}
-  const s=shop();
-  $('prodResults').innerHTML=`<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Cerco…</p>`;
-  $('prodImgGrid').innerHTML='';
-  try{
-    const res=await fetch(`/api/shopify/products/search?shop=${encodeURIComponent(s)}&q=${encodeURIComponent(q)}`);
-    const data=await res.json();
-    if(!res.ok){$('prodResults').innerHTML=`<p style="color:var(--accent);font-size:12px;">${esc(data.error)}</p>`;return;}
-    if(!data.length){$('prodResults').innerHTML='<p style="color:var(--muted);font-size:12px;">Nessun prodotto trovato</p>';return;}
-    $('prodResults').innerHTML=data.map(p=>`
-      <div class="prod-result" id="pr-${p.id.replace(/\W/g,'_')}" onclick='loadProdImages(${JSON.stringify(p)})'>
-        <div class="pr-info">
-          <div class="pr-title">${esc(p.title)}</div>
-          <div class="pr-handle">${esc(p.handle)}</div>
-        </div>
-        <span style="font-size:10px;color:var(--muted);">${p.image_count} img →</span>
-      </div>`).join('');
-  }catch(e){$('prodResults').innerHTML=`<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`;}
-}
-$('prodSearch').addEventListener('keydown',e=>{if(e.key==='Enter')searchProducts();});
-
-async function loadProdImages(prod){
-  document.querySelectorAll('.prod-result').forEach(el=>el.classList.remove('active'));
-  const el=$('pr-'+prod.id.replace(/\W/g,'_'));
-  if(el)el.classList.add('active');
-  $('prodImgGrid').innerHTML=`<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico immagini…</p>`;
-  const s=shop();
-  try{
-    const res=await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(prod.handle)}`);
-    const data=await res.json();
-    if(!res.ok){$('prodImgGrid').innerHTML=`<p style="color:var(--accent);font-size:12px;grid-column:1/-1">${esc(data.error)}</p>`;return;}
-    if(!data.images.length){$('prodImgGrid').innerHTML='<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine</p>';return;}
-    $('prodImgGrid').innerHTML=data.images.map(img=>`
-      <div class="icard">
-        <img src="${esc(img.url)}" loading="lazy">
-        <div class="ov">
-          <button class="obtn addprod" onclick="addToProduct('${esc(img.url)}','')">+ Aggiungi al prodotto</button>
-          <a class="obtn" href="${esc(img.url)}" target="_blank">↗ Apri</a>
-        </div>
-      </div>`).join('');
-  }catch(e){$('prodImgGrid').innerHTML=`<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`;}
-}
-
-// ── ADD TO CURRENT PRODUCT ────────────────────────────────────────────────────
-async function addToProduct(url, alt){
-  if(!cur||!shopData){toast('Seleziona prima un prodotto nel tab Prodotto','err');return;}
-  toast('Aggiungo immagine…');
-  const form=new FormData();
-  form.append('shop',shop());form.append('product_id',shopData.id);
-  form.append('image_url',url);form.append('alt',alt||cur.title);
-  try{
-    const res=await fetch('/api/shopify/image/upload-url',{method:'POST',body:form});
-    const data=await res.json();
-    if(!res.ok){toast('Errore: '+(data.error||''),'err');return;}
-    shopData.images.push(data);
-    toast(`✓ Aggiunta a "${cur.title||cur.handle}"!`,'ok');
-  }catch(e){toast('Errore: '+e.message,'err');}
-}
-</script>
-</body>
-</html>
