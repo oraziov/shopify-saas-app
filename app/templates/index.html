@@ -19,6 +19,9 @@
       --accent: #C84B2F;
       --al: #F5E8E4;
       --green: #2A6B4A;
+      --gl: #E4F0EB;
+      --blue: #2C4FA3;
+      --bl: #E8EDFA;
       --r: 6px;
       --mono: 'DM Mono', monospace;
       --serif: 'Fraunces', Georgia, serif;
@@ -109,7 +112,6 @@
       min-height: calc(100vh - 48px);
     }
 
-    /* SIDEBAR */
     .sidebar {
       background: var(--surface);
       border-right: 1px solid var(--border);
@@ -155,6 +157,32 @@
       color: var(--muted);
       font-size: 11px;
       line-height: 1.5;
+    }
+
+    .search-wrap {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sbox {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 0 9px;
+    }
+
+    .sbox input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 7px 0;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      outline: none;
     }
 
     .filter-wrap {
@@ -206,6 +234,7 @@
       border-radius: 50%;
       flex-shrink: 0;
       border: 1px solid rgba(0, 0, 0, .1);
+      display: inline-block;
     }
 
     .ccount {
@@ -280,7 +309,6 @@
       font-size: 12px;
     }
 
-    /* MAIN */
     .main {
       overflow-y: auto;
       padding: 24px 28px;
@@ -312,6 +340,35 @@
       color: var(--muted);
       font-size: 12px;
       line-height: 1.6;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .ntab {
+      padding: 9px 18px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      margin-bottom: -2px;
+      transition: all .15s;
+    }
+
+    .ntab:hover {
+      color: var(--text);
+    }
+
+    .ntab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
     }
 
     .detail {
@@ -362,7 +419,6 @@
       color: var(--muted);
     }
 
-    /* IMAGE GRID */
     .igrid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -416,7 +472,7 @@
       font-family: var(--mono);
       font-size: 10px;
       cursor: pointer;
-      width: 110px;
+      width: 120px;
       text-align: center;
       transition: background .1s;
     }
@@ -429,7 +485,22 @@
       background: rgba(200, 75, 47, .8);
     }
 
-    /* UPLOAD */
+    .obtn.addprod {
+      background: rgba(42, 107, 74, .7);
+    }
+
+    .obtn.addprod:hover {
+      background: rgba(42, 107, 74, .95);
+    }
+
+    .obtn.assign-btn {
+      background: rgba(42, 107, 74, .7);
+    }
+
+    .obtn.assign-btn:hover {
+      background: rgba(42, 107, 74, .95);
+    }
+
     .upzone {
       border: 1.5px dashed var(--border);
       border-radius: var(--r);
@@ -494,79 +565,62 @@
       background: #3A3530;
     }
 
-    #toast {
-      position: fixed;
-      bottom: 18px;
-      right: 18px;
-      background: var(--text);
-      color: var(--bg);
-      padding: 10px 16px;
-      border-radius: var(--r);
-      font-size: 12px;
-      transform: translateY(60px);
-      opacity: 0;
-      transition: all .22s;
-      z-index: 999;
-      max-width: 320px;
-    }
-
-    #toast.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    #toast.ok {
-      background: var(--green);
-    }
-
-    #toast.err {
-      background: var(--accent);
-    }
-
-    .spin {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid currentColor;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: sp .7s linear infinite;
-      vertical-align: middle;
-    }
-
-    @keyframes sp {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .nav-tabs {
-      display: flex;
-      gap: 0;
-      margin-bottom: 20px;
-      border-bottom: 2px solid var(--border);
-    }
-
-    .ntab {
-      padding: 9px 18px;
-      border: none;
-      border-bottom: 2px solid transparent;
-      background: none;
+    .ctab {
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--s2);
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
       cursor: pointer;
-      margin-bottom: -2px;
-      transition: all .15s;
+      transition: all .12s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
-    .ntab:hover {
-      color: var(--text);
-    }
-
-    .ntab.active {
+    .ctab:hover {
+      border-color: var(--accent);
       color: var(--accent);
-      border-bottom-color: var(--accent);
+    }
+
+    .ctab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .cdot2 {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, .1);
+      flex-shrink: 0;
+    }
+
+    .icard.assign-pick {
+      cursor: pointer;
+    }
+
+    .icard.cur-assigned {
+      border: 2px solid var(--green);
+    }
+
+    .sbadge-assigned {
+      display: none;
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: var(--green);
+      color: #fff;
+      font-size: 9px;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    .icard.cur-assigned .sbadge-assigned {
+      display: block;
     }
 
     .lib-header {
@@ -645,90 +699,55 @@
       color: var(--muted);
     }
 
-    .obtn.assign-btn {
-      background: rgba(42, 107, 74, .7);
+    #toast {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      background: var(--text);
+      color: var(--bg);
+      padding: 10px 16px;
+      border-radius: var(--r);
+      font-size: 12px;
+      transform: translateY(60px);
+      opacity: 0;
+      transition: all .22s;
+      z-index: 999;
+      max-width: 320px;
     }
 
-    .obtn.assign-btn:hover {
-      background: rgba(42, 107, 74, .95);
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
     }
 
-    .ctab {
-      padding: 5px 10px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background: var(--s2);
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all .12s;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
+    #toast.ok {
+      background: var(--green);
     }
 
-    .ctab:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .ctab.active {
+    #toast.err {
       background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
     }
 
-    .cdot2 {
-      width: 10px;
-      height: 10px;
+    .spin {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
       border-radius: 50%;
-      border: 1px solid rgba(0, 0, 0, .1);
-      flex-shrink: 0;
+      animation: sp .7s linear infinite;
+      vertical-align: middle;
     }
 
-    .icard.assign-pick:hover {
-      border-color: var(--green);
-      cursor: pointer;
-    }
-
-    .icard.assign-pick:hover::after {
-      content: 'Assegna';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--green);
-      color: #fff;
-      font-family: var(--mono);
-      font-size: 10px;
-      padding: 4px;
-      text-align: center;
-    }
-
-    .icard.cur-assigned {
-      border: 2px solid var(--green);
-    }
-
-    .icard.cur-assigned .sbadge-assigned {
-      display: block;
-    }
-
-    .sbadge-assigned {
-      display: none;
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      background: var(--green);
-      color: #fff;
-      font-size: 9px;
-      padding: 2px 5px;
-      border-radius: 3px;
+    @keyframes sp {
+      to {
+        transform: rotate(360deg);
+      }
     }
   </style>
+</head>
 
 <body>
-
   <header>
     <h1>Image <em>Manager</em></h1>
     <div class="hright">
@@ -739,7 +758,6 @@
       <span class="hstat" id="hstat">Nessun CSV</span>
     </div>
   </header>
-
   <div class="layout">
     <aside class="sidebar">
       <div class="csvzone">
@@ -763,44 +781,32 @@
         </select>
       </div>
       <div class="plist-header">
-        <span>Prodotti</span>
-        <span id="pcount">0</span>
+        <span>Prodotti</span><span id="pcount">0</span>
       </div>
       <div class="plist" id="plist">
         <div class="nores">Carica un CSV per iniziare</div>
       </div>
     </aside>
-
     <main class="main">
-
-      <!-- NAV TABS -->
       <div class="nav-tabs" id="navTabs">
         <button class="ntab active" onclick="switchTab('product')">📦 Prodotto</button>
         <button class="ntab" onclick="switchTab('library')">🗂 Libreria Shopify</button>
       </div>
-
-      <!-- PRODUCT TAB -->
       <div id="tabProduct">
         <div class="empty" id="empty">
           <div class="big">🖼</div>
           <h2>Seleziona un prodotto</h2>
-          <p>Carica il CSV e clicca un prodotto per gestire le sue immagini su Shopify</p>
+          <p>Carica il CSV e clicca un prodotto per gestire le sue immagini</p>
         </div>
-
         <div class="detail" id="detail">
           <div class="dhead">
             <h2 id="dtitle">—</h2>
             <span class="dhandle" id="dhandle"></span>
           </div>
-
           <div class="sec">
-            <div class="sectitle">
-              Immagini su Shopify
-              <span class="secn" id="imgcount"></span>
-            </div>
+            <div class="sectitle">Immagini su Shopify<span class="secn" id="imgcount"></span></div>
             <div class="igrid" id="imgGrid"></div>
           </div>
-
           <div class="sec">
             <div class="sectitle">Aggiungi immagini</div>
             <div class="upzone" onclick="document.getElementById('fileinput').click()">
@@ -813,32 +819,23 @@
               <button class="btn bprim" onclick="uploadUrl()">⬆ Carica</button>
             </div>
           </div>
-
-          <!-- VARIANT COLOR ASSIGNMENT -->
           <div class="sec" id="variantSection" style="display:none;">
             <div class="sectitle">Associa immagine per colore variante</div>
-            <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">
-              Seleziona un colore → clicca un'immagine → l'immagine viene assegnata a tutte le varianti di quel colore
-            </p>
+            <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Seleziona un colore → clicca un'immagine →
+              viene assegnata a tutte le varianti di quel colore</p>
             <div id="colorTabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
             <div id="assignGrid" class="igrid"></div>
           </div>
         </div>
       </div>
-
-      <!-- LIBRARY TAB -->
       <div id="tabLibrary" style="display:none;">
         <div class="lib-header">
           <div class="lib-tabs">
             <button class="ltab active" onclick="switchLib('files')">Files Shopify</button>
             <button class="ltab" onclick="switchLib('products')">Da prodotti esistenti</button>
           </div>
-          <div class="lib-info" id="libInfo">
-            <span id="libTarget">Nessun prodotto selezionato — torna al tab Prodotto</span>
-          </div>
+          <div class="lib-info"><span id="libTarget">Nessun prodotto selezionato</span></div>
         </div>
-
-        <!-- FILES tab -->
         <div id="libFiles">
           <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
             <input id="libSearch" type="text" placeholder="Cerca per nome file…"
@@ -851,13 +848,9 @@
           </div>
           <div id="filesMore" style="margin-top:14px;text-align:center;display:none;">
             <button class="btn" style="background:var(--s2);border-color:var(--border);width:100%;"
-              onclick="loadMoreFiles()">
-              <span class="spin"></span> Carica altre…
-            </button>
+              onclick="loadMoreFiles()">Carica altre →</button>
           </div>
         </div>
-
-        <!-- PRODUCTS tab -->
         <div id="libProducts" style="display:none;">
           <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
             <input id="prodSearch" type="text" placeholder="Cerca prodotto su Shopify…"
@@ -867,35 +860,19 @@
           <div id="prodResults"></div>
           <div id="prodImgGrid" class="igrid" style="margin-top:14px;"></div>
         </div>
-
       </div>
-
     </main>
   </div>
-
   <div id="toast"></div>
-
   <script>
-    let all = [], cur = null, shopData = null;
+    let all = [], cur = null, shopData = null, activeColor = null;
     let fSearch = '', fBrand = '', fTitle = '';
     const $ = id => document.getElementById(id);
     const shop = () => $('shopInput').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
-
-    function toast(msg, type = '') {
-      const el = $('toast'); el.textContent = msg;
-      el.className = 'show ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : '');
-      clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3500);
-    }
+    function toast(msg, type = '') { const el = $('toast'); el.textContent = msg; el.className = 'show ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : ''); clearTimeout(el._t); el._t = setTimeout(() => el.className = '', 3500); }
     function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-    const CMAP = {
-      NERO: '#1A1A1A', NERO1: '#2A2A2A', BIANCO: '#F0EEE8', AVORIO: '#F5EFD8', BURRO: '#F5ECC0',
-      BEIGE: '#D4C5A9', NUDO: '#E8C9A0', TORTORA: '#C4B49A', FANGO: '#9E8B72', CAMMELLO: '#C19A6B',
-      TABACCO: '#8B6340', MARRONE: '#6B3D26', KAKI: '#8A8A4A', MILITARE: '#4A5A35', PRATO: '#3A6B3A',
-      VERDE: '#2A7A3A', DENIM: '#3A5A8A', BLU: '#1A3A7A', BLU1: '#2A4A9A', AZZURRO: '#5A9AC8',
-      CELESTE: '#8AC4E0', LILLA: '#9A7AC8', ROSA: '#E8A0B0', BORDEAUX: '#7A1A2A', GRIGIO: '#909090', GIALLO: '#E8D040',
-    };
-    const cdot = c => `<span class="cdot" style="background:${CMAP[c] || '#CCC'}"></span>`;
+    const CMAP = { NERO: '#1A1A1A', NERO1: '#2A2A2A', BIANCO: '#F0EEE8', AVORIO: '#F5EFD8', BURRO: '#F5ECC0', BEIGE: '#D4C5A9', NUDO: '#E8C9A0', TORTORA: '#C4B49A', FANGO: '#9E8B72', CAMMELLO: '#C19A6B', TABACCO: '#8B6340', MARRONE: '#6B3D26', KAKI: '#8A8A4A', MILITARE: '#4A5A35', PRATO: '#3A6B3A', VERDE: '#2A7A3A', DENIM: '#3A5A8A', BLU: '#1A3A7A', BLU1: '#2A4A9A', AZZURRO: '#5A9AC8', CELESTE: '#8AC4E0', LILLA: '#9A7AC8', ROSA: '#E8A0B0', BORDEAUX: '#7A1A2A', GRIGIO: '#909090', GIALLO: '#E8D040' };
+    const cdot = (c, s = 8) => `<span class="cdot" style="width:${s}px;height:${s}px;background:${CMAP[c] || '#CCC'};"></span>`;
 
     // CSV
     $('csvfile').addEventListener('change', e => e.target.files[0] && loadCSV(e.target.files[0]));
@@ -923,15 +900,7 @@
       const titles = [...new Set(all.map(p => p.title).filter(Boolean))].sort();
       $('ftitle').innerHTML = '<option value="">Tutti i modelli</option>' + titles.map(t => `<option>${esc(t)}</option>`).join('');
     }
-
-    $('fbrand').addEventListener('change', e => {
-      fBrand = e.target.value;
-      // Rebuild title filter based on selected brand
-      const titles = [...new Set(all.filter(p => !fBrand || p.brand === fBrand).map(p => p.title).filter(Boolean))].sort();
-      $('ftitle').innerHTML = '<option value="">Tutti i modelli</option>' + titles.map(t => `<option>${esc(t)}</option>`).join('');
-      fTitle = '';
-      applyF();
-    });
+    $('fbrand').addEventListener('change', e => { fBrand = e.target.value; const titles = [...new Set(all.filter(p => !fBrand || p.brand === fBrand).map(p => p.title).filter(Boolean))].sort(); $('ftitle').innerHTML = '<option value="">Tutti i modelli</option>' + titles.map(t => `<option>${esc(t)}</option>`).join(''); fTitle = ''; applyF(); });
     $('ftitle').addEventListener('change', e => { fTitle = e.target.value; applyF(); });
     $('search').addEventListener('input', e => { fSearch = e.target.value.toLowerCase(); applyF(); });
 
@@ -951,28 +920,25 @@
       $('plist').innerHTML = items.map(p => {
         const gi = all.indexOf(p);
         const active = cur && all.indexOf(cur) === gi;
-        const colorChips = p.colors.map(c => `
-      <span class="chip">${cdot(c.colore)} ${esc(c.colore)} <span style="color:var(--blue);font-size:9px;">#${esc(c.color_code)}</span></span>
-    `).join('');
+        const colorChips = (p.colors || []).map(c => `<span class="chip">${cdot(c.colore)} ${esc(c.colore)} <span style="color:var(--blue);font-size:9px;">#${esc(c.color_code)}</span></span>`).join('');
         return `<div class="pitem${active ? ' active' : ''}" data-i="${gi}" onclick="selProd(${gi})">
       <div class="phandle">${p.handle}</div>
       <div class="ptitle">${esc(p.title) || '(senza titolo)'}</div>
       <span class="pbrand">${esc(p.brand)}</span>
-      <span class="ccount" style="margin-left:4px;">${p.colors.length} colori</span>
+      <span class="ccount" style="margin-left:4px;">${(p.colors || []).length} colori</span>
       <div class="colors-wrap">${colorChips}</div>
     </div>`;
       }).join('');
     }
 
-    // SELECT
     async function selProd(idx) {
-      cur = all[idx]; shopData = null;
+      cur = all[idx]; shopData = null; activeColor = null;
       document.querySelectorAll('.pitem').forEach(el => el.classList.remove('active'));
       document.querySelector(`.pitem[data-i="${idx}"]`)?.classList.add('active');
       $('empty').style.display = 'none';
       $('detail').classList.add('on');
       $('dtitle').textContent = cur.title || String(cur.handle);
-      $('dhandle').textContent = `handle: ${cur.handle} · ${cur.brand}`;
+      $('dhandle').textContent = 'handle: ' + cur.handle + ' · ' + cur.brand;
       await loadShopify();
     }
 
@@ -981,18 +947,13 @@
       $('imgGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico da Shopify…</p>`;
       $('variantSection').style.display = 'none';
       const s = shop();
-      if (!s) { $('imgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop nell\'header</p>'; return; }
+      if (!s) { $('imgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop</p>'; return; }
       try {
-        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(cur.handle)}`);
+        const res = await fetch('/api/shopify/product?shop=' + encodeURIComponent(s) + '&handle=' + encodeURIComponent(cur.handle));
         const data = await res.json();
-        if (!res.ok) {
-          // Product not found but we still allow upload — create a placeholder shopData
-          shopData = { id: null, title: cur.title, images: [], variants: [] };
-          $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">⚠ ${esc(data.error)}<br><span style="color:var(--muted)">Puoi comunque caricare immagini se il prodotto esiste su Shopify con handle diverso.</span></p>`;
-          return;
-        }
+        if (!res.ok) { shopData = { id: null, title: cur.title, images: [], variants: [] }; $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">⚠ ${esc(data.error)}</p>`; return; }
         shopData = data;
-        $('imgcount').textContent = `${data.images.length} immagini`;
+        $('imgcount').textContent = data.images.length + ' immagini';
         renderImages(data.images);
         renderVariantSection(data.variants, data.images);
       } catch (e) { $('imgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`; }
@@ -1010,11 +971,22 @@
     </div>`).join('');
     }
 
-    // ── VARIANT COLOR ASSIGNMENT ──────────────────────────────────────────────────
-    let activeColor = null;
+    async function deleteImg(imgId) {
+      if (!confirm('Eliminare questa immagine?')) return;
+      const params = new URLSearchParams({ shop: shop(), product_id: shopData.id, image_id: imgId });
+      try {
+        const res = await fetch('/api/shopify/image?' + params, { method: 'DELETE' });
+        if (!res.ok) { const d = await res.json(); toast('Errore: ' + (d.error || ''), 'err'); return; }
+        toast('Immagine eliminata', 'ok');
+        shopData.images = shopData.images.filter(i => i.id !== imgId);
+        $('imgcount').textContent = shopData.images.length + ' immagini';
+        renderImages(shopData.images);
+        if (activeColor) selectColor(activeColor);
+      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    }
 
+    // VARIANT COLOR ASSIGNMENT
     function getColorCode(colorName) {
-      // Look up color_code from CSV data for the current product
       if (!cur || !cur.colors) return '';
       const found = cur.colors.find(c => c.colore.toUpperCase() === colorName.toUpperCase());
       return found ? found.color_code : '';
@@ -1022,319 +994,209 @@
 
     function renderVariantSection(variants, images) {
       if (!variants || !variants.length) { $('variantSection').style.display = 'none'; return; }
-
-      const colors = [...new Map(
-        variants.filter(v => v.color).map(v => [v.color, v])
-      ).values()];
-
+      const colors = [...new Map(variants.filter(v => v.color).map(v => [v.color, v])).values()];
       if (!colors.length) { $('variantSection').style.display = 'none'; return; }
       $('variantSection').style.display = 'block';
-
       $('colorTabs').innerHTML = colors.map(v => {
         const code = getColorCode(v.color);
         return `<button class="ctab" data-color="${esc(v.color)}" onclick="selectColor('${esc(v.color)}')">
       <span class="cdot2" style="background:${CMAP[v.color.toUpperCase()] || '#CCC'}"></span>
-      ${esc(v.color)}${code ? ` <span style="font-size:9px;opacity:.7;">#${esc(code)}</span>` : ''}
+      ${esc(v.color)}${code ? ' <span style="font-size:9px;opacity:.7;">#' + esc(code) + '</span>' : ''}
     </button>`;
       }).join('');
-
       selectColor(colors[0].color);
     }
 
     function selectColor(color) {
       activeColor = color;
       document.querySelectorAll('.ctab').forEach(b => b.classList.toggle('active', b.dataset.color === color));
-
       const colorVariants = shopData.variants.filter(v => v.color && v.color.toUpperCase() === color.toUpperCase());
-      const assignedImgId = colorVariants[0]?.image_id || null;
+      const assignedImgId = colorVariants[0] ? colorVariants[0].image_id : null;
       const code = getColorCode(color);
-
       const images = shopData.images;
       if (!images.length) { $('assignGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Carica prima delle immagini</p>'; return; }
-
       $('assignGrid').innerHTML = images.map(img => {
         const isAssigned = !!(assignedImgId && assignedImgId === img.id);
         const safeId = esc(img.id);
-        const safeColor = esc(color);
-        const safeCode = code ? ` #${esc(code)}` : '';
+        const badgeLabel = '✓ ' + esc(color) + (code ? ' #' + esc(code) : '');
         if (isAssigned) {
-          return `<div class="icard cur-assigned">
+          return `<div class="icard cur-assigned" onclick="assignColor('${safeId}')">
         <img src="${esc(img.url)}" loading="lazy">
-        <span class="sbadge-assigned">✓ ${safeColor}${safeCode}</span>
-        <div class="ov"><button class="obtn del" onclick="removeColorAssign('${safeId}')">✕ Rimuovi</button></div>
-      </div>`;
-        } else {
-          return `<div class="icard assign-pick" onclick="assignToColor('${safeId}')">
-        <img src="${esc(img.url)}" loading="lazy">
-        <div class="ov"><button class="obtn assign-btn" onclick="assignToColor('${safeId}');event.stopPropagation()">📌 Assegna a ${safeColor}</button></div>
+        <span class="sbadge-assigned">${badgeLabel}</span>
+        <div class="ov"><span class="obtn" style="background:rgba(42,107,74,.7);">✓ Assegnata</span></div>
       </div>`;
         }
+        return `<div class="icard assign-pick" onclick="assignColor('${safeId}')">
+      <img src="${esc(img.url)}" loading="lazy">
+      <div class="ov"><button class="obtn assign-btn">📌 Assegna a ${esc(color)}</button></div>
+    </div>`;
       }).join('');
     }
 
-    async function assignToColor(imgId) {
-      if (!activeColor || !shopData?.id) { toast('Seleziona prima un colore', 'err'); return; }
-      // Use the exact color value from Shopify variant data (e.g. "Nero" not "NERO")
-      const exactColor = shopData.variants.find(v => v.color && v.color.toUpperCase() === activeColor.toUpperCase())?.color || activeColor;
-      toast(`Assegno a variante ${exactColor}…`);
+    async function assignColor(imgId) {
+      if (!activeColor || !shopData || !shopData.id) { toast('Seleziona prima un colore', 'err'); return; }
+      const exactColor = shopData.variants.find(v => v.color && v.color.toUpperCase() === activeColor.toUpperCase());
+      const colorVal = exactColor ? exactColor.color : activeColor;
+      toast('Assegno immagine a ' + colorVal + '…');
       const form = new FormData();
-      form.append('shop', shop());
-      form.append('product_id', shopData.id);
-      form.append('image_id', imgId);
-      form.append('color', exactColor);
+      form.append('shop', shop()); form.append('product_id', shopData.id);
+      form.append('image_id', imgId); form.append('color', colorVal);
       try {
         const res = await fetch('/api/shopify/variant/assign-color', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok) {
           if (data.debug_options) {
-            const opts = [...new Set(data.debug_options.map(([n, v]) => `${n}: ${v}`))].join(' | ');
-            toast(`0 varianti trovate. Option su Shopify: ${opts}`, 'err');
+            const opts = [...new Set(data.debug_options.map(function (x) { return x[0] + ': ' + x[1]; }))].join(' | ');
+            toast('0 varianti. Option Shopify: ' + opts, 'err');
           } else {
             toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err');
           }
-          fetchRealOptions();
-          return;
+          fetchRealOptions(); return;
         }
-        if (data.updated === 0) {
-          toast(`⚠ 0 varianti aggiornate`, 'err');
-          fetchRealOptions();
-          return;
-        }
-        toast(`✓ Immagine assegnata a ${data.updated} varianti ${exactColor}!`, 'ok');
-        // Remove debug box if present
+        if (data.updated === 0) { toast('⚠ 0 varianti aggiornate', 'err'); fetchRealOptions(); return; }
+        toast('✓ Assegnata a ' + data.updated + ' varianti ' + colorVal + '!', 'ok');
         const dbg = $('optDebug'); if (dbg) dbg.remove();
-        shopData.variants.forEach(v => {
-          if (v.color && v.color.toUpperCase() === activeColor.toUpperCase()) v.image_id = imgId;
-        });
+        shopData.variants.forEach(v => { if (v.color && v.color.toUpperCase() === activeColor.toUpperCase()) v.image_id = imgId; });
         selectColor(activeColor);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
-    async function removeColorAssign(imgId) {
-      if (!activeColor || !shopData?.id) { return; }
-      if (!confirm(`Rimuovere l'immagine assegnata a ${activeColor}?`)) return;
-      toast(`Rimozione assegnazione ${activeColor}…`);
-      const colorVariants = shopData.variants.filter(v => v.color && v.color.toUpperCase() === activeColor.toUpperCase());
-      const exactColor = colorVariants[0]?.color || activeColor;
-      const form = new FormData();
-      form.append('shop', shop());
-      form.append('product_id', shopData.id);
-      form.append('image_id', '');
-      form.append('color', exactColor);
-      try {
-        const res = await fetch('/api/shopify/variant/assign-color', { method: 'POST', body: form });
-        const data = await res.json();
-        if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
-        toast(`✓ Assegnazione rimossa da ${data.updated} varianti ${activeColor}!`, 'ok');
-        const dbg = $('optDebug'); if (dbg) dbg.remove();
-        shopData.variants.forEach(v => {
-          if (v.color && v.color.toUpperCase() === activeColor.toUpperCase()) v.image_id = null;
-        });
-        selectColor(activeColor);
-      } catch (e) { toast('Errore: ' + e.message, 'err'); }
-    }
-    if (!shopData?.id) return;
-    const res = await fetch(`/api/shopify/product/options?shop=${encodeURIComponent(shop())}&product_id=${encodeURIComponent(shopData.id)}`);
-    const data = await res.json();
-    if (!data.options) return;
-    const info = data.options.map(o => `"${o.name}": ${o.values.slice(0, 3).join(', ')}`).join(' | ');
-    // Show in variant section
-    const el = $('variantSection');
-    let dbg = $('optDebug');
-    if (!dbg) {
-      dbg = document.createElement('div');
-      dbg.id = 'optDebug';
-      dbg.style.cssText = 'font-size:11px;color:var(--accent);padding:8px 10px;background:var(--al);border-radius:var(--r);border:1px solid #E8B8A8;margin-bottom:12px;';
-      el.insertBefore(dbg, $('colorTabs'));
-    }
-    dbg.innerHTML = `⚠ Option reali su Shopify: <strong>${info}</strong><br>
-    Il filtro colore cerca option con nome "Colore", "Color" o "Colour".<br>
-    Controlla che il nome dell'option corrisponda.`;
-}
-
-    async function deleteImg(imgId) {
-      if (!confirm('Eliminare questa immagine da Shopify?')) return;
-      const params = new URLSearchParams({ shop: shop(), product_id: shopData.id, image_id: imgId });
-      try {
-        const res = await fetch('/api/shopify/image?' + params, { method: 'DELETE' });
-        if (!res.ok) { const d = await res.json(); toast('Errore: ' + (d.error || ''), 'err'); return; }
-        toast('Immagine eliminata', 'ok');
-        shopData.images = shopData.images.filter(i => i.id !== imgId);
-        $('imgcount').textContent = `${shopData.images.length} immagini`;
-        renderImages(shopData.images);
-      } catch (e) { toast('Errore: ' + e.message, 'err'); }
+    async function fetchRealOptions() {
+      if (!shopData || !shopData.id) return;
+      const res = await fetch('/api/shopify/product/options?shop=' + encodeURIComponent(shop()) + '&product_id=' + encodeURIComponent(shopData.id));
+      const data = await res.json();
+      if (!data.options) return;
+      const info = data.options.map(function (o) { return '"' + o.name + '": ' + o.values.slice(0, 3).join(', '); }).join(' | ');
+      const el = $('variantSection');
+      let dbg = $('optDebug');
+      if (!dbg) { dbg = document.createElement('div'); dbg.id = 'optDebug'; dbg.style.cssText = 'font-size:11px;color:var(--accent);padding:8px 10px;background:var(--al);border-radius:var(--r);border:1px solid #E8B8A8;margin-bottom:12px;'; el.insertBefore(dbg, $('colorTabs')); }
+      dbg.innerHTML = '⚠ Option reali su Shopify: <strong>' + info + '</strong><br>Il filtro colore cerca option con nome "Colore", "Color" o "Colour".';
     }
 
+    // UPLOAD
     async function uploadUrl() {
       const inp = $('urlinput'); const url = inp.value.trim();
       if (!url.startsWith('http')) { toast('URL non valido', 'err'); return; }
-      if (!cur) { toast('Seleziona prima un prodotto dalla lista', 'err'); return; }
-      if (!shopData || !shopData.id) { toast('Prodotto non trovato su Shopify — verifica il dominio shop', 'err'); return; }
+      if (!cur) { toast('Seleziona prima un prodotto', 'err'); return; }
+      if (!shopData || !shopData.id) { toast('Prodotto non trovato su Shopify', 'err'); return; }
       toast('Caricamento…'); inp.disabled = true;
       const form = new FormData();
-      form.append('shop', shop()); form.append('product_id', shopData.id);
-      form.append('image_url', url); form.append('alt', cur.title);
+      form.append('shop', shop()); form.append('product_id', shopData.id); form.append('image_url', url); form.append('alt', cur.title);
       try {
         const res = await fetch('/api/shopify/image/upload-url', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + (data.error || ''), 'err'); return; }
         toast('Immagine caricata!', 'ok'); inp.value = '';
-        shopData.images.push(data);
-        $('imgcount').textContent = `${shopData.images.length} immagini`;
-        renderImages(shopData.images);
-        if (activeColor) selectColor(activeColor);
+        shopData.images.push(data); $('imgcount').textContent = shopData.images.length + ' immagini';
+        renderImages(shopData.images); if (activeColor) selectColor(activeColor);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
       finally { inp.disabled = false; }
     }
 
-    $('fileinput').addEventListener('change', async e => {
-      if (!cur) { toast('Seleziona prima un prodotto dalla lista', 'err'); return; }
-      if (!shopData || !shopData.id) { toast('Prodotto non trovato su Shopify — verifica il dominio shop', 'err'); return; }
-      for (const file of Array.from(e.target.files)) {
-        toast(`Caricamento ${file.name}…`);
-        const form = new FormData();
+    $('fileinput').addEventListener('change', async function (e) {
+      if (!cur) { toast('Seleziona prima un prodotto', 'err'); return; }
+      if (!shopData || !shopData.id) { toast('Prodotto non trovato su Shopify', 'err'); return; }
+      for (var i = 0; i < e.target.files.length; i++) {
+        var file = e.target.files[i];
+        toast('Caricamento ' + file.name + '…');
+        var form = new FormData();
         form.append('shop', shop()); form.append('product_id', shopData.id); form.append('file', file);
         try {
-          const res = await fetch('/api/shopify/image/upload-file', { method: 'POST', body: form });
-          const data = await res.json();
+          var res = await fetch('/api/shopify/image/upload-file', { method: 'POST', body: form });
+          var data = await res.json();
           if (!res.ok) { toast('Errore: ' + (data.error || ''), 'err'); continue; }
-          toast(`${file.name} caricato!`, 'ok');
-          shopData.images.push(data);
+          toast(file.name + ' caricato!', 'ok'); shopData.images.push(data);
         } catch (err) { toast('Errore: ' + err.message, 'err'); }
       }
-      $('imgcount').textContent = `${shopData.images.length} immagini`;
-      renderImages(shopData.images);
-      if (activeColor) selectColor(activeColor);
+      $('imgcount').textContent = shopData.images.length + ' immagini';
+      renderImages(shopData.images); if (activeColor) selectColor(activeColor);
       e.target.value = '';
     });
 
-    // ── TABS ──────────────────────────────────────────────────────────────────────
+    // TABS
     function switchTab(tab) {
-      document.querySelectorAll('.ntab').forEach((b, i) => b.classList.toggle('active', ['product', 'library'][i] === tab));
+      document.querySelectorAll('.ntab').forEach(function (b, i) { b.classList.toggle('active', ['product', 'library'][i] === tab); });
       $('tabProduct').style.display = tab === 'product' ? '' : 'none';
       $('tabLibrary').style.display = tab === 'library' ? '' : 'none';
-      if (tab === 'library') updateLibTarget();
-    }
-    function updateLibTarget() {
-      $('libTarget').textContent = cur
-        ? `Prodotto attivo: "${cur.title || cur.handle}" — clicca una foto per aggiungerla`
-        : 'Nessun prodotto selezionato — torna al tab Prodotto e scegli un prodotto';
+      if (tab === 'library') $('libTarget').textContent = cur ? 'Prodotto attivo: "' + ((cur.title || cur.handle)) + '" — clicca una foto per aggiungerla' : 'Nessun prodotto selezionato';
     }
     function switchLib(lib) {
-      document.querySelectorAll('.ltab').forEach((b, i) => b.classList.toggle('active', ['files', 'products'][i] === lib));
+      document.querySelectorAll('.ltab').forEach(function (b, i) { b.classList.toggle('active', ['files', 'products'][i] === lib); });
       $('libFiles').style.display = lib === 'files' ? '' : 'none';
       $('libProducts').style.display = lib === 'products' ? '' : 'none';
     }
 
-    // ── FILES SHOPIFY ─────────────────────────────────────────────────────────────
-    let filesCursor = null, filesTotal = 0, filesLoading = false;
-
-    async function loadFiles(reset = true) {
+    // LIBRARY FILES
+    var filesCursor = null, filesTotal = 0, filesLoading = false;
+    async function loadFiles(reset) {
       if (filesLoading) return;
-      if (reset) {
-        filesCursor = null; filesTotal = 0;
-        $('filesGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico libreria…</p>`;
-        $('filesCounter').textContent = '';
-      }
-      const s = shop();
+      if (reset === undefined) reset = true;
+      if (reset) { filesCursor = null; filesTotal = 0; $('filesGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico libreria…</p>'; }
+      var s = shop();
       if (!s) { $('filesGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Inserisci il dominio shop</p>'; return; }
       filesLoading = true;
-      const q = $('libSearch').value.trim();
+      var q = $('libSearch').value.trim();
       try {
-        const res = await fetch(`/api/shopify/files?shop=${encodeURIComponent(s)}&after=${encodeURIComponent(filesCursor || '')}&q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        if (!res.ok) {
-          $('filesGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(data.error)}</p>`;
-          filesLoading = false; return;
-        }
-        const grid = $('filesGrid');
+        var res = await fetch('/api/shopify/files?shop=' + encodeURIComponent(s) + '&after=' + encodeURIComponent(filesCursor || '') + '&q=' + encodeURIComponent(q));
+        var data = await res.json();
+        if (!res.ok) { $('filesGrid').innerHTML = '<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ' + esc(data.error) + '</p>'; filesLoading = false; return; }
+        var grid = $('filesGrid');
         if (reset) grid.innerHTML = '';
-        if (!data.files.length && reset) {
-          grid.innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine nella libreria</p>';
-          filesLoading = false; return;
-        }
+        if (!data.files.length && reset) { grid.innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine</p>'; filesLoading = false; return; }
         filesTotal += data.files.length;
-        grid.innerHTML += data.files.map(f => `
-      <div class="icard" title="${esc(f.filename)}">
-        <img src="${esc(f.url)}" loading="lazy" onerror="this.parentElement.style.display='none'">
-        <div class="ov">
-          <button class="obtn addprod" onclick="addToProduct('${esc(f.url)}','${esc(f.alt || f.filename)}')">+ Aggiungi al prodotto</button>
-          <a class="obtn" href="${esc(f.url)}" target="_blank">↗ Apri</a>
-        </div>
-      </div>`).join('');
+        grid.innerHTML += data.files.map(function (f) { return '<div class="icard" title="' + esc(f.filename) + '"><img src="' + esc(f.url) + '" loading="lazy" onerror="this.parentElement.style.display=\'none\'"><div class="ov"><button class="obtn addprod" onclick="addToProduct(\'' + esc(f.url) + '\',\'' + esc(f.alt || f.filename) + '\')">+ Aggiungi al prodotto</button><a class="obtn" href="' + esc(f.url) + '" target="_blank">↗ Apri</a></div></div>'; }).join('');
         filesCursor = data.next_cursor || null;
-        $('filesCounter').textContent = filesCursor
-          ? `${filesTotal} immagini caricate — ce ne sono altre`
-          : `${filesTotal} immagini totali`;
+        $('filesCounter').textContent = filesCursor ? filesTotal + ' immagini caricate — ce ne sono altre' : filesTotal + ' immagini totali';
         $('filesMore').style.display = filesCursor ? 'flex' : 'none';
-      } catch (e) {
-        $('filesGrid').innerHTML += `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`;
-      }
+      } catch (e) { $('filesGrid').innerHTML += '<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ' + esc(e.message) + '</p>'; }
       filesLoading = false;
     }
+    function loadMoreFiles() { loadFiles(false); }
+    $('libSearch').addEventListener('keydown', function (e) { if (e.key === 'Enter') loadFiles(); });
 
-    async function loadMoreFiles() { await loadFiles(false); }
-    $('libSearch').addEventListener('keydown', e => { if (e.key === 'Enter') loadFiles(); });
-
-    // ── PRODUCTS SEARCH ───────────────────────────────────────────────────────────
+    // LIBRARY PRODUCTS SEARCH
     async function searchProducts() {
-      const q = $('prodSearch').value.trim();
-      if (!q) { toast('Inserisci un termine di ricerca', 'err'); return; }
-      const s = shop();
-      $('prodResults').innerHTML = `<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Cerco…</p>`;
+      var q = $('prodSearch').value.trim();
+      if (!q) { toast('Inserisci un termine', 'err'); return; }
+      var s = shop();
+      $('prodResults').innerHTML = '<p style="color:var(--muted);font-size:12px;"><span class="spin"></span> Cerco…</p>';
       $('prodImgGrid').innerHTML = '';
       try {
-        const res = await fetch(`/api/shopify/products/search?shop=${encodeURIComponent(s)}&q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        if (!res.ok) { $('prodResults').innerHTML = `<p style="color:var(--accent);font-size:12px;">${esc(data.error)}</p>`; return; }
-        if (!data.length) { $('prodResults').innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessun prodotto trovato</p>'; return; }
-        $('prodResults').innerHTML = data.map(p => `
-      <div class="prod-result" id="pr-${p.id.replace(/\W/g, '_')}" onclick='loadProdImages(${JSON.stringify(p)})'>
-        <div class="pr-info">
-          <div class="pr-title">${esc(p.title)}</div>
-          <div class="pr-handle">${esc(p.handle)}</div>
-        </div>
-        <span style="font-size:10px;color:var(--muted);">${p.image_count} img →</span>
-      </div>`).join('');
-      } catch (e) { $('prodResults').innerHTML = `<p style="color:var(--accent);font-size:12px;">Errore: ${esc(e.message)}</p>`; }
+        var res = await fetch('/api/shopify/products/search?shop=' + encodeURIComponent(s) + '&q=' + encodeURIComponent(q));
+        var data = await res.json();
+        if (!res.ok) { $('prodResults').innerHTML = '<p style="color:var(--accent);font-size:12px;">' + esc(data.error) + '</p>'; return; }
+        if (!data.length) { $('prodResults').innerHTML = '<p style="color:var(--muted);font-size:12px;">Nessun prodotto</p>'; return; }
+        $('prodResults').innerHTML = data.map(function (p) { return '<div class="prod-result" id="pr-' + p.id.replace(/\W/g, "_") + '" onclick="loadProdImages(\'' + esc(p.id) + '\',\'' + esc(p.handle) + '\',\'' + esc(p.title) + '\')"><div class="pr-info"><div class="pr-title">' + esc(p.title) + '</div><div class="pr-handle">' + esc(p.handle) + '</div></div><span style="font-size:10px;color:var(--muted);">' + p.image_count + ' img →</span></div>'; }).join('');
+      } catch (e) { $('prodResults').innerHTML = '<p style="color:var(--accent);font-size:12px;">Errore: ' + esc(e.message) + '</p>'; }
     }
-    $('prodSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchProducts(); });
+    $('prodSearch').addEventListener('keydown', function (e) { if (e.key === 'Enter') searchProducts(); });
 
-    async function loadProdImages(prod) {
-      document.querySelectorAll('.prod-result').forEach(el => el.classList.remove('active'));
-      const el = $('pr-' + prod.id.replace(/\W/g, '_'));
-      if (el) el.classList.add('active');
-      $('prodImgGrid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico immagini…</p>`;
-      const s = shop();
+    async function loadProdImages(prodId, handle, title) {
+      document.querySelectorAll('.prod-result').forEach(function (el) { el.classList.remove('active'); });
+      var el = $('pr-' + prodId.replace(/\W/g, '_')); if (el) el.classList.add('active');
+      $('prodImgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1"><span class="spin"></span> Carico immagini…</p>';
+      var s = shop();
       try {
-        const res = await fetch(`/api/shopify/product?shop=${encodeURIComponent(s)}&handle=${encodeURIComponent(prod.handle)}`);
-        const data = await res.json();
-        if (!res.ok) { $('prodImgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">${esc(data.error)}</p>`; return; }
+        var res = await fetch('/api/shopify/product?shop=' + encodeURIComponent(s) + '&handle=' + encodeURIComponent(handle));
+        var data = await res.json();
+        if (!res.ok) { $('prodImgGrid').innerHTML = '<p style="color:var(--accent);font-size:12px;grid-column:1/-1">' + esc(data.error) + '</p>'; return; }
         if (!data.images.length) { $('prodImgGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Nessuna immagine</p>'; return; }
-        $('prodImgGrid').innerHTML = data.images.map(img => `
-      <div class="icard">
-        <img src="${esc(img.url)}" loading="lazy">
-        <div class="ov">
-          <button class="obtn addprod" onclick="addToProduct('${esc(img.url)}','')">+ Aggiungi al prodotto</button>
-          <a class="obtn" href="${esc(img.url)}" target="_blank">↗ Apri</a>
-        </div>
-      </div>`).join('');
-      } catch (e) { $('prodImgGrid').innerHTML = `<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ${esc(e.message)}</p>`; }
+        $('prodImgGrid').innerHTML = data.images.map(function (img) { return '<div class="icard"><img src="' + esc(img.url) + '" loading="lazy"><div class="ov"><button class="obtn addprod" onclick="addToProduct(\'' + esc(img.url) + '\',\'\')">+ Aggiungi al prodotto</button><a class="obtn" href="' + esc(img.url) + '" target="_blank">↗ Apri</a></div></div>'; }).join('');
+      } catch (e) { $('prodImgGrid').innerHTML = '<p style="color:var(--accent);font-size:12px;grid-column:1/-1">Errore: ' + esc(e.message) + '</p>'; }
     }
 
-    // ── ADD TO CURRENT PRODUCT ────────────────────────────────────────────────────
     async function addToProduct(url, alt) {
-      if (!cur || !shopData) { toast('Seleziona prima un prodotto nel tab Prodotto', 'err'); return; }
+      if (!cur || !shopData || !shopData.id) { toast('Seleziona prima un prodotto nel tab Prodotto', 'err'); return; }
       toast('Aggiungo immagine…');
-      const form = new FormData();
-      form.append('shop', shop()); form.append('product_id', shopData.id);
-      form.append('image_url', url); form.append('alt', alt || cur.title);
+      var form = new FormData();
+      form.append('shop', shop()); form.append('product_id', shopData.id); form.append('image_url', url); form.append('alt', alt || cur.title);
       try {
-        const res = await fetch('/api/shopify/image/upload-url', { method: 'POST', body: form });
-        const data = await res.json();
+        var res = await fetch('/api/shopify/image/upload-url', { method: 'POST', body: form });
+        var data = await res.json();
         if (!res.ok) { toast('Errore: ' + (data.error || ''), 'err'); return; }
-        shopData.images.push(data);
-        toast(`✓ Aggiunta a "${cur.title || cur.handle}"!`, 'ok');
+        shopData.images.push(data); toast('✓ Aggiunta a "' + ((cur.title || cur.handle)) + '"!', 'ok');
+        renderImages(shopData.images); $('imgcount').textContent = shopData.images.length + ' immagini';
+        if (activeColor) selectColor(activeColor);
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
   </script>
