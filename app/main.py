@@ -256,25 +256,30 @@ async def assign_color_image(
                 "debug_options": list(set(all_options))[:30],
             })
 
-        # Bulk assign
-        resp = await client.post(gql, headers=h, json={
-            "query": """mutation($productId:ID!,$variants:[ProductVariantsBulkInput!]!){
-              productVariantsBulkUpdate(productId:$productId,variants:$variants){
-                productVariants{id image{id url}}
-                userErrors{field message}
-              }}""",
-            "variables": {
-                "productId": product_id,
-                "variants": [{"id": vid, "imageId": image_id} for vid in target_ids],
-            },
-        })
+        # Use REST API to assign image to each variant — more reliable than GraphQL bulk
+        rest_image_id = image_id.split("/")[-1]  # extract numeric ID from GID
+        updated = []
+        rest_errors = []
 
-    result = (resp.json().get("data") or {}).get("productVariantsBulkUpdate", {})
-    errors = result.get("userErrors", [])
-    if errors:
-        return JSONResponse(status_code=400, content={"errors": errors})
+        for vid in target_ids:
+            rest_variant_id = vid.split("/")[-1]
+            r = await client.put(
+                f"https://{shop}/admin/api/{API_VERSION}/variants/{rest_variant_id}.json",
+                headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
+                json={"variant": {"id": int(rest_variant_id), "image_id": int(rest_image_id)}},
+            )
+            if r.status_code == 200:
+                updated.append(vid)
+            else:
+                rest_errors.append({"variant": vid, "error": r.text[:200]})
+                logger.error(f"variant update failed: {vid} → {r.status_code} {r.text[:200]}")
 
-    return {"ok": True, "updated": len(result.get("productVariants", [])), "color": color}
+    logger.info(f"assign_color REST: updated={len(updated)}, errors={len(rest_errors)}")
+
+    if rest_errors and not updated:
+        return JSONResponse(status_code=400, content={"errors": rest_errors})
+
+    return {"ok": True, "updated": len(updated), "color": color, "errors": rest_errors}
 
 
 # ── SHOPIFY: list files (Content > Files) ────────────────────────────────────
