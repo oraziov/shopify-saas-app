@@ -1053,15 +1053,22 @@
       if (!images.length) { $('assignGrid').innerHTML = '<p style="color:var(--muted);font-size:12px;grid-column:1/-1">Carica prima delle immagini</p>'; return; }
 
       $('assignGrid').innerHTML = images.map(img => {
-        const isAssigned = assignedImgId && assignedImgId === img.id;
-        return `<div class="icard assign-pick${isAssigned ? ' cur-assigned' : ''}" onclick="${isAssigned ? '' : 'assignToColor(\'' + esc(img.id) + '\')'}">
-      <img src="${esc(img.url)}" loading="lazy">
-      <span class="sbadge-assigned">✓ ${esc(color)}${code ? ' #' + esc(code) : ''}</span>
-      ${isAssigned
-            ? `<div class="ov"><button class="obtn del" onclick="removeColorAssign(event)">✕ Rimuovi assegnazione</button></div>`
-            : `<div class="ov"><button class="obtn assign-btn" onclick="assignToColor('${esc(img.id)}');event.stopPropagation()">📌 Assegna a ${esc(color)}</button></div>`
-          }
-    </div>`;
+        const isAssigned = !!(assignedImgId && assignedImgId === img.id);
+        const safeId = esc(img.id);
+        const safeColor = esc(color);
+        const safeCode = code ? ` #${esc(code)}` : '';
+        if (isAssigned) {
+          return `<div class="icard cur-assigned">
+        <img src="${esc(img.url)}" loading="lazy">
+        <span class="sbadge-assigned">✓ ${safeColor}${safeCode}</span>
+        <div class="ov"><button class="obtn del" onclick="removeColorAssign('${safeId}')">✕ Rimuovi</button></div>
+      </div>`;
+        } else {
+          return `<div class="icard assign-pick" onclick="assignToColor('${safeId}')">
+        <img src="${esc(img.url)}" loading="lazy">
+        <div class="ov"><button class="obtn assign-btn" onclick="assignToColor('${safeId}');event.stopPropagation()">📌 Assegna a ${safeColor}</button></div>
+      </div>`;
+        }
       }).join('');
     }
 
@@ -1103,23 +1110,23 @@
       } catch (e) { toast('Errore: ' + e.message, 'err'); }
     }
 
-    async function removeColorAssign(event) {
-      event.stopPropagation();
+    async function removeColorAssign(imgId) {
       if (!activeColor || !shopData?.id) { return; }
       if (!confirm(`Rimuovere l'immagine assegnata a ${activeColor}?`)) return;
       toast(`Rimozione assegnazione ${activeColor}…`);
-
       const colorVariants = shopData.variants.filter(v => v.color && v.color.toUpperCase() === activeColor.toUpperCase());
+      const exactColor = colorVariants[0]?.color || activeColor;
       const form = new FormData();
       form.append('shop', shop());
       form.append('product_id', shopData.id);
-      form.append('image_id', '');  // empty = remove
-      form.append('color', colorVariants[0]?.color || activeColor);
+      form.append('image_id', '');
+      form.append('color', exactColor);
       try {
         const res = await fetch('/api/shopify/variant/assign-color', { method: 'POST', body: form });
         const data = await res.json();
         if (!res.ok) { toast('Errore: ' + JSON.stringify(data.errors || data.error), 'err'); return; }
         toast(`✓ Assegnazione rimossa da ${data.updated} varianti ${activeColor}!`, 'ok');
+        const dbg = $('optDebug'); if (dbg) dbg.remove();
         shopData.variants.forEach(v => {
           if (v.color && v.color.toUpperCase() === activeColor.toUpperCase()) v.image_id = null;
         });
