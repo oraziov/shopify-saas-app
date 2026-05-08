@@ -256,17 +256,22 @@ async def assign_color_image(
                 "debug_options": list(set(all_options))[:30],
             })
 
-        # Use REST API to assign image to each variant — more reliable than GraphQL bulk
-        rest_image_id = image_id.split("/")[-1]  # extract numeric ID from GID
+        # Use REST API — empty image_id means remove assignment
+        rest_image_id = image_id.split("/")[-1] if image_id else None
         updated = []
         rest_errors = []
 
         for vid in target_ids:
             rest_variant_id = vid.split("/")[-1]
+            body = {"variant": {"id": int(rest_variant_id)}}
+            if rest_image_id:
+                body["variant"]["image_id"] = int(rest_image_id)
+            else:
+                body["variant"]["image_id"] = None  # removes assignment
             r = await client.put(
                 f"https://{shop}/admin/api/{API_VERSION}/variants/{rest_variant_id}.json",
                 headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"},
-                json={"variant": {"id": int(rest_variant_id), "image_id": int(rest_image_id)}},
+                json=body,
             )
             if r.status_code == 200:
                 updated.append(vid)
